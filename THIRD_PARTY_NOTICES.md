@@ -6,4 +6,4 @@ Source exports intentionally omit generated `dist/` assets. A local production b
 
 The management-center build now emits `dist/THIRD_PARTY_NOTICES.txt` from bundled module inputs plus the explicitly embedded Geist font package. The candidate builder combines these notices with its server/CLI bundle dependencies in `app/THIRD_PARTY_NOTICES.txt`; the official Node runtime carries its own `runtime/LICENSE`. Missing license text stops the new build. Rebuild and review the actual final files before any public Release; this does not retroactively change old immutable assets.
 
-These notices do not replace the project-level `LICENSE`, which remains undecided. Publication must also check the selected Foundation license and any required third-party NOTICE/attribution obligations; generating files alone is not a public-release approval.
+These notices do not replace the approved project MIT `LICENSE`. The candidate also carries the Foundation-owned MIT text as `app/LICENSE`; third-party notices and the Node runtime license remain separate. Publication must check all required notices in the actual files; generating files alone is not a public-release approval.

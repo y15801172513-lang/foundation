@@ -79,6 +79,9 @@ fs.mkdirSync(path.join(SOURCE, 'app'), {recursive: true});
 
 copy('foundation-kit.json');
 copy('package.json');
+// The approved project MIT notice must accompany the executable copy too.
+// The same owned-code text is maintained in the standalone launcher source.
+copy('distribution/summon-foundation/LICENSE', 'LICENSE');
 copy('packages/core/package.json');
 copy('packages/cli/package.json');
 copy('apps/management-center/package.json');

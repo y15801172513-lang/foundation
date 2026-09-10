@@ -2,8 +2,8 @@
   "schemaVersion": "2.0.0",
   "exportContractSchemaVersion": "2.0.0",
   "exportContractSha256": "beb7eb5a843d51688389a601df4d5408033cae556c5e8cd711fd8915d5046790",
-  "sourceCommit": "884b87c17f46868f499b2c625d8f0af07ca51c67",
-  "approvedSourceCommit": "884b87c17f46868f499b2c625d8f0af07ca51c67",
+  "sourceCommit": "2a801c895918e19c5bf63530fb72419ca9ed7f4a",
+  "approvedSourceCommit": "2a801c895918e19c5bf63530fb72419ca9ed7f4a",
   "sourceState": "clean-exact-commit-approved",
   "productVersion": "0.2.6",
   "licenseStatus": "approved",
@@ -14,17 +14,17 @@
   "publicationEligible": true,
   "commitBinding": {
     "schemaVersion": "2.0.0",
-    "approvedCommit": "884b87c17f46868f499b2c625d8f0af07ca51c67",
-    "gitTree": "57c5531bc2fbcfc86d2d3d211db91f045a6bf078",
+    "approvedCommit": "2a801c895918e19c5bf63530fb72419ca9ed7f4a",
+    "gitTree": "19a8718ec152bce3d47e18fa31870b38f37c7c56",
     "contractSha256": "beb7eb5a843d51688389a601df4d5408033cae556c5e8cd711fd8915d5046790",
-    "expectedTreeHash": "678bdee182eb3ec25b34ef4b49e97021e29d55b95c43f24824de384145494ba1",
+    "expectedTreeHash": "7f1b9cb8c2643f35e1dd900d170a8fe6c4b2dbf0e413eafb435995aed1880c7d",
     "fileCount": 339
   },
   "fileCount": 341,
   "privateExportedCount": 339,
   "generatedPublicCount": 2,
-  "treeHash": "678bdee182eb3ec25b34ef4b49e97021e29d55b95c43f24824de384145494ba1",
-  "inventoryHash": "8e610e179db6474c25294d5995c86799a6359f8a1a59a72e49ad968f7400ef6c",
+  "treeHash": "7f1b9cb8c2643f35e1dd900d170a8fe6c4b2dbf0e413eafb435995aed1880c7d",
+  "inventoryHash": "a0351aaa5c7329ddbe9cad14a85996eb3569000dc6ed629376e9fc9898e2c1cd",
   "files": [
     {
       "path": ".gitignore",
@@ -47,7 +47,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 1081,
-      "sha256": "3c6c98899a7410120240a523b92c73ffb8eda64c6bc0a70f87a9b2485a2aaaaf",
+      "sha256": "2f61e456cb4efbc24260f9972ca96ee19f909f957c052bee1a3a5d01c168f3f3",
       "ownership": "generated-public"
     },
     {
@@ -62,8 +62,8 @@
       "path": "THIRD_PARTY_NOTICES.md",
       "type": "file",
       "mode": 420,
-      "bytes": 1427,
-      "sha256": "19cafbda2efd48f7a2cc4383128b785b842db1139982065508d99934e553d4c4",
+      "bytes": 1494,
+      "sha256": "3e5760cb04b70e7337ee6def3c481f2222c585a1824008902c031a379dee7206",
       "ownership": "private-exported"
     },
     {
@@ -1710,8 +1710,8 @@
       "path": "scripts/build-candidate.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 7708,
-      "sha256": "869ae11e9216ffd23e6205bd045dcd95e09625b72fe674a59400fc495f070681",
+      "bytes": 7919,
+      "sha256": "028277e9f5d0e40e13eebae7e1fb451a9926208b654b033437fe28a4a417619b",
       "ownership": "private-exported"
     },
     {
