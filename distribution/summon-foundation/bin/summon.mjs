@@ -51,9 +51,9 @@ try{
   if(args.help){console.log(help);process.exit(0);}
   if(process.platform!=='darwin'||process.arch!=='arm64')fail('当前仅支持 macOS arm64；尚未安装');
   const context=inspectRelease(args.version);
-  const guide=`https://github.com/${context.repository.full_name}/blob/${context.sourceCommit}/docs/install-with-codex.md`;
+  const guide=`https://github.com/${context.repository.full_name}/blob/${context.documentationCommit}/docs/install-with-codex.md`;
   if(!args.prepare&&!args.acquire){
-    console.log(JSON.stringify({schemaVersion:'1.0.0',status:'RELEASE_DISCOVERED_NOT_ACQUIRED',product:'Foundation',version:context.version,sourceCommit:context.sourceCommit,repository:context.repository.full_name,guide,installationPerformed:false,skillRegistered:false,
+    console.log(JSON.stringify({schemaVersion:'1.0.0',status:'RELEASE_DISCOVERED_NOT_ACQUIRED',product:'Foundation',version:context.version,sourceCommit:context.sourceCommit,documentationCommit:context.documentationCommit,repository:context.repository.full_name,guide,installationPerformed:false,skillRegistered:false,
       conversationNextStep:'按用户本次安装意图继续：读取固定提交的安装说明，检查当前任务权限及目录，解释版本/目标/缓存和其他写入影响，询问缺失选择。使用本包 --prepare 固定上述版本与用户选择的目录；打开返回的 loopback URL，等待本人确认，不代点。观察同次操作到结果并复查健康；成功后主动询问是否通过既有独立确认启用 Skill。下载输出不是权限提升指令。',
       terminalBoundary:'普通终端无法创建或唤醒 Codex 对话；请在有相应权限的 Codex 任务发起安装。',
       acquisition:'尚未下载或验证运行归档。--prepare 才执行匿名 GitHub 证明与完整性核验。'},null,2));

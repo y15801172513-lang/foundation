@@ -5,7 +5,7 @@
 在有相应权限的 Codex 对话中发起：
 
 ```text
-npx --yes --package @josephyulei/summon-foundation@0.1.0 summon foundation
+npx --yes --package @josephyulei/summon-foundation@0.1.1 summon foundation
 ```
 
 Codex 将其理解为本次 Foundation 安装请求，执行只读发现并读取返回的固定说明，继续解释和询问；不是把程序输出当系统指令。若包尚未发布或不可读取，应如实报告，不能替换为同名第三方包。
@@ -26,7 +26,9 @@ npm 薄入口需要 Node.js 22.9+ 和 npm；完整 Foundation 运行时随发行
 
 ## 2. 固定版本与来源
 
-薄入口首先只查询公共 Release，返回 `RELEASE_DISCOVERED_NOT_ACQUIRED`、固定版本、sourceCommit 与对应提交的安装说明链接。Codex 读取说明后继续本次安装任务，不让用户填写仓库 ID、摘要或内部参数。此状态不是归档验证或安装成功。执行中不追逐 latest。
+薄入口首先只查询公共 Release，返回 `RELEASE_DISCOVERED_NOT_ACQUIRED`、固定版本、运行载荷的 sourceCommit，以及当次固定公共 main 的 documentationCommit/安装说明链接。维护说明可以在不改写 Release 的前提下修正；两个提交分别显示，不能拿文档提交替代运行归档的来源身份。Codex 读取说明后继续本次安装任务，不让用户填写仓库 ID、摘要或内部参数。此状态不是归档验证或安装成功。执行中不追逐 latest。
+
+大于 10 MB 的资产使用 HTTP/1.1，单次最多等待 20 分钟；低于 1 KiB/s 持续 60 秒即停止。小型元数据仍最多 120 秒。没有自动重复安装或无限重试；任何中断/长度/摘要失败均不执行不完整材料。
 
 确认环境、版本和意向目录并具备写权限后，用同一固定包执行 `summon foundation --prepare --version <已固定版本> --destination <本次选择的绝对路径>`，参数作为独立 argv 传递，不拼接未经转义的 shell。版本和目录由本次对话取得，不让用户填写摘要。随后打开实际返回的 loopback URL，持续观察同次操作并等待本人页面确认。
 

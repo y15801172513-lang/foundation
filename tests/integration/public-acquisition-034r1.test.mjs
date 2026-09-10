@@ -12,6 +12,16 @@ import {spawn,spawnSync} from 'node:child_process';
 const repo=fs.realpathSync(path.resolve(import.meta.dirname,'../..'));
 const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
 const input=process.env.FOUNDATION_PUBLIC_ACQUISITION_FIXTURE;
+test('034R1 discovery binds current instructions separately from immutable payload', {skip:!input},()=>{
+  const work=fs.mkdtempSync(path.join(repo,'.tmp/public-discovery-'));
+  const policy=JSON.parse(fs.readFileSync(path.join(repo,'distribution/summon-foundation/lib/public-policy.json'))),payload='a'.repeat(40),docs='b'.repeat(40),moduleUrl=new URL('../../distribution/summon-foundation/lib/acquire.mjs',import.meta.url).href;
+  fs.writeFileSync(path.join(work,'transport.mjs'),`const prefix=${JSON.stringify('https://api.github.com/repos/'+policy.repository)};export function spawnSync(c,a){const u=a.at(-1);let value;if(u===prefix)value=${JSON.stringify({id:policy.repositoryId,full_name:policy.repository,private:false})};else if(u===prefix+'/releases/tags/v0.2.6')value={tag_name:'v0.2.6',immutable:true,draft:false,prerelease:false};else if(u===prefix+'/commits/v0.2.6')value={sha:${JSON.stringify(payload)}};else if(u===prefix+'/commits/main')value={sha:process.env.BAD_DOCS?'invalid':${JSON.stringify(docs)}};else throw Error('unexpected request '+u);return{status:0,stdout:Buffer.from(JSON.stringify(value))};}`);
+  fs.writeFileSync(path.join(work,'loader.mjs'),`export async function resolve(s,c,n){if(c.parentURL===${JSON.stringify(moduleUrl)}&&s==='node:child_process')return{url:new URL('./transport.mjs',import.meta.url).href,shortCircuit:true};return n(s,c)}`);
+  fs.writeFileSync(path.join(work,'register.mjs'),`import{register}from'node:module';register(new URL('./loader.mjs',import.meta.url));`);
+  fs.writeFileSync(path.join(work,'test.mjs'),`import{inspectRelease}from${JSON.stringify(moduleUrl)};console.log(JSON.stringify(inspectRelease('0.2.6')));`);
+  const invoke=bad=>spawnSync(process.execPath,['--import',path.join(work,'register.mjs'),path.join(work,'test.mjs')],{env:{...process.env,NODE_OPTIONS:'',BAD_DOCS:bad?'1':'',TMPDIR:work},encoding:'utf8'});
+  const good=invoke(false),bad=invoke(true);fs.writeFileSync(path.join(work,'results.json'),JSON.stringify({good,bad},null,2));assert.equal(good.status,0,good.stderr);const context=JSON.parse(good.stdout);assert.equal(context.sourceCommit,payload);assert.equal(context.documentationCommit,docs);assert.notEqual(bad.status,0);assert.match(bad.stderr,/无法固定当前安装说明提交/);
+});
 test('034R1 anonymous acquisition path reaches confirmation without installation', {skip:!input||process.platform!=='darwin'||process.arch!=='arm64'},async()=>{
   const config=JSON.parse(fs.readFileSync(input));
   for(const file of [input,config.catalog,config.archive,config.bootstrap])assert(fs.realpathSync(file).includes('/.tmp/'));
@@ -43,7 +53,7 @@ test('034R1 anonymous acquisition path reaches confirmation without installation
   assert.equal(run.status,0,run.stderr);assert.equal(fs.statSync(stage).mode&0o777,0o700);
   const receipt=JSON.parse(run.stdout);assert.equal(receipt.installationConfirmed,false);
   assert.equal(fs.readFileSync(path.join(work,'proof-calls.jsonl'),'utf8').trim().split('\n').length,2);
-  for(const line of fs.readFileSync(path.join(work,'transport.jsonl'),'utf8').trim().split('\n')){const row=JSON.parse(line);assert.equal(row.args[0],'-q');assert(!Object.keys(row.env).some(k=>/TOKEN|AUTH/.test(k)));}
+  for(const line of fs.readFileSync(path.join(work,'transport.jsonl'),'utf8').trim().split('\n')){const row=JSON.parse(line);assert.equal(row.args[0],'-q');assert(!Object.keys(row.env).some(k=>/TOKEN|AUTH/.test(k)));const large=row.args.at(-1)===assets[1].browser_download_url&&assets[1].size>10_000_000;assert.equal(row.args[row.args.indexOf('--max-time')+1],large?'1200':'120');assert.equal(row.args.includes('--http1.1'),large);if(large){assert.equal(row.args[row.args.indexOf('--speed-limit')+1],'1024');assert.equal(row.args[row.args.indexOf('--speed-time')+1],'60');}assert(!row.args.some(a=>a.startsWith('--retry')));}
   const home=path.join(work,'account');fs.mkdirSync(path.join(home,'Library/Application Support'),{recursive:true});fs.mkdirSync(path.join(home,'Library/Caches'));const destination=path.join(home,'Foundation 用户 空格');
   fs.writeFileSync(path.join(work,'account.mjs'),`export function readCurrentPlatformAccount(){return{schemaVersion:'1.0.0',authority:'contained-account-fixture',platform:process.platform,uid:process.getuid(),gid:process.getgid(),username:'fixture',homedir:${JSON.stringify(home)}}}`);
   fs.writeFileSync(path.join(work,'account-loader.mjs'),`export async function resolve(s,c,n){const r=await n(s,c);return r.url.endsWith('/packages/cli/platform-account.mjs')?{url:new URL('./account.mjs',import.meta.url).href,shortCircuit:true}:r}`);

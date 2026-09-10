@@ -1,12 +1,12 @@
 # AI Product Foundation Kit
 
-v0.2.5 已恢复用户确认的唯一 Foundation 工作台，并移除 HTML 指令帮助。旧 v0.2.4 发行资产保持不变；已安装副本须经本人确认更新后才获得修正。完整指令帮助仅在 Codex 对话输出。
+v0.2.6 已作为独立公共发行发布，保留用户确认的唯一 Foundation 工作台与仅在对话输出的指令帮助。旧私有发行保持不变；已安装副本须经本人确认更新后才获得新能力。
 
 页面越做越多，仍能说清它由什么组成、和哪里有关，以及这次到底要改哪一处。
 
 AI Product Foundation Kit 把项目中已经记录的页面、组件、关系、交互、资产与变更事实，和接入预览返回的对象上下文，组织成一个本地工作台。它帮助正在用 AI 做产品的人先把对象和影响范围说清楚，再提出更具体的修改任务。
 
-> 当前仅面向 macOS arm64。公共发行与 npm 短入口正在准备，未完成线上回读前不称为可用下载。代码工程验证不代替真人安装、Skill 发现及项目接入验收。
+> 当前仅面向 macOS arm64。[公共 v0.2.6](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.6) 已发布并完成 GitHub 来源证明核验。npm 0.1.0 已发布且只读发现通过；慢速链路的大归档获取仍在复验，0.1.1 下载修正准备中。工程验证不代替真人安装、Skill 发现及项目接入验收。
 
 ## 用 Codex 安装
 
@@ -86,12 +86,12 @@ npm run preview:stop
 
 | 项目 | 当前事实 |
 |---|---|
-| Source / package version | `0.2.5`（已发布源码） |
-| 私有发行源码 | `v0.2.5` 绑定 `e385c7736ba3b5cf6eca656e862a4a18b5a677e1`；后续文档提交不改变该发行身份 |
-| 真实安装 / Skill / 项目接入验收 | 原 v0.2.1 入口到页面 `failed`；0.2.2 用户记录的本人安装/重开 `passed`；0.2.5 真实安装/更新/卸载、Skill、项目接入 `pending` |
-| Git tag / private Release | `v0.2.5`，不可变 macOS arm64 私有试用发行 |
-| Public Release / distribution | `pending` |
-| macOS 真实用户路径 | 0.2.2 安装/重开有用户记录；0.2.5 试用 `pending` |
+| Source / package version | `0.2.6` |
+| 公共发行源码 | `v0.2.6` 绑定 `b1813b463bf58635d71da5f9df6bd37aae036081`；后续文档提交不改变发行身份 |
+| 双仓对应 | 私有源码 `2a801c895918e19c5bf63530fb72419ca9ed7f4a` → 独立公共源码；未公开私有历史 |
+| Public Release / distribution | GitHub 不可变 `v0.2.6` 与 npm `0.1.0` 已发布；npm `0.1.1` 下载修正待验证发布 |
+| 真实安装 / Skill / 项目接入验收 | 新公共路径均 `pending`，不以隔离工程验证代替本人确认 |
+| macOS 历史使用 | 0.2.2 安装/重开已有用户记录；不是本次公共入口的验收 |
 | Windows 真实机器与分发 | `pending` |
 | 项目数据 | 项目内保存；默认 `unmanaged`；普通停用/卸载保留 |
 

@@ -2,8 +2,8 @@
   "schemaVersion": "2.0.0",
   "exportContractSchemaVersion": "2.0.0",
   "exportContractSha256": "beb7eb5a843d51688389a601df4d5408033cae556c5e8cd711fd8915d5046790",
-  "sourceCommit": "2a801c895918e19c5bf63530fb72419ca9ed7f4a",
-  "approvedSourceCommit": "2a801c895918e19c5bf63530fb72419ca9ed7f4a",
+  "sourceCommit": "76c22a3353c8303c92eea3794a74a7707e36418d",
+  "approvedSourceCommit": "76c22a3353c8303c92eea3794a74a7707e36418d",
   "sourceState": "clean-exact-commit-approved",
   "productVersion": "0.2.6",
   "licenseStatus": "approved",
@@ -14,17 +14,17 @@
   "publicationEligible": true,
   "commitBinding": {
     "schemaVersion": "2.0.0",
-    "approvedCommit": "2a801c895918e19c5bf63530fb72419ca9ed7f4a",
-    "gitTree": "19a8718ec152bce3d47e18fa31870b38f37c7c56",
+    "approvedCommit": "76c22a3353c8303c92eea3794a74a7707e36418d",
+    "gitTree": "721d0bf7161a4a800f8c6e747ecb2c0de28fb97c",
     "contractSha256": "beb7eb5a843d51688389a601df4d5408033cae556c5e8cd711fd8915d5046790",
-    "expectedTreeHash": "7f1b9cb8c2643f35e1dd900d170a8fe6c4b2dbf0e413eafb435995aed1880c7d",
+    "expectedTreeHash": "aaa4d9c2827c8bbcf4733a6fd4c4814a93b261a529660b6b721f1ff63fde570b",
     "fileCount": 339
   },
   "fileCount": 341,
   "privateExportedCount": 339,
   "generatedPublicCount": 2,
-  "treeHash": "7f1b9cb8c2643f35e1dd900d170a8fe6c4b2dbf0e413eafb435995aed1880c7d",
-  "inventoryHash": "a0351aaa5c7329ddbe9cad14a85996eb3569000dc6ed629376e9fc9898e2c1cd",
+  "treeHash": "aaa4d9c2827c8bbcf4733a6fd4c4814a93b261a529660b6b721f1ff63fde570b",
+  "inventoryHash": "014a7d8337f0c3a3925c8f779efdeabd69129c31eb2aeab27273ec0fbf852229",
   "files": [
     {
       "path": ".gitignore",
@@ -47,15 +47,15 @@
       "type": "file",
       "mode": 420,
       "bytes": 1081,
-      "sha256": "2f61e456cb4efbc24260f9972ca96ee19f909f957c052bee1a3a5d01c168f3f3",
+      "sha256": "04ae8d31fd1c5d1b539eac4f401110c063f40418b888c1085ee5af8cbb57ac8b",
       "ownership": "generated-public"
     },
     {
       "path": "README.md",
       "type": "file",
       "mode": 420,
-      "bytes": 11108,
-      "sha256": "080ce3cb013e3570bc8402696995e5df710169a7fff5fa46bd172de9735f647f",
+      "bytes": 11272,
+      "sha256": "81e75de4f871103e5e5a5bbd9d0f3eb6e7a660052d9695cb9b839f609844e377",
       "ownership": "private-exported"
     },
     {
@@ -543,7 +543,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 1635,
-      "sha256": "53faa42a28db799fc325923c10550953a06312bf4aec9b6244a2e14720738c01",
+      "sha256": "1452363db69b2705ff857edacfd5a443f9a6d03bfe1c338b809b77c061795e7e",
       "ownership": "private-exported"
     },
     {
@@ -558,16 +558,16 @@
       "path": "distribution/summon-foundation/bin/summon.mjs",
       "type": "file",
       "mode": 493,
-      "bytes": 6291,
-      "sha256": "71957c9581f4753718307fadfdb47165c9ce0aee21732f1b406470f869baa7e3",
+      "bytes": 6346,
+      "sha256": "94cceee2a9fd7a13c45307edb56acd4aed6955467dc5160fcab8c8bae2af3d46",
       "ownership": "private-exported"
     },
     {
       "path": "distribution/summon-foundation/lib/acquire.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 12034,
-      "sha256": "adb1cb108279ee081516a485cca766698fcfcaa04daa6344a3c004e4068a0e70",
+      "bytes": 12658,
+      "sha256": "8d004affe8ab91c18eb65b70bec269ff94d959cd4cbf50b4d37e56ff2cf1e89d",
       "ownership": "private-exported"
     },
     {
@@ -591,7 +591,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 21854,
-      "sha256": "0889bf5c055bef65b076e8493bbb9d251ca65221f5e0b664c42e6ccedd4b6b3a",
+      "sha256": "cfd0eff23cab4351ffd9a9e69cd48dd03c618c971b75f4a09da6f925358866da",
       "ownership": "private-exported"
     },
     {
@@ -599,7 +599,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 800,
-      "sha256": "477505b6f0c59c4bf08c674167385d1377d1c16d563f984ab4671d4d3ccb96fd",
+      "sha256": "89055c665f63dc85fd4bac1f77422d1d45a6b459d1fa07fe1ca9807d6cf1c44c",
       "ownership": "private-exported"
     },
     {
@@ -670,8 +670,8 @@
       "path": "docs/current-status.md",
       "type": "file",
       "mode": 420,
-      "bytes": 3879,
-      "sha256": "0c1f559332dbc61ac046ca42e03323ed2e5fcd70e15c3c85eb583a70bbffe452",
+      "bytes": 4022,
+      "sha256": "c6a7cc5df60e09da63365a5dc69d0b72fa37c43da08d097e7cd3dfab84931b6f",
       "ownership": "private-exported"
     },
     {
@@ -710,8 +710,8 @@
       "path": "docs/install-with-codex.md",
       "type": "file",
       "mode": 420,
-      "bytes": 13832,
-      "sha256": "68c04c766fe3c798b7f560a259054df3aa695cd7fac6eac02b46545f5f4da7c3",
+      "bytes": 14282,
+      "sha256": "a34b5b665a314e61c9f30e461bf66d17ade974a659715c3801f5111c32675a88",
       "ownership": "private-exported"
     },
     {
@@ -2494,8 +2494,8 @@
       "path": "tests/integration/public-acquisition-034r1.test.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 8633,
-      "sha256": "46d0af346ea8922f6d6d1688177d49c4dbb35cfd856732e5eeae3655cc5da72b",
+      "bytes": 11320,
+      "sha256": "cc7b4c133ab3b3ed0e0c1ad92a0cc07902ebfff5f6be8c4fb2e122441148eefc",
       "ownership": "private-exported"
     },
     {

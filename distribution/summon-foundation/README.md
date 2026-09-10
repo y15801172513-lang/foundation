@@ -6,7 +6,7 @@ Foundation 的薄获取入口，不包含完整运行包，没有 npm 安装生�
 可用性以 npm registry 的实际版本和公共 GitHub Release 为准；本目录或说明存在不是发布回执。只使用本项目已核验的包名，缺包时不换同名来源。
 
 ```text
-npx --yes --package @josephyulei/summon-foundation@0.1.0 summon foundation
+npx --yes --package @josephyulei/summon-foundation@0.1.1 summon foundation
 ```
 
 由 Codex 读取返回的固定安装说明后继续对话，先解释版本、目录、写入影响和权限；`--prepare --version <固定版本> --destination <绝对目录>` 获取后进入本人确认。`--acquire --version <固定版本>` 只准备更新输入，不执行更新；更新使用已安装稳定入口。没有 npm 时可先从 GitHub 安装说明开始检查环境，不自动安装全局依赖。

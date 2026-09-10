@@ -14,12 +14,14 @@ const json = bytes => JSON.parse(bytes.toString('utf8'));
 const canonical = value => Array.isArray(value) ? `[${value.map(canonical).join(',')}]` : value && typeof value==='object' ? `{${Object.keys(value).sort().map(k=>`${JSON.stringify(k)}:${canonical(value[k])}`).join(',')}}` : JSON.stringify(value);
 // Public transport never reads gh credentials or curl configuration. Proxy
 // environment remains optional; neither Mono nor an author path is packaged.
-function download(url, limit=10_000_000) {
+function download(url, limit=10_000_000, largeAsset=false) {
   const u = new URL(url);
   if (u.protocol !== 'https:' || u.username || u.password) fail('只接受无凭证 HTTPS 地址');
   const env = {PATH:'/usr/bin:/bin'};
   for (const key of ['HTTPS_PROXY','HTTP_PROXY','ALL_PROXY','NO_PROXY','https_proxy','http_proxy','all_proxy','no_proxy','TMPDIR']) if (process.env[key]) env[key]=process.env[key];
-  const r=spawnSync('/usr/bin/curl',['-q','--fail','--silent','--show-error','--location','--max-redirs','4','--proto','=https','--proto-redir','=https','--connect-timeout','15','--max-time','120',url],{env,maxBuffer:limit});
+  // Large immutable assets may take minutes on a constrained proxy. Keep a
+  // bounded transfer, fail stalled connections, and never execute partial data.
+  const r=spawnSync('/usr/bin/curl',['-q',...(largeAsset?['--http1.1','--speed-limit','1024','--speed-time','60']:[]),'--fail','--silent','--show-error','--location','--max-redirs','4','--proto','=https','--proto-redir','=https','--connect-timeout','15','--max-time',largeAsset?'1200':'120',url],{env,maxBuffer:limit});
   if(r.status!==0 || r.error) fail(`匿名获取失败（${u.hostname}）；保留本次材料，不自动重试安装`);
   return r.stdout;
 }
@@ -44,7 +46,11 @@ export function inspectRelease(version) {
   if(!/^v\d+\.\d+\.\d+$/.test(release.tag_name)||!release.immutable||release.draft||release.prerelease)fail('没有可用的正式不可变发行');
   const commit=api(`commits/${release.tag_name}`);
   if(!/^[a-f0-9]{40}$/.test(commit.sha))fail('无法解析发行提交');
-  return {repository,release,sourceCommit:commit.sha,version:release.tag_name.slice(1)};
+  // Instructions follow the maintained public docs, frozen for this invocation;
+  // runtime identity still comes exclusively from the immutable release tag.
+  const documentation=api('commits/main');
+  if(!/^[a-f0-9]{40}$/.test(documentation.sha))fail('无法固定当前安装说明提交');
+  return {repository,release,sourceCommit:commit.sha,documentationCommit:documentation.sha,version:release.tag_name.slice(1)};
 }
 async function trustRoot(stage) {
   const metadata=path.join(stage,'tuf-metadata'),targets=path.join(stage,'tuf-targets');
@@ -59,7 +65,7 @@ async function trustRoot(stage) {
 }
 async function verifiedAsset(context,asset,stage,trust) {
   if(!asset||!Number.isSafeInteger(asset.size)||asset.size<=0||asset.size>250_000_000||!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(asset.name)||!/^sha256:[a-f0-9]{64}$/.test(asset.digest)||asset.browser_download_url!==`https://github.com/${policy.repository}/releases/download/${context.release.tag_name}/${asset.name}`)fail('资产元数据无效');
-  const bytes=download(asset.browser_download_url,asset.size+1);
+  const bytes=download(asset.browser_download_url,asset.size+1,asset.size>10_000_000);
   if(bytes.length!==asset.size||`sha256:${hash(bytes)}`!==asset.digest)fail('下载长度或摘要不匹配');
   const proofs=api(`attestations/${asset.digest}?predicate_type=release&per_page=100`).attestations;
   if(!Array.isArray(proofs)||proofs.length>=100)fail('证明列表不完整或分页待核实');
