@@ -6,7 +6,7 @@ v0.2.6 已作为独立公共发行发布，保留用户确认的唯一 Foundatio
 
 AI Product Foundation Kit 把项目中已经记录的页面、组件、关系、交互、资产与变更事实，和接入预览返回的对象上下文，组织成一个本地工作台。它帮助正在用 AI 做产品的人先把对象和影响范围说清楚，再提出更具体的修改任务。
 
-> 当前仅面向 macOS arm64。[公共 v0.2.6](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.6) 已发布并完成 GitHub 来源证明核验。npm 0.1.0 已发布且只读发现通过；慢速链路的大归档获取仍在复验，0.1.1 下载修正准备中。工程验证不代替真人安装、Skill 发现及项目接入验收。
+> 当前仅面向 macOS arm64。[公共 v0.2.6](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.6) 与 [npm 启动器 0.1.1](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.1) 已发布。匿名获取、来源与字节校验、到达隔离确认页已通过；真人安装、Skill 发现及项目接入仍需本人验收。
 
 ## 用 Codex 安装
 
@@ -19,6 +19,12 @@ AI Product Foundation Kit 把项目中已经记录的页面、组件、关系、
 Codex 按[安装说明](docs/install-with-codex.md)查询正式 [GitHub Release](https://github.com/y15801172513-lang/foundation/releases)，固定单次版本、核验来源与文件，再说明环境、目录和写入影响，在内置浏览器展示计划，等你亲自确认。无需 clone 源码或手动操作安装包。npm 薄入口需要 Node/npm（Node ≥22.9）；已安装 Foundation 使用随包运行时。缺工具或权限时先说明，不自动全局安装依赖。公共入口不要求访问开发仓库。
 
 安装后主动询问是否启用 Foundation 对话能力；Skill 注册和项目接入分别确认，不静默捆绑。完整指令帮助只在对话输出。无程序/Skill时的残留处理见[缓存清理说明](docs/cache-cleanup.md)，不依赖已删除 launcher。
+
+已有 Node/npm 的 Codex 任务也可以直接发下面的短命令；它先只读发现，再由对话说明并接续确认，不会静默安装：
+
+```text
+npx --yes --package @josephyulei/summon-foundation@0.1.1 summon foundation
+```
 
 运行文件只从正式版本化 GitHub Release 获取，Actions 临时产物不是最终下载源。公开仓库是审核后的独立快照；日常开发在私有仓库，公开内容不包含内部报告、本机信息或私有历史。采用 GitHub 自带来源证明与摘要校验，不另建发行密钥体系。尚无 Apple Developer ID 签名/公证，不绕过系统安全检查。手动更新、恢复和安全卸载保留，自动更新和 Windows 后置。
 
@@ -89,7 +95,8 @@ npm run preview:stop
 | Source / package version | `0.2.6` |
 | 公共发行源码 | `v0.2.6` 绑定 `b1813b463bf58635d71da5f9df6bd37aae036081`；后续文档提交不改变发行身份 |
 | 双仓对应 | 私有源码 `2a801c895918e19c5bf63530fb72419ca9ed7f4a` → 独立公共源码；未公开私有历史 |
-| Public Release / distribution | GitHub 不可变 `v0.2.6` 与 npm `0.1.0` 已发布；npm `0.1.1` 下载修正待验证发布 |
+| Public Release / distribution | GitHub 不可变 `v0.2.6` 与 npm `0.1.1` 已发布并回读；旧资产不覆盖 |
+| npm 源码对应 | 私有 `76c22a3353c8303c92eea3794a74a7707e36418d` → 公共 `9cb7808f609b82dfd4ab119cb49daae87cfeadba`；与运行载荷独立递增 |
 | 真实安装 / Skill / 项目接入验收 | 新公共路径均 `pending`，不以隔离工程验证代替本人确认 |
 | macOS 历史使用 | 0.2.2 安装/重开已有用户记录；不是本次公共入口的验收 |
 | Windows 真实机器与分发 | `pending` |
