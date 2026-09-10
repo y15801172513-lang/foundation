@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "0.1.0",
+  "kind": "interactions",
+  "items": [
+    {
+      "id": "interaction_event_state",
+      "name": "事件状态变化",
+      "description": "当前事件可归档或删除，归档事件可恢复；重要事件始终属于当前事件。",
+      "pageIds": ["page_events_home", "page_events_manage", "page_event_detail"],
+      "responsibility": "维护事件状态变化及由来源页决定的返回语义。",
+      "status": "confirmed", "source": "prompt-011", "updatedAt": "2026-08-28T09:00:00.000Z", "verificationStatus": "verified"
+    }
+  ]
+}

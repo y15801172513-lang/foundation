@@ -1,0 +1,144 @@
+{
+  "schemaVersion": "1.0.0",
+  "promptId": "AI-PFK-REAL-USER-INSTALL-AND-FIRST-USE-030R1",
+  "guaranteeScope": "Foundation-owned production entrypoints; same-user unrestricted shell edits remain outside the product boundary",
+  "closedProjectHandlers": [
+    "extension-shadcn-apply",
+    "extension-shadcn-remove-owned",
+    "foundation-facts-upgrade",
+    "foundation-skeleton-and-facts-create",
+    "relation-facts-write",
+    "page-facts-write"
+  ],
+  "entrypoints": [
+    {
+      "id": "ai-bridge",
+      "surface": "AI bridge",
+      "entry": "packages/core/ai-bridge.mjs#aiInvocation",
+      "dispatcher": "read-only inspect/request-plan/open-manager/status",
+      "lowestWriteGate": "none; AI surface cannot confirm/apply/recover/purge",
+      "mutation": "denied"
+    },
+    {
+      "id": "cli-capability",
+      "surface": "CLI",
+      "entry": "packages/cli/index.mjs#runCapabilityCli",
+      "dispatcher": "plan only or manager open",
+      "lowestWriteGate": "local manager exact confirmation -> durable pre-intent -> guard -> consume -> writes",
+      "mutation": "manager-internal only"
+    },
+    {
+      "id": "cli-lifecycle",
+      "surface": "CLI",
+      "entry": "packages/cli/lifecycle.mjs#runLifecycleCli",
+      "dispatcher": "plan only or manager open",
+      "lowestWriteGate": "local manager exact confirmation -> durable pre-intent -> guard -> consume -> writes",
+      "mutation": "manager-internal only"
+    },
+    {
+      "id": "cli-project-authority",
+      "surface": "CLI",
+      "entry": "packages/cli/index.mjs#runProjectCli/runCreateCli",
+      "dispatcher": "plan only or manager open",
+      "lowestWriteGate": "local manager exact confirmation -> project/install guards -> consume -> transaction",
+      "mutation": "manager-internal only"
+    },
+    {
+      "id": "cli-upgrade",
+      "surface": "CLI",
+      "entry": "packages/cli/index.mjs#upgradeProject",
+      "dispatcher": "plan only or manager open",
+      "lowestWriteGate": "manager-confirmed closed project handler",
+      "mutation": "manager-internal only"
+    },
+    {
+      "id": "codex-user-skill",
+      "surface": "installed capability manager",
+      "entry": "packages/core/codex-skill-registration.mjs#applyCodexSkillRegistration/applyCodexSkillRemoval",
+      "dispatcher": "packages/core/capability-authority.mjs#applyCapabilityPlan",
+      "lowestWriteGate": "installed authority -> exact file plan -> durable pre-intent -> guard -> exact manager consume -> ownership checked files",
+      "mutation": "source-only denied; atomic owned registration/removal; signed write-ahead recovery through a separate exact manager plan"
+    },
+    {
+      "id": "extension-adapter",
+      "surface": "extension",
+      "entry": "packages/core/extension-adapters.mjs#applyExtension/removeExtension",
+      "dispatcher": "packages/core/project-authority.mjs#applyProjectMutationPlan",
+      "lowestWriteGate": "manager confirmation plus fixed handler binding before write",
+      "mutation": "closed project handler"
+    },
+    {
+      "id": "first-install-bootstrap",
+      "surface": "candidate launcher",
+      "entry": "packages/core/first-install-bootstrap.mjs#runFirstInstallBootstrap",
+      "dispatcher": "create exact install plan and open loopback manager only",
+      "lowestWriteGate": "candidate/bootstrap guards -> local manager exact confirmation -> durable pre-intent -> consume -> install transaction -> bounded authority transfer",
+      "mutation": "manager-internal only"
+    },
+    {
+      "id": "http-management-center-relation",
+      "surface": "HTTP and management-center",
+      "entry": "apps/management-center/src/server/center-server.mjs#POST /__foundation/relations",
+      "dispatcher": "create exact plan and open loopback manager only",
+      "lowestWriteGate": "manager-confirmed relation-facts-write handler",
+      "mutation": "no route mutation before manager confirmation"
+    },
+    {
+      "id": "node-project-mutation",
+      "surface": "Node internal engine",
+      "entry": "packages/core/project-authority.mjs#applyProjectMutationPlan",
+      "dispatcher": "fixed handler selected by immutable plan",
+      "lowestWriteGate": "durable pre-intent -> guard -> exact manager consume -> fixed handler",
+      "mutation": "fails closed outside manager execution"
+    },
+    {
+      "id": "node-relation-helper",
+      "surface": "Node internal helper",
+      "entry": "packages/core/facts.mjs#registerPageRelation",
+      "dispatcher": "packages/core/project-authority.mjs#applyProjectMutationPlan",
+      "lowestWriteGate": "manager-confirmed relation-facts-write",
+      "mutation": "fails closed outside manager execution"
+    },
+    {
+      "id": "node-skeleton-helper",
+      "surface": "Node internal helper",
+      "entry": "packages/core/facts.mjs#ensureSkeleton",
+      "dispatcher": "packages/core/project-authority.mjs#applyProjectMutationPlan",
+      "lowestWriteGate": "manager-confirmed foundation-skeleton-and-facts-create",
+      "mutation": "fails closed outside manager execution"
+    },
+    {
+      "id": "offer-preference",
+      "surface": "Node and AI offer",
+      "entry": "packages/core/offer-consent.mjs#recordFoundationOfferDecision",
+      "dispatcher": "session-only fallback or exact manager preference plan",
+      "lowestWriteGate": "durable preference write requires exact manager confirmation",
+      "mutation": "AI cannot durable reopen decline"
+    },
+    {
+      "id": "uninstall-finalizer",
+      "surface": "internal child process",
+      "entry": "packages/core/uninstall-finalizer.mjs#executeUninstallFinalizer",
+      "dispatcher": "signed continuation bound to consumed manager confirmation",
+      "lowestWriteGate": "verify manager-confirmed continuation before owned deletion",
+      "mutation": "bounded lifecycle continuation"
+    }
+  ],
+  "productionWriterFiles": [
+    "packages/core/candidate-package.mjs",
+    "packages/core/capability-authority.mjs",
+    "packages/core/codex-skill-registration.mjs",
+    "packages/core/first-install-bootstrap.mjs",
+    "packages/core/lifecycle-manager-host.mjs",
+    "packages/core/lifecycle-manager.mjs",
+    "packages/core/offer-consent.mjs",
+    "packages/core/project-authority.mjs",
+    "packages/core/project-layout.mjs",
+    "packages/core/project-mutation-handlers.mjs",
+    "packages/core/project-transaction.mjs",
+    "packages/core/transaction-engine.mjs",
+    "packages/core/trusted-authority.mjs",
+    "packages/core/trusted-intent-ledger.mjs",
+    "packages/core/uninstall-finalizer.mjs"
+  ]
+}

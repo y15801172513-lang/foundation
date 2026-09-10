@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "1.0.0",
+  "capabilityId": "ai-product-foundation-kit",
+  "type": "codex-skill",
+  "version": "0.2.0",
+  "requiredFoundationVersion": ">=0.2.0",
+  "projectScoped": false,
+  "dependencyCapabilityIds": [],
+  "readOnlyOperationClasses": [
+    "foundation-status",
+    "foundation-doctor",
+    "project-inventory",
+    "project-status",
+    "capability-status",
+    "offer-preference-lookup",
+    "foundation-manager-plan-status"
+  ],
+  "mutatingOperationClasses": [
+    "foundation-lifecycle",
+    "foundation-project-authority",
+    "foundation-project-mutation",
+    "foundation-capability-control-plane",
+    "foundation-project-layout",
+    "foundation-global-settings"
+  ],
+  "files": [
+    {
+      "path": "SKILL.md",
+      "size": 11757,
+      "sha256": "8fae154799e13e90adce9492660d83d6ff52105f41651bd293c81ae4b2fa3000"
+    }
+  ],
+  "contentHash": "97e1aaca84164de42513e4a763cbd1ef22b14a9a86f82972fd6ac98d147f225c"
+}

@@ -1,0 +1,19 @@
+{
+  "name": "@josephyulei/summon-foundation",
+  "version": "0.1.0",
+  "description": "Prepare a verified Foundation release for an explicitly confirmed Codex installation",
+  "type": "module",
+  "bin": {"summon": "bin/summon.mjs"},
+  "files": ["bin/", "lib/", "README.md", "LICENSE", "THIRD_PARTY_NOTICES.txt", "npm-shrinkwrap.json"],
+  "license": "MIT",
+  "engines": {"node": ">=22.9.0"},
+  "repository": {"type": "git", "url": "git+https://github.com/y15801172513-lang/foundation.git", "directory": "distribution/summon-foundation"},
+  "publishConfig": {"access": "public", "registry": "https://registry.npmjs.org/"},
+  "dependencies": {
+    "@sigstore/verify": "3.1.1",
+    "@sigstore/bundle": "4.0.0",
+    "@sigstore/protobuf-specs": "0.5.0",
+    "tuf-js": "4.1.0",
+    "snappyjs": "0.7.0"
+  }
+}

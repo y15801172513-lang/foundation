@@ -1,0 +1,14 @@
+{
+  "projectId": "project_foundation-events",
+  "name": "foundation-events",
+  "governanceMode": "shadcn-first",
+  "uiPolicy": {
+    "version": "020R1",
+    "governanceMode": "preserve-and-inventory",
+    "classification": "existing-shadcn",
+    "authority": "foundation-ui-governance"
+  },
+  "dataFormatVersion": "0.1.1-r1-event-012",
+  "createdAt": "2026-08-28T09:00:00.000Z",
+  "updatedAt": "2026-08-28T10:00:00.000Z"
+}

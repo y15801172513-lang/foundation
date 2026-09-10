@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://foundation.invalid/schema/authorization-capability-v1.json",
+  "title": "Foundation broker authorization and capability contract v1",
+  "schemaVersion": "1.0.0",
+  "$defs": {
+    "hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "authorizationEffect": {
+      "type": "object",
+      "required": ["schemaVersion", "operationClass", "operation", "planId", "planHash", "targets", "actions", "expectedBeforeState", "effectHash"],
+      "properties": {
+        "schemaVersion": {"const": "1.0.0"},
+        "planHash": {"$ref": "#/$defs/hash"},
+        "effectHash": {"$ref": "#/$defs/hash"},
+        "targets": {"type": "array", "minItems": 1},
+        "actions": {"type": "array"}
+      }
+    },
+    "authorizationReceipt": {
+      "type": "object",
+      "required": ["authorizationId", "nonceHash", "brokerId", "hostId", "decisionProvenance", "operationClass", "operation", "effectHash", "planId", "planHash", "targets", "createdAt", "expiresAt", "state", "integrity"],
+      "properties": {
+        "nonceHash": {"$ref": "#/$defs/hash"},
+        "effectHash": {"$ref": "#/$defs/hash"},
+        "planHash": {"$ref": "#/$defs/hash"},
+        "state": {"enum": ["issued", "reserved", "consumed", "revoked", "expired"]}
+      }
+    },
+    "capabilityManifest": {
+      "type": "object",
+      "required": ["schemaVersion", "capabilityId", "type", "version", "requiredFoundationVersion", "projectScoped", "dependencyCapabilityIds", "readOnlyOperationClasses", "mutatingOperationClasses", "files", "contentHash"],
+      "properties": {
+        "schemaVersion": {"const": "1.0.0"},
+        "contentHash": {"$ref": "#/$defs/hash"},
+        "files": {"type": "array", "minItems": 1}
+      }
+    },
+    "capabilityReceipt": {
+      "type": "object",
+      "required": ["capabilityId", "type", "version", "contentHash", "foundationInstallId", "active", "authorizationEvidence"]
+    },
+    "hostRegistration": {
+      "type": "object",
+      "required": ["capabilityId", "foundationInstallId", "hostRegistrationIdentity", "contentHash", "active"]
+    },
+    "offerPreference": {
+      "type": "object",
+      "required": ["schemaVersion", "scope", "state", "provenance", "updatedAt", "integrity"],
+      "properties": {
+        "scope": {"const": "foundation-global"},
+        "state": {"enum": ["never-offered", "offered-awaiting-response", "accepted-plan-only", "declined", "uninstalled-suppress-offer", "reopened"]}
+      }
+    }
+  }
+}

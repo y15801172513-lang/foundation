@@ -1,0 +1,6 @@
+{
+  "repository": "y15801172513-lang/foundation",
+  "repositoryId": 1363748227,
+  "bootstrapRootUrl": "https://raw.githubusercontent.com/cli/cli/v2.98.0/pkg/cmd/attestation/verification/embed/tuf-repo.github.com/root.json",
+  "bootstrapRootSha256": "98cba97be9075bc98b2322de3de85fbd1b70ec7392991dfd2f53d215bede1a8d"
+}

@@ -1,0 +1,16 @@
+{
+  "name": "@foundation/cli",
+  "version": "0.2.6",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "foundation-kit": "./index.mjs"
+  },
+  "exports": {
+    ".": "./index.mjs"
+  },
+  "dependencies": {
+    "@foundation/core": "0.2.6",
+    "@foundation/management-center": "0.2.6"
+  }
+}

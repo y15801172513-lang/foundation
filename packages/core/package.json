@@ -1,0 +1,15 @@
+{
+  "name": "@foundation/core",
+  "version": "0.2.6",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./index.mjs",
+    "./preview-config": "./preview-config.mjs",
+    "./context": "./context.mjs",
+    "./human-labels": "./human-labels.mjs",
+    "./identity": "./identity.mjs",
+    "./git-identity": "./git-identity.mjs",
+    "./ui-policy": "./ui-policy.mjs"
+  }
+}

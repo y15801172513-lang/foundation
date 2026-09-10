@@ -1,0 +1,21 @@
+node_modules/
+.tmp/
+*.log
+coverage/
+.nyc_output/
+.DS_Store
+dist/**/*.map
+# Public source snapshots rebuild these outputs; private tracked artifacts
+# remain tracked and must still reproduce byte-for-byte before release.
+apps/management-center/dist/
+examples/foundation-events/dist/
+*.cache
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+secrets.json

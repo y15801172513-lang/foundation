@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://foundation.invalid/schema/install-contract-v1.json",
+  "title": "Foundation install contract v1",
+  "schemaVersion": "1.0.0",
+  "compatibility": {
+    "major": "reject",
+    "minor": "forward-compatible",
+    "unknownFields": "ignore-non-security-critical"
+  },
+  "$defs": {
+    "supportStatus": {
+      "enum": ["verified", "candidate-unverified", "unsupported"]
+    },
+    "capabilityStatus": {
+      "enum": ["verified", "candidate-unverified", "pending", "blocked", "out-of-scope"]
+    },
+    "relativeOwnedPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+$"
+    },
+    "hash": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "releaseManifest": {
+      "type": "object",
+      "required": ["schemaVersion", "productVersion", "platform", "arch", "files", "candidateHash", "source", "build", "runtime", "signature", "provenance"],
+      "properties": {
+        "schemaVersion": {"const": "1.0.0"},
+        "productVersion": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+        "platform": {"enum": ["win32", "darwin"]},
+        "arch": {"enum": ["x64", "arm64"]},
+        "candidateHash": {"$ref": "#/$defs/hash"},
+        "launcher": {
+          "type": ["object", "null"],
+          "properties": {
+            "path": {"const": "foundation-kit"},
+            "size": {"type": "integer", "minimum": 1},
+            "sha256": {"$ref": "#/$defs/hash"},
+            "mode": {"const": 493},
+            "externalNodeRequired": {"const": false}
+          }
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "size", "sha256"],
+            "properties": {
+              "path": {"$ref": "#/$defs/relativeOwnedPath"},
+              "size": {"type": "integer", "minimum": 0},
+              "sha256": {"$ref": "#/$defs/hash"}
+            }
+          }
+        }
+      }
+    },
+    "installPlan": {
+      "type": "object",
+      "required": ["schemaVersion", "planId", "operation", "targetRoot", "installIdentity", "installId", "authority", "expiresAt", "actions", "integrity"],
+      "properties": {
+        "schemaVersion": {"const": "1.0.0"},
+        "operation": {"enum": ["install", "update", "repair", "rollback", "recover", "uninstall"]},
+        "installIdentity": {"const": "current-user"},
+        "installId": {"type": "string", "pattern": "^install-[0-9a-f]{24}$"},
+        "authority": {
+          "type": "object",
+          "required": ["mode", "repositoryRealPath", "trustedRootRealPath", "targetRelative", "targetSnapshot"],
+          "properties": {"mode": {"enum": ["repository-candidate", "platform-first-install-candidate", "platform-installed-runtime"]}}
+        },
+        "actions": {"type": "array", "items": {"type": "string"}},
+        "integrity": {
+          "type": "object",
+          "required": ["algorithm", "hash"],
+          "properties": {"algorithm": {"const": "sha256"}, "hash": {"$ref": "#/$defs/hash"}}
+        }
+      }
+    },
+    "operationJournal": {
+      "type": "object",
+      "required": ["schemaVersion", "operationId", "operation", "status", "steps"],
+      "properties": {"status": {"enum": ["planned", "staged", "switching", "committed", "rolling-back", "uninstalling", "completed", "unknown"]}}
+    },
+    "ownershipReceipt": {
+      "type": "object",
+      "required": ["schemaVersion", "operationId", "identity", "version", "candidateHash", "files", "preserves", "integrity"]
+    },
+    "extensionManifest": {
+      "type": "object",
+      "required": ["schemaVersion", "adapter", "source", "version", "license", "ownership", "files"],
+      "properties": {"ownership": {"enum": ["foundation-owned", "project-owned"]}}
+    },
+    "projectBinding": {
+      "type": "object",
+      "required": ["schemaVersion", "bindingVersion", "projectId", "identity", "state", "product"],
+      "properties": {
+        "schemaVersion": {"const": "1.0.0"},
+        "bindingVersion": {"const": "1.0.0"},
+        "projectId": {"type": "string", "pattern": "^project-"},
+        "identity": {
+          "type": "object",
+          "required": ["scheme", "value"],
+          "properties": {"scheme": {"const": "foundation-project-id-v1"}, "value": {"type": "string", "pattern": "^project-"}}
+        },
+        "state": {"enum": ["enabled", "disabled"]},
+        "product": {"const": "AI Product Foundation Kit"}
+      },
+      "not": {"anyOf": [{"required": ["absolutePath"]}, {"required": ["projectPath"]}]}
+    },
+    "projectRegistration": {
+      "type": "object",
+      "required": ["projectId", "bindingVersion", "state", "realPath", "projectIdentity", "portableBindingHash", "authorizationEvidence"],
+      "properties": {
+        "bindingVersion": {"const": "1.0.0"},
+        "state": {"enum": ["enabled", "disabled"]},
+        "portableBindingHash": {"$ref": "#/$defs/hash"},
+        "authorizationEvidence": {
+          "type": "object",
+          "required": ["authorizationId", "brokerId", "effectHash", "planId"],
+          "properties": {"effectHash": {"$ref": "#/$defs/hash"}}
+        }
+      }
+    },
+    "projectAuthorityPlan": {
+      "type": "object",
+      "required": ["schemaVersion", "bindingVersion", "operation", "project", "installationRoot", "projectId", "changes", "preserves", "integrity"],
+      "properties": {
+        "schemaVersion": {"const": "1.0.0"},
+        "bindingVersion": {"const": "1.0.0"},
+        "operation": {"enum": ["enable", "disable"]},
+        "integrity": {
+          "type": "object",
+          "required": ["algorithm", "hash"],
+          "properties": {"algorithm": {"const": "sha256"}, "hash": {"$ref": "#/$defs/hash"}}
+        }
+      }
+    },
+    "structuredError": {
+      "type": "object",
+      "required": ["schemaVersion", "code", "stage", "retryable", "message", "recovery"]
+    }
+  }
+}

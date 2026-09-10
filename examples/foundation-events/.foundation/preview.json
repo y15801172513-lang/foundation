@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "0.1.0",
+  "mode": "local-static",
+  "routes": [
+    {"path": "/events", "file": "dist/index.html"},
+    {"path": "/events/manage", "file": "dist/index.html"},
+    {"path": "/events/detail", "file": "dist/index.html"}
+  ],
+  "assets": [
+    {"path": "/assets/events-app.js", "file": "dist/assets/events-app.js"},
+    {"path": "/assets/events-app.css", "file": "dist/assets/events-app.css"}
+  ]
+}

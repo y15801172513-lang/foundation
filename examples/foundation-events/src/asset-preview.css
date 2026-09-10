@@ -1,0 +1,8 @@
+@reference "./styles.css";
+
+.asset-preview-stage { @apply grid min-h-screen place-items-center p-6; }
+.asset-preview-component { @apply w-full max-w-xl; }
+.asset-preview-component > .event-card { min-height:220px; }
+.asset-preview-message { @apply flex min-h-screen flex-col items-center justify-center gap-2 p-6 text-center; }
+.asset-preview-message strong { @apply text-base font-medium; }
+.asset-preview-message span { @apply text-xs text-muted-foreground; }

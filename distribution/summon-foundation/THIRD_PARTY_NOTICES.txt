@@ -1,0 +1,13 @@
+The Foundation launcher code is MIT licensed. Its dependencies are separately
+licensed and distributed by npm with their original license files retained:
+
+@sigstore/verify, @sigstore/bundle, @sigstore/protobuf-specs: Apache-2.0
+tuf-js: MIT
+snappyjs: MIT
+
+GitHub's public TUF bootstrap root is fetched from the fixed GitHub CLI v2.98.0
+source URL and checked against a packaged SHA-256 before TUF refresh. This is
+GitHub's existing release trust infrastructure, not a Foundation signing key.
+
+This file does not replace the original dependency license texts installed by
+npm. No third-party source is relicensed under Foundation's MIT license.

@@ -1,0 +1,50 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import {clampFloatingPosition, createWorkspaceState, transitionWorkspace, VIEWPORT_PRESETS} from '@foundation/management-center/state';
+
+test('工作台状态覆盖页面、设备、面板模式、拖动、缩放与恢复', () => {
+  const initial = createWorkspaceState({pageId: 'page_home', componentId: 'component_button', instanceId: 'button_instance_home', variant: 'primary', componentPageId: 'page_home', tab: 'component', panelPlacement: 'floating', floatingPosition: {x: 100, y: 80}});
+  assert.deepEqual({workspaceArea: initial.workspaceArea, buildingMode: initial.buildingMode}, {workspaceArea: 'building', buildingMode: 'preview'});
+  assert.equal('workMode' in initial, false);
+  const detailPage = transitionWorkspace(initial, {type: 'set-page', pageId: 'page_detail', route: '/events/detail?id=event_1&returnTo=%2Fevents'});
+  assert.equal(detailPage.pageId, 'page_detail');
+  assert.equal(detailPage.previewRoute, '/events/detail?id=event_1&returnTo=%2Fevents');
+  assert.equal(transitionWorkspace(detailPage, {type: 'set-page', pageId: 'page_home'}).previewRoute, null);
+  const toolbarNavigation = transitionWorkspace(detailPage, {type: 'navigate-page', pageId: 'page_home', route: '/events'});
+  assert.deepEqual({pageId: toolbarNavigation.pageId, previewRoute: toolbarNavigation.previewRoute, iframeRoute: toolbarNavigation.iframeRoute}, {pageId: 'page_home', previewRoute: null, iframeRoute: '/events'});
+  const selected = transitionWorkspace(initial, {type: 'set-component', componentId: 'component_button', instanceId: 'button_instance_detail', variant: 'secondary', pageId: 'page_detail', eventId: 'event_1', eventState: 'archived'});
+  assert.deepEqual({componentId: selected.componentId, instanceId: selected.instanceId, variant: selected.variant, componentPageId: selected.componentPageId, eventId: selected.eventId, eventState: selected.eventState}, {componentId: 'component_button', instanceId: 'button_instance_detail', variant: 'secondary', componentPageId: 'page_detail', eventId: 'event_1', eventState: 'archived'});
+  assert.equal(transitionWorkspace(selected, {type: 'set-page', pageId: 'page_home'}).variant, 'secondary');
+  assert.equal(transitionWorkspace(selected, {type: 'navigate-page', pageId: 'page_home', route: '/events'}).eventState, null);
+  assert.equal(transitionWorkspace(initial, {type: 'set-viewport', viewportPresetId: 'phone-375'}).viewportPresetId, 'phone-375');
+  const objectContext = transitionWorkspace(initial, {type: 'set-panel-context', context: 'object'});
+  assert.equal(objectContext.panelContext, 'object');
+  assert.equal(transitionWorkspace(objectContext, {type: 'toggle-placement'}).panelContext, 'object');
+  assert.equal(transitionWorkspace(initial, {type: 'toggle-placement'}).panelPlacement, 'docked');
+  const collapsed = transitionWorkspace(initial, {type: 'collapse'});
+  assert.equal(collapsed.panelCollapsed, true);
+  assert.equal(transitionWorkspace(collapsed, {type: 'restore'}).panelPlacement, 'floating');
+  const anchoredCollapse = transitionWorkspace(initial, {type: 'collapse', collapsedPosition: {x: 430, y: 96}, workspace: {width: 1200, height: 800}, panel: {width: 28, height: 28}});
+  const movedCollapse = transitionWorkspace(anchoredCollapse, {type: 'set-collapsed-position', position: {x: 800, y: 200}, workspace: {width: 1200, height: 800}, panel: {width: 28, height: 28}});
+  const restoredAtMovedAnchor = transitionWorkspace(movedCollapse, {type: 'restore', workspace: {width: 1200, height: 800}, panel: initial.floatingSize});
+  assert.deepEqual(restoredAtMovedAnchor.floatingPosition, {x: 470, y: 184}, '拖动缩小按钮后应按相同位移从当前位置展开浮动面板');
+  const duplicateRestore = transitionWorkspace(restoredAtMovedAnchor, {type: 'restore', workspace: {width: 1200, height: 800}, panel: initial.floatingSize});
+  assert.deepEqual(duplicateRestore.floatingPosition, restoredAtMovedAnchor.floatingPosition, '重复 restore 不得二次叠加缩小按钮位移');
+  const dockedCollapsed = transitionWorkspace(createWorkspaceState({panelPlacement: 'docked'}), {type: 'collapse'});
+  assert.equal(transitionWorkspace(dockedCollapsed, {type: 'restore'}).panelPlacement, 'docked');
+  assert.deepEqual(transitionWorkspace(initial, {type: 'set-floating-size', size: {width: 420, height: 360}}).floatingSize, {width: 420, height: 360});
+  assert.deepEqual(clampFloatingPosition({x: -100, y: 9999}, {width: 900, height: 600}, {width: 300, height: 200}), {x: 12, y: 388});
+  assert.deepEqual(VIEWPORT_PRESETS.filter((item) => item.type === 'device').map((item) => [item.width, item.height]), [[2560, 1440], [1920, 1080], [1440, 900], [1280, 800], [768, 1024], [390, 844], [375, 812], [320, 568]]);
+});
+
+test('搭建方式与资产管理使用分离状态，并迁移旧 workMode', () => {
+  const legacy = createWorkspaceState({workMode: 'information_logic', pageId: 'page_home'});
+  assert.deepEqual({workspaceArea: legacy.workspaceArea, buildingMode: legacy.buildingMode}, {workspaceArea: 'building', buildingMode: 'logic'});
+  assert.equal('workMode' in legacy, false);
+  const assets = transitionWorkspace(legacy, {type: 'open-assets'});
+  assert.equal(assets.workspaceArea, 'assets');
+  assert.equal('workMode' in assets, false);
+  assert.equal(transitionWorkspace(assets, {type: 'set-building-mode', mode: 'preview'}).workspaceArea, 'building');
+  assert.equal(transitionWorkspace(assets, {type: 'set-building-mode', mode: 'preview'}).buildingMode, 'preview');
+  assert.deepEqual(transitionWorkspace(legacy, {type: 'set-mode', mode: 'asset_management'}), legacy);
+});

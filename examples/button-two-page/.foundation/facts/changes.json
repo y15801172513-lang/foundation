@@ -1,0 +1,1 @@
+{"schemaVersion":"0.1.0","kind":"changes","items":[{"id":"change_button_variant","label":"Button 变体演示","reason":"同用途同结构的可重复样式差异","affectedPages":["page_home","page_detail"],"affectedAssets":["component_button","component_button_secondary"],"status":"confirmed","source":"example","updatedAt":"2026-08-25T00:00:00.000Z","verificationStatus":"verified"}]}
