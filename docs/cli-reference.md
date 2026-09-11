@@ -1,16 +1,16 @@
 # CLI 参考
 
-## 035 安装入口修正（0.2.7 / npm 0.1.2）
+## 036 生命周期收尾（0.2.8 / npm 0.1.3）
 
-npm 0.1.2 的 `summon foundation` 默认准备安装，只有 `--inspect` 是只读发行发现。未给目录时由已验证候选的 `install --choose-destination --browser codex` 打开目录选择阶段；选择只产生意向，下一页仍须本人确认精确计划。`--choose-destination` 与 `--destination` 互斥。系统浏览器不是自动备用，对话是否主动告知仍须真实宿主验收。
+npm 0.1.3 的 `summon foundation` 默认准备安装，只有 `--inspect` 是只读发行发现。未给目录时由已验证候选的 `install --choose-destination --browser codex` 打开目录选择阶段；选择只产生意向，下一页仍须本人确认精确计划。`--choose-destination` 与 `--destination` 互斥。系统浏览器不是自动备用，对话是否主动告知仍须真实宿主验收。
 
-036 本地候选（尚未发布）在联网前记录同次获取，`--status <本次返回的结果文件>` 只读恢复；大文件输出实际字节、最多两次有界获取。新运行版将稳定入口健康检查并入安装/更新结果，安装启动器负责工作台就绪，不等服务退出。更新的 `updateCleanupExecutor: confirmed-update-engine` 表示已确认暂存由程序精确处理；旧版没有该声明则保留暂存，不由模型补执行。安装、工作台就绪、Skill 注册及新对话发现分别报告。
+036 修正版在联网前记录同次获取，`--status <本次返回的结果文件>` 只读恢复；大文件输出实际字节、最多两次有界获取。新运行版将稳定入口健康检查并入安装/更新结果，安装启动器负责工作台就绪，不等服务退出。更新的 `updateCleanupExecutor: confirmed-update-engine` 表示已确认暂存由程序精确处理；旧版没有该声明则保留暂存，不由模型补执行。安装、工作台就绪、Skill 注册及新对话发现分别报告。
 
-现有显式 `--prepare --version <版本> --destination <目录>` 与更新获取 `--acquire --version <版本>` 保留；更新仍由稳定 installed launcher 处理。新参数不能用于未声明该能力的旧运行版。npm 0.1.2 / 运行版 0.2.7 已发布；安装前仍须核验实际发行与资产，帮助文本不替代来源证明或真人验收。
+现有显式 `--prepare --version <版本> --destination <目录>` 与更新获取 `--acquire --version <版本>` 保留；更新仍由稳定 installed launcher 处理。新参数不能用于未声明该能力的旧运行版。npm 0.1.3 / 运行版 0.2.8 已发布；安装前仍须核验实际发行与资产，帮助文本不替代来源证明或真人验收。
 
 运行 `./foundation-kit --help` 可查看当前对话安装、结果查询和再次打开入口；显示“实现中”即不代表 GitHub 用户路径已就绪。
 
-发布后的后台入口由 Codex 调用，不要求用户手写参数：`--inspect` 返回绑定的版本与 Release 获取合同；`--version <版本> --github-client <已核验宿主 gh 实路径> [--destination <目录意向>]` 自动取得精确 Release 资产，仍需管理器页面确认才安装。当前最小 GitHub 入口不接受 `--archive` 跳过来源核验；该参数只保留于后置的旧独立签名模式。最小入口不需要独立发行密钥，当前阻断是尚未保存/发布本轮精确版本，不是缺私钥。
+发布后的后台入口由 Codex 调用，不要求用户手写参数：`--inspect` 返回绑定的版本与 Release 获取合同；`--version <版本> --github-client <已核验宿主 gh 实路径> [--destination <目录意向>]` 自动取得精确 Release 资产，仍需管理器页面确认才安装。当前最小 GitHub 入口不接受 `--archive` 跳过来源核验；该参数只保留于后置的旧独立签名模式。最小入口不需要独立发行密钥，实际获取仍须核验已发布的精确版本、GitHub 证明和资产字节；不要求另建私钥。
 
 本文从当前 `packages/cli/index.mjs` 与 `packages/cli/lifecycle.mjs` 整理。仓库根 `./foundation-kit` 是源码开发入口，需要本机 Node.js；candidate 顶层 `foundation-kit` 是另一个自带 Runtime 的入口，不要混用。
 
