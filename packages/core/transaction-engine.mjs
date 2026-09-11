@@ -9,6 +9,7 @@ import {isWithin} from './path-boundary.mjs';
 import {platformShim, probeDiskAvailableBytes} from './platform-bootstrap.mjs';
 import {sanitizeNodeStartupEnvironment} from './node-startup-environment.mjs';
 import {classifyProcessOwner, observeProcessFingerprint} from './process-owner.mjs';
+import {finishConfirmedUpdateInputs} from './update-input-inventory.mjs';
 import {
   acquisitionNetworkDisconnected,
   currentRuntimeIdentity,
@@ -485,7 +486,10 @@ function installOrUpdate({plan, root, current, installations, journal, journalFi
   journal.created.receipt = !fs.existsSync(receiptFile);
   writeJournal(journalFile, journal, 'switching', 'receipt-commit-intent');
   writeSignedJson(receiptFile, receiptPayload(root, plan, record, checked.manifest, integrationRoot));
-  const result = {schemaVersion: '1.0.0', ok: true, operationId: plan.planId, state: current ? 'updated' : 'installed', current: record, previous: current?.version || null, executableHealth: 'passed'};
+  const stable=spawnSync(shim,['--foundation-health'],{cwd:root,encoding:'utf8',timeout:15000,env:{PATH:'',FOUNDATION_HEALTH_PROBE:'1'}});
+  let stableHealth;try{stableHealth=JSON.parse(stable.stdout);}catch{}
+  if(stable.error||stable.signal||stable.status!==0||stableHealth?.ok!==true||stableHealth.version!==record.version)throw new LifecycleError('STABLE_LAUNCHER_HEALTH_FAILED','稳定入口健康核验失败；恢复旧可用版本',{stage:'health-check'});
+  const result = {schemaVersion: '1.0.0', ok: true, operationId: plan.planId, state: current ? 'updated' : 'installed', current: record, previous: current?.version || null, executableHealth: 'passed',stableLauncherHealth:'passed'};
   journal.result = result;
   writeJournal(journalFile, journal, 'committed', 'receipt-committed');
   operationCheckpoint('after-receipt-commit');
@@ -956,6 +960,10 @@ export function applyLifecyclePlan({plan, now = Date.now()}) {
     else throw new LifecycleError('OPERATION_UNSUPPORTED', `未实现操作：${plan.operation}`);
     if (plan.operation !== 'uninstall' || plan.mode !== 'full') { writeSignedJson(resultFile, result, {signing: trustedSigning}); writeJournal(journalFile, journal, 'completed', 'operation-complete', trustedSigning); }
     updateTrustedPreIntent(preIntent, 'completed', {completedAt: Date.now(), outcome: 'completed'}, {signing: trustedSigning});
+    if(plan.operation==='update'&&plan.hostCleanup){
+      try{result.cleanup=finishConfirmedUpdateInputs(plan);writeSignedJson(resultFile,result,{signing:trustedSigning});}
+      catch{result.cleanup={state:'retained',reason:'cleanup-or-secondary-record-unavailable'};}
+    }
     return result;
   } catch (error) {
     if (!authorizationConsumed) {

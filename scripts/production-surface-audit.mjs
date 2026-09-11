@@ -46,10 +46,12 @@ function walk(root) {
 
 if (candidateRoot) {
   const boundaryScript = path.join(ROOT, 'scripts', 'candidate-module-boundary-audit.mjs');
-  const run = spawnSync(process.execPath, [boundaryScript, '--candidate', candidateRoot], {cwd: ROOT, encoding: 'utf8', env: {...process.env, NODE_OPTIONS: ''}});
+  // The complete per-module evidence exceeds Node's default 1 MiB buffer.
+  // Keep a finite evidence budget; overflow remains a failed audit, not a pass.
+  const run = spawnSync(process.execPath, [boundaryScript, '--candidate', candidateRoot], {cwd: ROOT, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024, env: {...process.env, NODE_OPTIONS: ''}});
   let boundary;
   try { boundary = JSON.parse(run.stdout); }
-  catch { boundary = {ok: false, moduleCount: 0, modules: [], moduleInventoryHash: null, auditHash: null, unknownOrForbidden: [{code: 'CANDIDATE_MODULE_AUDIT_OUTPUT_INVALID', exitCode: run.status, stderrHash: hash(run.stderr || '')}]}; }
+  catch { boundary = {ok: false, moduleCount: 0, modules: [], moduleInventoryHash: null, auditHash: null, unknownOrForbidden: [{code: 'CANDIDATE_MODULE_AUDIT_OUTPUT_INVALID', exitCode: run.status, processError: run.error?.code || null, stderrHash: hash(run.stderr || '')}]}; }
   const result = {
     schemaVersion: '1.0.0',
     ok: run.status === 0 && boundary.ok === true,

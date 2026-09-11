@@ -1,6 +1,33 @@
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import path from 'node:path';import {spawn,spawnSync} from 'node:child_process';
 const repo=fs.realpathSync(path.resolve(import.meta.dirname,'../..'));
 const input=process.env.FOUNDATION_INSTALL_ENTRY_CANDIDATE;
+test('036 npm orchestration returns after real payload install and stable workbench readiness',{skip:!input,timeout:60000},async()=>{
+  const candidate=fs.realpathSync(input);assert(candidate.startsWith(repo+'/.tmp/'));const manifest=JSON.parse(fs.readFileSync(candidate+'/manifest.json'));
+  const work=fs.mkdtempSync(repo+'/.tmp/npm-final-036-'),home=work+'/account';fs.mkdirSync(home+'/Library/Application Support',{recursive:true});fs.mkdirSync(home+'/Library/Caches');
+  const entry=new URL('../../distribution/summon-foundation/bin/summon.mjs',import.meta.url).href;
+  // Only initial account discovery/acquisition are substituted. Production npm
+  // orchestration, actual payload engine, stable launcher and workbench are real.
+  fs.writeFileSync(work+'/account.mjs',`export function readCurrentPlatformAccount(){return{authority:'036-contained-account',platform:process.platform,uid:process.getuid(),gid:process.getgid(),username:'fixture',homedir:${JSON.stringify(home)}}}`);
+  fs.writeFileSync(work+'/account-loader.mjs',`export async function resolve(s,c,n){const r=await n(s,c);return r.url.endsWith('/packages/cli/platform-account.mjs')?{url:new URL('./account.mjs',import.meta.url).href,shortCircuit:true}:r}`);
+  fs.writeFileSync(work+'/account-register.mjs',`import{register}from'node:module';register(new URL('./account-loader.mjs',import.meta.url));`);
+  fs.writeFileSync(work+'/acquire.mjs',`export{plainPath}from${JSON.stringify(new URL('../../distribution/summon-foundation/lib/acquire.mjs',import.meta.url).href)};export function inspectRelease(){return{version:${JSON.stringify(manifest.productVersion)},sourceCommit:'a'.repeat(40),documentationCommit:'b'.repeat(40),repository:{full_name:'y15801172513-lang/foundation'}}}export async function acquireRelease(){return{launcher:${JSON.stringify(candidate+'/foundation-kit')},installationConfirmed:false}}`);
+  fs.writeFileSync(work+'/fs.mjs',`import fs from'node:fs';export default{...fs,existsSync(p){return String(p).endsWith('/AGENTS.md')?false:fs.existsSync(p)}};`);
+  fs.writeFileSync(work+'/child.mjs',`import{spawn as real,spawnSync as sync}from'node:child_process';export function spawnSync(c,a,o){if(c==='/usr/bin/id')return{status:0,stdout:'fixture\\n'};if(c==='/usr/bin/dscl')return{status:0,stdout:${JSON.stringify('NFSHomeDirectory: '+home+'\n')}};return sync(c,a,o)}export function spawn(c,a,o){if(c===${JSON.stringify(candidate+'/foundation-kit')}&&a[0]==='install')return real(${JSON.stringify(candidate+'/payload/runtime/bin/node')},['--import',${JSON.stringify(work+'/account-register.mjs')},${JSON.stringify(candidate+'/payload/app/packages/cli/index.mjs')},...a],o);return real(c,a,o)}`);
+  fs.writeFileSync(work+'/loader.mjs',`export async function resolve(s,c,n){if(c.parentURL===${JSON.stringify(entry)}){const m={'../lib/acquire.mjs':'acquire.mjs','node:child_process':'child.mjs','node:fs':'fs.mjs'};if(m[s])return{url:new URL(m[s],import.meta.url).href,shortCircuit:true}}return n(s,c)}`);
+  fs.writeFileSync(work+'/register.mjs',`import{register}from'node:module';register(new URL('./loader.mjs',import.meta.url));`);
+  const child=spawn(process.execPath,['--import',work+'/register.mjs',new URL(entry).pathname,'foundation'],{cwd:work,env:{...process.env,PATH:'',NODE_OPTIONS:'',TMPDIR:work}});let out='',err='',workbench;
+  child.stdout.on('data',b=>{out+=b;fs.writeFileSync(work+'/stdout.log',out)});child.stderr.on('data',b=>{err+=b;fs.writeFileSync(work+'/stderr.log',err)});const done=new Promise(r=>child.once('close',(code,signal)=>r({code,signal})));
+  try{
+    const until=Date.now()+30000;while(!out.includes('AWAITING_FOUNDATION_DIRECTORY_SELECTION')&&child.exitCode===null&&Date.now()<until)await new Promise(r=>setTimeout(r,50));assert.match(out,/AWAITING_FOUNDATION_DIRECTORY_SELECTION/,err);
+    const selection=out.split('\n').filter(l=>l.startsWith('{')).map(l=>{try{return JSON.parse(l)}catch{return{}}}).find(e=>e.status==='AWAITING_FOUNDATION_DIRECTORY_SELECTION');assert(selection?.url);
+    const page=await(await fetch(selection.url)).text(),nonce=page.match(/nonce:"([a-f0-9]{64})"/)[1],destination=home+'/Foundation 用户';assert(!fs.existsSync(destination));
+    const chosen=await(await fetch(selection.url+'__foundation/install/selection',{method:'POST',headers:{origin:new URL(selection.url).origin,'content-type':'application/json'},body:JSON.stringify({nonce,action:'select',destination})})).json();
+    const confirmation=await(await fetch(chosen.url)).text(),managerNonce=confirmation.match(/name="managerNonce" value="([^"]+)"/)[1];assert(!fs.existsSync(destination));
+    const result=await(await fetch(chosen.url+'__foundation/manager/confirm',{method:'POST',headers:{origin:new URL(chosen.url).origin,'content-type':'application/json'},body:JSON.stringify({managerNonce,action:'confirm-exact-operation'})})).json();assert.equal(result.state,'completed');
+    assert.equal((await done).code,0,err);const last=out.split('\n').filter(l=>l.startsWith('{"status":"FOUNDATION_INSTALL_OPERATION"')).map(JSON.parse).at(-1);workbench=last.workbench;assert.equal(last.state,'completed');assert.equal(last.phase,'finished');assert.equal(workbench?.state,'ready',JSON.stringify(last));assert.equal(last.skillRegistered,false);assert.equal(last.installationRoot,destination);assert.equal((await fetch(workbench.url)).status,200);
+    fs.writeFileSync(work+'/result.json',JSON.stringify({status:'ENGINEERING_PASS',candidateHash:manifest.candidateHash,last,exit:await done,simulated:['account provider','preverified acquisition','engineering page confirmation'],real:['npm orchestration','payload install','stable health','stable launcher workbench spawn and ready check','finite npm exit'],freshConversation:false},null,2));console.log('036 npm final evidence '+path.relative(repo,work));
+  }finally{if(child.exitCode===null)child.kill('SIGTERM');await done;if(workbench?.pid)process.kill(workbench.pid,'SIGTERM');}
+});
 test('035 real payload: selection, rejection, exact confirmation, install and stable reopen',{skip:!input,timeout:90000},async()=>{
   const candidate=fs.realpathSync(input);assert(candidate.startsWith(repo+'/.tmp/'));
   const manifest=JSON.parse(fs.readFileSync(path.join(candidate,'manifest.json')));
@@ -47,7 +74,7 @@ test('035 real payload: selection, rejection, exact confirmation, install and st
     const reopened=spawn(launcher,['workbench','open','--root',destination],{cwd:work,env});let opened='';reopened.stdout.on('data',b=>opened+=b);let error='';reopened.stderr.on('data',b=>error+=b);
     try{const deadline=Date.now()+15000;while(!opened.includes('"url"')&&reopened.exitCode===null&&Date.now()<deadline)await new Promise(r=>setTimeout(r,50));assert.match(opened,/"url"/,error);const response=await fetch(JSON.parse(opened.trim()).url);assert.equal(response.status,200);fs.writeFileSync(work+'/reopened.html',await response.text());}finally{reopened.kill('SIGTERM');}
     const noInstallCases=[];
-    for(const mode of ['cancel','expire']){
+    for(const mode of ['cancel','expire','terminate']){
       const clock=work+'/clock.mjs';
       if(mode==='expire')fs.writeFileSync(clock,`const real=Date.now;let offset=0;Date.now=()=>real()+offset;const later=globalThis.setTimeout;globalThis.setTimeout=(f,n,...a)=>n>590000?later(()=>{offset=n+1;f(...a)},30):later(f,n,...a);`);
       const c=spawn(candidate+'/payload/runtime/bin/node',['--import',work+'/register.mjs',...(mode==='expire'?['--import',clock]:[]),candidate+'/payload/app/packages/cli/index.mjs','install','--choose-destination','--browser','codex'],{cwd:work,env});
@@ -56,7 +83,8 @@ test('035 real payload: selection, rejection, exact confirmation, install and st
         const deadline=Date.now()+15000;while(!out.includes('AWAITING_FOUNDATION_DIRECTORY_SELECTION')&&c.exitCode===null&&Date.now()<deadline)await new Promise(r=>setTimeout(r,10));
         assert.match(out,/AWAITING_FOUNDATION_DIRECTORY_SELECTION/,err);
         if(mode==='cancel'){const first=JSON.parse(out.trim().split('\n')[0]);const html=await(await fetch(first.url)).text();const nonce=html.match(/nonce:"([a-f0-9]{64})"/)[1];const response=await fetch(first.url+'__foundation/install/selection',{method:'POST',headers:{origin:new URL(first.url).origin,'content-type':'application/json'},body:JSON.stringify({nonce,action:'cancel'})});assert.equal(response.status,200);}
-        const exit=await ended;assert.equal(exit.code,0,err);assert.match(out,mode==='cancel'?/cancelled-no-install/:/expired-no-install/);assert(!out.includes('FOUNDATION_SELECTION_BOUND'));noInstallCases.push({mode,exit,stdout:out,stderr:err,clockSimulated:mode==='expire'});
+        if(mode==='terminate')c.kill('SIGTERM');
+        const exit=await ended;assert.equal(exit.code,0,err);assert.match(out,mode==='cancel'?/cancelled-no-install/:mode==='expire'?/expired-no-install/:/shutdown-no-install/);assert(!out.includes('FOUNDATION_SELECTION_BOUND'));noInstallCases.push({mode,exit,stdout:out,stderr:err,clockSimulated:mode==='expire'});
       }finally{if(c.exitCode===null)c.kill('SIGTERM');await ended;}
     }
     invoke(launcher,['--foundation-health']);

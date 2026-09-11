@@ -4,6 +4,8 @@
 
 npm 0.1.2 的 `summon foundation` 默认准备安装，只有 `--inspect` 是只读发行发现。未给目录时由已验证候选的 `install --choose-destination --browser codex` 打开目录选择阶段；选择只产生意向，下一页仍须本人确认精确计划。`--choose-destination` 与 `--destination` 互斥。系统浏览器不是自动备用，对话是否主动告知仍须真实宿主验收。
 
+036 本地候选（尚未发布）在联网前记录同次获取，`--status <本次返回的结果文件>` 只读恢复；大文件输出实际字节、最多两次有界获取。新运行版将稳定入口健康检查并入安装/更新结果，安装启动器负责工作台就绪，不等服务退出。更新的 `updateCleanupExecutor: confirmed-update-engine` 表示已确认暂存由程序精确处理；旧版没有该声明则保留暂存，不由模型补执行。安装、工作台就绪、Skill 注册及新对话发现分别报告。
+
 现有显式 `--prepare --version <版本> --destination <目录>` 与更新获取 `--acquire --version <版本>` 保留；更新仍由稳定 installed launcher 处理。新参数不能用于未声明该能力的旧运行版。npm 0.1.2 / 运行版 0.2.7 已发布；安装前仍须核验实际发行与资产，帮助文本不替代来源证明或真人验收。
 
 运行 `./foundation-kit --help` 可查看当前对话安装、结果查询和再次打开入口；显示“实现中”即不代表 GitHub 用户路径已就绪。

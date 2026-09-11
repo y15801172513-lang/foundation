@@ -71,6 +71,7 @@ function actionsFor({operation, mode, extensions, aiBridge}) {
 }
 
 export function createLifecyclePlan({operation, profile = 'core', mode = null, targetRoot, sandboxRoot, currentVersion = null, targetVersion = null, installIdentity = 'current-user', candidate = null, extensions, aiBridge, recoverySnapshot = null, cleanupAcquisition = false, now = Date.now(), ttlMs = 15 * 60 * 1000}) {
+  if(operation==='update'&&currentVersion&&currentVersion===targetVersion)throw new LifecycleError('UPDATE_VERSION_ALREADY_CURRENT','当前已是该版本，无需重复更新',{stage:'plan'});
   if(typeof cleanupAcquisition!=='boolean'||cleanupAcquisition&&operation!=='update')throw new LifecycleError('CLEANUP_INTENT_INVALID','本次获取清理仅作为更新计划的意向，不是执行批准');
   if (!LIFECYCLE_PROFILES[profile]) throw new LifecycleError('PROFILE_INVALID', `未知安装方式：${profile}`);
   if (operation === 'uninstall' && !['app-only', 'app-and-runtime', 'full'].includes(mode)) throw new LifecycleError('UNINSTALL_MODE_INVALID', '卸载必须明确选择 app-only、app-and-runtime 或 full');

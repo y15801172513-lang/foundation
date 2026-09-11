@@ -32,11 +32,11 @@ npm 薄入口需要 Node.js 22.9+ 和 npm；完整 Foundation 运行时随发行
 
 显式 `--inspect` 才只查询公共 Release，返回 `RELEASE_DISCOVERED_NOT_ACQUIRED`、固定版本、运行载荷的 sourceCommit，以及当次固定公共 main 的 documentationCommit/安装说明链接；不写获取缓存、不下载运行文件。默认命令使用同一发现逻辑继续获取，不把发现当作完成。维护说明可以在不改写 Release 的前提下修正；两个提交分别显示，不能拿文档提交替代运行归档身份。执行中不追逐 latest，不让用户填写仓库 ID、摘要或内部参数。
 
-大于 10 MB 的资产使用 HTTP/1.1，单次最多等待 20 分钟；低于 1 KiB/s 持续 60 秒即停止。小型元数据仍最多 120 秒。没有自动重复安装或无限重试；任何中断/长度/摘要失败均不执行不完整材料。
+当前线上版本的单次大文件获取上限为 20 分钟。036 本地候选（尚未发布）将大于 10 MB 的资产改为 HTTP/1.1 流式获取：单次最多 10 分钟，连接最多 15 秒，低于 1 KiB/s 持续 60 秒即停止；仅 DNS、连接、超时或连接中断可重试一次。重试从零重新核验，不拼接失败字节。小型元数据仍最多 120 秒。没有自动重复安装或无限重试；任何中断/长度/摘要失败均不执行不完整材料。
 
 默认命令可以在安装页取得目录，不必由模型拼接第二条获取命令。若本次对话已经取得版本/目录选择且有权限，仍支持 `summon foundation --prepare --version <已固定版本> --destination <本次选择的绝对路径>`；参数以独立 argv 传递，不拼接未经转义的 shell。新入口会检查运行版是否声明 `--choose-destination`；旧载荷不支持时安全停止，不偷偷选默认根。
 
-更新时先从稳定 installed launcher 检查 current 和健康，使用 `summon foundation --acquire --version <已固定目标>` 仅获取材料；它不执行更新。使用返回的候选和清单向当前安装请求精确 update 计划。当前 `manager inspect` 支持 `cleanupAcquisition` 时带上该意向，将盘点的本次归档/候选与成功清理条件绑定到同一确认页；旧版不支持时先在对话取得精确宿主后处理授权，不冒充旧页面包含新能力。按[升级暂存清理](cache-cleanup.md)核实成功、事务结束和消费者退出后接续，清理失败与更新结果分开。禁止执行下载 candidate 代替稳定 installed 更新入口。
+更新时从稳定 installed launcher 检查 current，目标相同则不重复更新。使用 `summon foundation --acquire --version <已固定目标>` 仅获取材料，再向当前安装请求精确 update 计划；不执行下载 candidate 代替稳定更新入口。当前 `manager inspect` 支持 `cleanupAcquisition` 时带上该意向，将本次归档/候选与成功清理条件绑定到同一确认页。声明 `updateCleanupExecutor: confirmed-update-engine` 的管理器在稳定入口健康通过后程序化清理；任务读取同次结果，不再手工拼删除命令。旧 0.2.7 首次更新仍由旧引擎执行，暂存安全保留，不把新版能力倒用于旧计划。详见[升级暂存清理](cache-cleanup.md)。
 
 准备阶段重新核对固定仓库 ID、tag/source SHA、不可变且非草稿/预发行的 Release，以及唯一资产名称/长度/摘要。GitHub 签名证明通过其既有 TUF 信任数据、证书、真实签名时间戳和 Release 证书身份验证；再核对证明中的仓库 ID、Release ID、tag、源码提交和每个资产摘要。下载文件不能自述 verified 替代校验。无独立 Foundation 发行密钥，也不使用 Actions 临时产物。
 
@@ -68,6 +68,16 @@ GitHub 证明不是 Apple 签名或公证。系统拒绝执行时保留提示并
 
 ## 5. 安装结果、重开与 Skill
 
+### 获取阶段也属于同一次安装任务
+
+下载时工具返回 running/session handle，只表示这一段等待结束，不是安装任务结束。运行中的任务保留原句柄，以可中断的分段等待读取同一进程；不重新启动命令制造进展，不在正常下载中用 final 结束。下载上限取上文实际网络限制，不套用页面确认的等待期限。句柄失效、任务被停止或平台强制结束时，明确说明跟进中断、结果待核实；不能声称已经设置后台通知。
+
+036 本地候选（npm 0.1.3 / 运行版 0.2.8，尚未发布）承接 035R1：首个联网步骤前建立同次 `operationId` 与获取目录内的 `operation-result.json`（0600），输出真实阶段、大文件实际下载字节/总量、尝试次数和最近进展。无法建立记录则不开始联网。下载/校验失败仍无安装根写入；运行时启动后缺少可靠结果则标为未知，不把进程退出等同安装成功。记录只用于恢复查询，不是确认授权。已发布的 0.1.2 不含此能力；不要用尚未发布的版本作为可执行入口。
+
+修复版的 `summon foundation --status <本任务返回的 resultFile>` 只读原结果，不下载、不安装、不重试；路径由当前任务输出取得，不让用户手写内部参数。只有中间记录时返回待核实，不能凭 PID 猜测进程仍在工作。不能保存记录时终态仍输出到原工具 stdout。curl 失败保留可得的实际退出码和类别（DNS、连接、HTTP、TLS、超时或低速）；退出码 28 不足以进一步区分两种超时原因。原始 stderr 可能含签名网址或凭据，不写入结果记录。失败缓存保留；先核验原进程已结束，再由用户决定是否安全重试，绝不重放旧安装确认。
+
+上述是程序结果恢复和运行中任务的观察方法，不能强制一个无历史 Codex 对话保持活跃。裸命令的独立持续跟进仍待验证；不把新增记录当成宿主主动回复通过，也不承诺 HTML 能唤醒任务。
+
 运行中的任务在确认页打开后应继续观察同一操作，不要以 final 提前结束正常等待。先说“等待你确认，还未开始”，保留工具进程句柄和同次 session/planRef。每次分段等待建议 5–15 秒、最多 60 秒，可中断；截止取实际计划到期时间，无到期信息则最多 10 分钟。只有同次真实 executing/consumed 记录或 FOUNDATION_OPERATION_STATE 才说明执行开始；快速操作可直接报告终态。到期或宿主工具无法继续时明确说明待核实/降级，不能把网页点击当作已执行。
 
 打开页面后，保持当前任务等待并读取同次操作终态，不忙轮询。首次安装观察原获取进程的 `BOOTSTRAP_OPERATION_ENDED`；维护入口会输出 `FOUNDATION_OPERATION_RESULT`，普通 `open-manager` 进程不必退出才算完成。收到终态后主动说明结果、版本、目录、未处理事项和下一步。页面独立展示结果，不依赖对话回复；普通 HTML 不会唤醒已结束的 Codex 任务。此处引导不证明宿主主动通知已验收。
@@ -78,7 +88,7 @@ GitHub 证明不是 Apple 签名或公证。系统拒绝执行时保留提示并
 
 完成后简短说明实际处理、未处理（尤其 Skill/项目）、保留数据、完整位置和一个下一步。失败说明已知的变更/恢复证据；未知就明确未知。请求失败、关页与安装失败不同，不重放批准。临时 URL 不保证进程结束后仍有效。
 
-只有进程成功且 installed 状态核验通过才报告安装成功。用实际安装根的 `bin/foundation-kit`（不是下载 candidate 或源码入口）执行：
+036 程序收尾将稳定入口健康核验并入安装/更新结果，npm 安装入口随后通过实际安装根启动唯一工作台并检查就绪，返回 URL 由运行中的 Codex 打开。工作台服务继续运行不妨碍安装任务完成；安装成功但工作台未就绪分别报告，不重装。结果中没有这些已核实字段的旧版，以及用户日后重新打开时，才使用下列只读/打开命令，不重复执行已完成的新程序收尾：
 
 ```sh
 <安装根>/bin/foundation-kit --foundation-health
@@ -86,7 +96,7 @@ GitHub 证明不是 Apple 签名或公证。系统拒绝执行时保留提示并
 <安装根>/bin/foundation-kit workbench open --root <安装根>
 ```
 
-关闭首次页面后打开 `workbench open` 新返回的 URL，检查本次固定发行版本、目录和 installed current 状态。把这个稳定 launcher 路径交给用户，未选择项目时显示原画布空态，不能展示示例冒充用户项目。任一失败记 failed，保留错误，不用安装终态记录替代健康验证。
+打开程序本次返回的 URL；日后重开才重新调用稳定 launcher。未选择项目时显示原画布空态，不展示示例冒充用户项目。安装和工作台状态分开记录；不要把工作台打开失败改写成已核实安装失败。
 
 安装成功、健康检查并打开唯一工作台后，主动询问：“是否启用 Foundation 对话能力，让新对话可以打开工作台和查看指令？”说明用户级写入范围；用户拒绝仍算安装成功，但明确对话能力未启用，不反复追问。同意后，由已安装 launcher 的 `manager inspect` 核验 current，在该已验证 current 内查找打包的 Foundation `codex-skill` capability manifest；读取其真实路径和 capabilityId，不使用源码仓库 manifest。按 `manager request-plan --operation capability-register --parameters-json <对象>` 传入 `installationRoot`、`manifestFile`、`connectCodex: true`，JSON 安全编码。用返回的不透明 `planRef` 执行 `manager open-manager --plan-ref <返回值>`，打开真实 URL 等用户单独确认，再用 `manager status --plan-ref <返回值>` 和 installed inspect 核验；同名未知文件不覆盖。安装确认不是注册确认。
 
@@ -94,7 +104,7 @@ GitHub 证明不是 Apple 签名或公证。系统拒绝执行时保留提示并
 
 完成安装/更新后可提示“打开 Foundation”“Foundation 指令”。当前实现恢复唯一原工作台、移除 HTML 帮助，并保留 [指令入口修正](conversation-commands.md)、白话反馈和保留已核实结果的刷新提示；不能把新命令用于旧 Runtime。更新并核验安装后，稳定 launcher 的 `--help` 声明 `workbench open` 才使用该默认工作台入口；旧 `onboarding open` 是诊断概览，不把它称作工作台。已注册旧 Skill 的用户应在更新前用旧 current 独立解除已归属副本，更新后从新 current 单独建立 receipt/注册；不静默覆盖用户级文件。未注册时新任务识别仍未知。
 
-真实项目接入另问用户选择精确项目，先盘点现有事实，再通过 installed manager 独立计划/页面确认。未确认的项目默认 unmanaged；不得顺带扫描或启用任意项目。手动更新、恢复和卸载沿用已安装 manager 的单独计划机制，本次不自动执行，保留为后续试用。
+真实项目接入另问用户选择精确项目，先盘点现有事实，再通过 installed manager 独立计划/页面确认。未确认的项目默认 unmanaged；不得顺带扫描或启用任意项目。卸载由同一任务先检查已有 Skill 关联：有则说明用户级位置并组织现有独立解除确认，再组织软件卸载；拒绝或解除失败时保留并报告，不能借卸载扩大删除权限。没有关联无需注册再卸载。用户不需要查找 capability 内部编号。卸载完成读取独立小回执，项目资料、修改/未知文件和共享资源保留。
 
 ## 验收记录
 

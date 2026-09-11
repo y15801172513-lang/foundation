@@ -8,10 +8,11 @@ export function parseSummonArgs(args){
     if(flag==='--prepare')result.prepare=true;
     else if(flag==='--acquire')result.acquire=true;
     else if(flag==='--inspect')result.inspect=true;
-    else if(flag==='--version'||flag==='--destination'){if(!args.length||args[0].startsWith('--'))fail('参数缺值');result[flag.slice(2)]=args.shift();}
+    else if(flag==='--version'||flag==='--destination'||flag==='--status'){if(!args.length||args[0].startsWith('--'))fail('参数缺值');result[flag.slice(2)]=args.shift();}
     else fail('未知参数；请查看 --help');
   }
   if((result.prepare||result.acquire||result.destination)&&result.inspect||result.prepare&&result.acquire||result.destination&&result.acquire)fail('参数组合不支持');
+  if(seen.has('--status')){if(!result.status||seen.size!==1)fail('结果查询需要非空路径且不能与其他操作组合');return result;}
   if(!result.inspect&&!result.acquire)result.prepare=true;
   if(result.acquire&&!result.version)fail('获取更新材料前须固定版本');
   return result;
