@@ -9,7 +9,7 @@ Foundation 的薄获取入口，不包含完整运行包，没有 npm 安装生�
 npx --yes --package @josephyulei/summon-foundation@0.1.2 summon foundation
 ```
 
-本地 0.1.2 修正版尚未发布；上述命令须在 npm 与配套运行版发布并核验后使用。默认命令实际查询、固定版本、披露缓存、下载并校验，然后保持运行等待安装页目录选择。选择目录后还要亲自确认精确安装计划；不会注册 Skill 或接入项目。
+0.1.2 入口配合 Foundation 0.2.7 或后续支持目录选择的正式发行使用。默认命令实际查询、固定版本、披露缓存、下载并校验，然后保持运行等待安装页目录选择。选择目录后还要亲自确认精确安装计划；不会注册 Skill 或接入项目。实际获取仍须通过 registry 与 Release 校验，本文不替代发布证明。
 
 Codex 需要打开返回的内置浏览器网址，并分段等待同次操作结果。npm 不能自行操控或唤醒 Codex，对话主动告知不是程序退出码保证；新对话接续仍待真人验收。系统浏览器只是明确告知后的备用，不自动打开。
 
@@ -19,4 +19,4 @@ Codex 需要打开返回的内置浏览器网址，并分段等待同次操作�
 固定版本准备阶段匿名校验 GitHub 仓库身份、不可变 Release、签名证明、时间戳、源码提交和资产字节，随后使用随包运行时进入现有 Foundation 确认页面。
 不关闭 Gatekeeper、不清除隔离属性，不冒充 Apple 签名或公证。遇到权限问题安全停止。
 
-尚无 Foundation / Skill 的缓存说明：[公开清理指南](https://github.com/y15801172513-lang/foundation/blob/main/docs/cache-cleanup.md)。该链接须在正式发布后回读核验；当前 README 不是发布完成回执。
+尚无 Foundation / Skill 的缓存说明：[公开清理指南](https://github.com/y15801172513-lang/foundation/blob/main/docs/cache-cleanup.md)。当前 README 不是安装完成回执。

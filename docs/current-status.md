@@ -1,5 +1,11 @@
 # 当前状态与发布就绪度
 
+## 035 当前发行（2026-09-11）
+
+公共不可变 [v0.2.7](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.7) 与 [npm 0.1.2](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.2) 已发布，发行证明、资产长度/摘要及 npm registry 实际 tarball 已回读。运行载荷绑定公共提交 `1f99eecd4b21bf29b004e1110ef515466f7f3ed8`；安装说明跟随当前 main，不替代该不可变身份。
+
+默认短命令现在实际获取并等待安装页目录选择，不再只返回发行发现。精确确认、隔离安装/重开、更新清理和卸载保护回归通过；新对话接续、本人安装、Skill 发现及主动完成告知仍 pending。新版发布不等于用户安装已更新。旧版记录如下，不能代替本轮实时状态。
+
 本页记录当前源码 checkpoint、短期事实和未关闭门，不把私有 Result 复制成第二套叙事。公开安全的历史证据见[验证基线](verification-baseline.md)。
 
 | 维度 | 当前事实 | 含义 |

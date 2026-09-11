@@ -21,7 +21,7 @@ Foundation 是一个本地工作台：把项目已记录的页面、组件、关
 
 ## 用 Codex 安装
 
-**修正版待发布**：以下是本地准备的 npm 0.1.2 入口，配套运行版 0.2.7 尚未发布，暂不能复制试用。发布并回读核验后，在一个**不属于源码建设目录、允许写入安装位置的新 Codex 对话**里粘贴：
+在一个**不属于源码建设目录、允许写入安装位置的新 Codex 对话**里粘贴以下命令。npm 0.1.2 与配套运行版 0.2.7 已发布并完成发行字节核验；新对话安装体验仍待真人验收：
 
 ```text
 npx --yes --package @josephyulei/summon-foundation@0.1.2 summon foundation
@@ -29,7 +29,7 @@ npx --yes --package @josephyulei/summon-foundation@0.1.2 summon foundation
 
 当前支持 **macOS Apple Silicon（arm64）**，获取入口需要 **Node.js 22.9+ 与 npm**，以及可用网络、本地命令和浏览器工具。不需要 clone 项目，也不需要自己下载、解包或填写校验参数。缺少依赖或写入权限时先解决前置条件，不会自动全局安装工具。
 
-目前已发布的运行版仍是 [v0.2.6](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.6)。npm 0.1.1 的裸短命令只查询发行，**不会自行进入安装准备**。新版会实际下载并准备目录选择页，不再只打印接续提示；但无历史新 Codex 对话是否正确打开页面、持续等待并主动告知结果，仍须真人验收。当前版本与过渡方法见[安装说明](docs/install-with-codex.md)。
+当前运行版为 [v0.2.7](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.7)。新版入口会实际下载并准备目录选择页，不再只打印接续提示；但无历史新 Codex 对话是否正确打开页面、持续等待并主动告知结果，仍须真人验收。默认使用 Codex 内置浏览器，系统浏览器仅在告知并同意后备用。当前版本与过渡方法见[安装说明](docs/install-with-codex.md)。
 
 ### 接下来会发生什么
 
