@@ -1,5 +1,11 @@
 # CLI 参考
 
+## 035 安装入口修正（本地待发布）
+
+npm 0.1.2 的 `summon foundation` 默认准备安装，只有 `--inspect` 是只读发行发现。未给目录时由已验证候选的 `install --choose-destination --browser codex` 打开目录选择阶段；选择只产生意向，下一页仍须本人确认精确计划。`--choose-destination` 与 `--destination` 互斥。系统浏览器不是自动备用，对话是否主动告知仍须真实宿主验收。
+
+现有显式 `--prepare --version <版本> --destination <目录>` 与更新获取 `--acquire --version <版本>` 保留；更新仍由稳定 installed launcher 处理。新参数不能用于未声明该能力的旧运行版。npm 0.1.2 / 运行版 0.2.7 尚未发布，线上仍使用 0.1.1 / 0.2.6，不能把本地帮助当作发布回执。
+
 运行 `./foundation-kit --help` 可查看当前对话安装、结果查询和再次打开入口；显示“实现中”即不代表 GitHub 用户路径已就绪。
 
 发布后的后台入口由 Codex 调用，不要求用户手写参数：`--inspect` 返回绑定的版本与 Release 获取合同；`--version <版本> --github-client <已核验宿主 gh 实路径> [--destination <目录意向>]` 自动取得精确 Release 资产，仍需管理器页面确认才安装。当前最小 GitHub 入口不接受 `--archive` 跳过来源核验；该参数只保留于后置的旧独立签名模式。最小入口不需要独立发行密钥，当前阻断是尚未保存/发布本轮精确版本，不是缺私钥。

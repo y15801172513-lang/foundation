@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import crypto from 'node:crypto';
 import path from 'node:path';
+import http from 'node:http';
 import {spawnSync} from 'node:child_process';
 
 import {validateCandidate} from './candidate-package.mjs';
@@ -10,6 +11,8 @@ import {createLocalLifecycleManagerServer} from './lifecycle-manager-host.mjs';
 import {probeDiskAvailableBytes} from './platform-bootstrap.mjs';
 import {resolveFoundationPlatformPaths} from './platform-paths.mjs';
 import {openFoundationManagerUrl} from './browser-launch.mjs';
+import {renderInstallDestinationPage} from './lifecycle-feedback.mjs';
+import {inspectInstallDestination} from './install-destination.mjs';
 import {sanitizeNodeStartupEnvironment} from './node-startup-environment.mjs';
 import {activateFirstInstallBootstrapAuthority, deriveTrustedLifecycleAuthority, loadTrustedAuthorityKey, transferBootstrapAuthorityToInstalledState, verifyTrustedPayload} from './trusted-authority.mjs';
 import {classifyProcessOwner, observeProcessFingerprint} from './process-owner.mjs';
@@ -257,6 +260,73 @@ export function routeToInstalledAuthority(paths, output = console) {
   const result = spawnSync(installedLauncher, ['manager', 'inspect', '--root', paths.installRoot], {encoding: 'utf8', env: {...sanitizeNodeStartupEnvironment(), PATH: ''}});
   if (result.status !== 0) throw bootstrapError('INSTALLED_AUTHORITY_ROUTE_FAILED', 'installed Runtime 未能验证并接管 lifecycle inspect；拒绝覆盖或创建第二套安装', {status: result.status, stderr: result.stderr});
   output.log(JSON.stringify({ok: true, status: 'ALREADY_INSTALLED_ROUTED_TO_INSTALLED_AUTHORITY', installationRoot: paths.installRoot, installedLauncher, installedResult: JSON.parse(result.stdout), duplicateInstallationCreated: false}, null, 2));
+}
+
+export function runFirstInstallDestinationSelection(output = console, {browser = 'codex'} = {}) {
+  // Selection is only intent. It cannot consume a manager confirmation or apply.
+  const candidateRoot = discoverLaunchedCandidateRoot();
+  const checked = validateCandidate(candidateRoot, {platform: process.platform, arch: process.arch, requireRuntime: true});
+  if (!checked.ok) throw bootstrapError(checked.error.code, checked.error.message);
+  classifyFirstInstallCandidateTrust(checked.manifest);
+  const paths = resolveFoundationPlatformPaths();
+  const selectionId = `selection-${crypto.randomUUID()}`;
+  const nonce = crypto.randomBytes(32).toString('hex');
+  const expiresAt = Date.now() + 10 * 60 * 1000;
+  const suggestion = paths.installRoot;
+  let phase = 'waiting', nextUrl = null, origin = null, timer;
+  const send = (res, code, value, html = false) => {
+    res.writeHead(code, {'content-type': html ? 'text/html; charset=utf-8' : 'application/json; charset=utf-8', 'cache-control':'no-store', 'x-content-type-options':'nosniff', 'content-security-policy':"default-src 'none'; connect-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'"});
+    res.end(html ? value : JSON.stringify(value));
+  };
+  const finish = state => {
+    if (phase !== 'waiting') return;
+    phase = state;
+    output.log(JSON.stringify({status:'FOUNDATION_SELECTION_ENDED',selectionId,state,installationPerformed:false,skillRegistered:false}));
+    server.close();
+  };
+  const server = http.createServer(async (req, res) => {
+    if (req.headers.host !== new URL(origin).host || !['127.0.0.1','::ffff:127.0.0.1'].includes(req.socket.remoteAddress)) return send(res,403,{message:'仅接受本机原始地址'});
+    if (req.method === 'GET' && req.url === '/') {
+      if (nextUrl) {res.writeHead(303,{location:nextUrl,'cache-control':'no-store'});res.end();return;}
+      return send(res,200,renderInstallDestinationPage({version:checked.manifest.productVersion,suggestion,acquisitionRoot:path.dirname(candidateRoot),bootstrapStateRoot:paths.bootstrapStateRoot,nonce,expiresAt}),true);
+    }
+    if (req.method !== 'POST' || req.url !== '/__foundation/install/selection') return send(res,404,{message:'页面不存在'});
+    if (req.headers.origin !== origin || req.headers['content-type'] !== 'application/json') return send(res,403,{message:'请求来源不符'});
+    if (phase !== 'waiting' || Date.now() >= expiresAt) return send(res,409,{message:'选择已处理或过期；请查看原对话，不重复执行'});
+    let size=0, body='';
+    try {
+      for await (const chunk of req) {size+=chunk.length;if(size>8192)throw Error('请求过大');body+=chunk;}
+      const choice=JSON.parse(body);
+      if (choice.nonce !== nonce || !['select','cancel'].includes(choice.action) || Object.keys(choice).some(k=>!['nonce','action','destination'].includes(k))) return send(res,403,{message:'选择请求无效'});
+      // Recheck after the async body read: concurrent submissions must not win twice.
+      if (phase !== 'waiting' || Date.now() >= expiresAt) return send(res,409,{message:'选择已处理或过期'});
+      if (choice.action === 'cancel') {send(res,200,{message:'已取消，未安装；已下载的缓存保留。'});finish('cancelled-no-install');return;}
+      const selected=inspectInstallDestination(choice.destination,{requiredBytes:checked.manifest.totalBytes});
+      if (!selected.empty) return send(res,409,{message:'文件夹已有内容；不会覆盖，请选择空文件夹。',retryable:true});
+      // Check the real parent and overlap before any bootstrap state is created.
+      resolveFoundationPlatformPaths({destination:selected.realPath});
+      phase='preparing';clearTimeout(timer);
+      let manager;
+      try {manager=runFirstInstallBootstrap(output,{destination:selected.realPath,browser:'codex'});}
+      catch(error){phase='failed';send(res,409,{message:`计划准备失败，尚未取得安装确认：${error.message}。请在原对话核实，不自动重试。`});output.error(`错误：${error.message}`);process.exitCode=1;server.close();return;}
+      if (!manager) {phase='existing-installation';send(res,409,{message:'安装状态已变化；请在原对话核实已有安装。'});server.close();return;}
+      manager.once('listening',()=>{nextUrl=`http://127.0.0.1:${manager.address().port}/`;phase='plan-ready';output.log(JSON.stringify({status:'FOUNDATION_SELECTION_BOUND',selectionId,destination:selected.realPath,url:nextUrl,sessionId:manager.managerSession.sessionId,planHash:manager.managerSession.planHash,installationPerformed:false}));send(res,200,{url:nextUrl});});
+      manager.once('error',()=>{if(!res.writableEnded)send(res,500,{message:'确认服务未能启动，请在原对话核实。'});server.close();});
+      manager.once('close',()=>server.close());
+    } catch(error) {if(!res.writableEnded)send(res,400,{message:`无法使用这个选择：${error.message}`,retryable:phase==='waiting'});}
+  });
+  server.requestTimeout=5000;
+  const onSignal=()=>finish('shutdown-no-install');
+  process.once('SIGINT',onSignal);process.once('SIGTERM',onSignal);
+  server.once('close',()=>{clearTimeout(timer);process.off('SIGINT',onSignal);process.off('SIGTERM',onSignal);});
+  server.once('error',error=>{clearTimeout(timer);process.off('SIGINT',onSignal);process.off('SIGTERM',onSignal);output.error(`错误：${error.message}`);process.exitCode=1;});
+  server.listen(0,'127.0.0.1',()=>{
+    origin=`http://127.0.0.1:${server.address().port}`;
+    const browserResult=browser==='system'?openFoundationManagerUrl(origin+'/'):{opened:false,requiredHostAction:'open-returned-loopback-url-in-codex-browser'};
+    output.log(JSON.stringify({status:'AWAITING_FOUNDATION_DIRECTORY_SELECTION',selectionId,url:origin+'/',version:checked.manifest.productVersion,expiresAt,browser:browserResult,installationPerformed:false,skillRegistered:false,next:'在 Codex 内置浏览器打开此页并保持同一任务等待；选择目录不是安装批准。'}));
+    timer=setTimeout(()=>finish('expired-no-install'),Math.max(1,expiresAt-Date.now()));
+  });
+  return server;
 }
 
 export function runFirstInstallBootstrap(output = console, {destination = null, browser = 'system'} = {}) {

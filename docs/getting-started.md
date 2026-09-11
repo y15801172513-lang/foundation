@@ -91,3 +91,37 @@ candidate 顶层入口概念上是：
 普通 Foundation 软件卸载可以 detach 可确认的机器登记，但保留项目源码、身份与 `.foundation/facts`。永久删除 facts 是独立破坏性操作，需要另行计划和确认。
 
 错误恢复先运行只读 `status`、`doctor` 或相应 `recover plan`；不要手改签名状态、复制计划 ID、重放旧确认或删除 lock/journal 绕过流程。完整命令见 [CLI 参考](cli-reference.md)。
+
+## 从产品首页移入的详细记录（035）
+
+## 运行本地开发预览
+
+要求 Node.js `>=20.19.0`。从仓库根运行：
+
+```sh
+npm ci
+npm run preview
+```
+
+预览固定使用 `http://127.0.0.1:4317/`，并在 Foundation 工作台中承载仓库内的 `examples/foundation-events`。它不会安装 Foundation，也不会启用真实产品项目。
+
+查看状态或停止：
+
+```sh
+npm run preview:status
+npm run preview:stop
+```
+
+第一次浏览开发预览建议按[入门指南](getting-started.md)中的“在预览里走一遍产品”进行。实际安装请使用上方对话入口；source-candidate 安装测试仍是 developer/test-only，不能替代真实用户验收。
+
+## 开发检查
+
+```sh
+npm run build
+npm test
+npm run test:browser
+npm run audit:deps
+npm run audit:ui
+```
+
+Windows-only 项目在非 Windows 主机上会标记为不适用；skip 不能当作 Windows 通过。完整 CLI 不在 README 重复，见[CLI 参考](cli-reference.md)。

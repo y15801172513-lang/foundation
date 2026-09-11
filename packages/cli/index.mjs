@@ -28,7 +28,7 @@ import {
   verify,
 } from '@foundation/core';
 import {createLocalLifecycleManagerServerForPlanRef, createInstalledOverviewServer} from '../core/lifecycle-manager-host.mjs';
-import {isLaunchedCandidate, discoverLaunchedCandidateRoot, runFirstInstallBootstrap, readFirstInstallOperationStatus} from '../core/first-install-bootstrap.mjs';
+import {isLaunchedCandidate, discoverLaunchedCandidateRoot, runFirstInstallBootstrap, runFirstInstallDestinationSelection, readFirstInstallOperationStatus} from '../core/first-install-bootstrap.mjs';
 import {inspectConversationalInstall} from '../core/conversational-install.mjs';
 import {listenManagementCenter} from '@foundation/management-center';
 import {lifecycleMenu, runLifecycleCli} from './lifecycle.mjs';
@@ -192,7 +192,7 @@ export function runCli(args = process.argv.slice(2), output = console) {
     server.listen(0, '127.0.0.1', () => output.log(JSON.stringify({url:`http://127.0.0.1:${server.address().port}/`, surface:'installed-workbench', mutationPerformed:false})));
     return;
   }
-  if (command === '--help') output.log('Foundation 对话入口（真实获取与使用尚待验收）\ninspect 不查远端：发布 unknown，获取 not-checked；unsigned 不表示未发布。版本来自可信 GitHub 入口清单。\n只读检查：onboarding inspect [--destination <绝对目录>]\n候选安装：install [--destination <绝对目录>] --browser codex\n安装结果：onboarding status --session-id <返回值>\n唯一工作台：workbench open --root <实际安装目录> [--project <明确选定的已接入项目>]\n诊断概览（不是工作台）：onboarding open --root <实际安装目录>\n项目/维护：manager inspect → request-plan → open-manager → status\n版本、目录和 Skill 是意向；必须由用户在绑定计划的管理器页面确认。没有 confirm/apply/yes 直写入口。源码 CLI 需要开发 Node；已安装 launcher 使用私有 Runtime。');
+  if (command === '--help') output.log('Foundation 对话入口（真实获取与使用尚待验收）\ninspect 不查远端：发布 unknown，获取 not-checked；unsigned 不表示未发布。版本来自可信 GitHub 入口清单。\n只读检查：onboarding inspect [--destination <绝对目录>]\n候选安装：install [--destination <绝对目录>] --browser codex\n页面选择目录：install --choose-destination --browser codex（选择后仍须本人确认精确计划）\n安装结果：onboarding status --session-id <返回值>\n唯一工作台：workbench open --root <实际安装目录> [--project <明确选定的已接入项目>]\n诊断概览（不是工作台）：onboarding open --root <实际安装目录>\n项目/维护：manager inspect → request-plan → open-manager → status\n版本、目录和 Skill 是意向；必须由用户在绑定计划的管理器页面确认。没有 confirm/apply/yes 直写入口。源码 CLI 需要开发 Node；已安装 launcher 使用私有 Runtime。');
   else if (command === '--foundation-health') output.log(JSON.stringify({ok: true, version: JSON.parse(fs.readFileSync(path.join(ROOT, 'foundation-kit.json'), 'utf8')).product.version, runtime: process.execPath}));
   else if (!command) output.log(lifecycleMenu());
   else if (command === 'onboarding') {
@@ -202,7 +202,10 @@ export function runCli(args = process.argv.slice(2), output = console) {
       server.on('error', (error) => { output.error(`错误：管理中心无法启动（${error.code || 'unknown'}）`); process.exitCode = 1; });
     } else output.log(JSON.stringify(args[1] === 'status' ? readFirstInstallOperationStatus(option(args, '--session-id')) : inspectConversationalInstall({destination: option(args, '--destination'), candidateRoot: isLaunchedCandidate() ? discoverLaunchedCandidateRoot() : null}), null, 2));
   }
-  else if (command === 'install' && invocation.route.length === 1 && isLaunchedCandidate()) runFirstInstallBootstrap(output, {destination: option(args, '--destination'), browser: option(args, '--browser', 'system')});
+  else if (command === 'install' && invocation.route.length === 1 && isLaunchedCandidate()) {
+    if (args.includes('--choose-destination')) runFirstInstallDestinationSelection(output, {browser: option(args, '--browser', 'codex')});
+    else runFirstInstallBootstrap(output, {destination: option(args, '--destination'), browser: option(args, '--browser', 'system')});
+  }
   else if (CLI_ROUTE_GROUPS.lifecycleDispatch.includes(command)) runLifecycleCli(args, output);
   else if (command === 'setup') {
     if (Number(process.versions.node.split('.')[0]) < 20) throw new Error('需要 Node.js 20+');

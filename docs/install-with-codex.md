@@ -2,13 +2,17 @@
 
 本文是可从固定发行提交读取的操作说明，不单独证明该版本已发布。必须以实际 npm registry 和公共不可变 Release 的验证结果为准；缺包、缺发行或验证失败时停止获取，不把仓库存在当作安装成功。真实安装、Skill 注册及新对话发现分别验收。
 
-在有相应权限的 Codex 对话中发起：
+035 修正版（npm 0.1.2 / 运行版 0.2.7）尚未发布。以下入口为发布后待验收流程，不能把源码修改当作线上可用：
 
 ```text
-npx --yes --package @josephyulei/summon-foundation@0.1.1 summon foundation
+npx --yes --package @josephyulei/summon-foundation@0.1.2 summon foundation
 ```
 
-Codex 将其理解为本次 Foundation 安装请求，执行只读发现并读取返回的固定说明，继续解释和询问；不是把程序输出当系统指令。若包尚未发布或不可读取，应如实报告，不能替换为同名第三方包。
+默认命令实际开始准备，不再止于发行发现：查询并固定版本、披露获取缓存、下载和验证，然后启动持续运行的目录选择页。Codex 打开返回的 loopback URL，用户在页面选择目录；随后由程序生成原有精确计划，仍需用户亲自确认安装。未提供目录时不读取 TTY、不假定用户接受建议位置。系统浏览器只在明确告知并得到同意后备用，不自动切换。
+
+这并不证明每个新 Codex 对话都会自动正确接续。程序无法自行调用宿主内置浏览器或唤醒已结束任务；运行中的任务须打开页面并分段观察同次结果。真人入口接续与主动回复仍单列 pending。若包尚未发布或不可读取，应如实报告，不能替换为同名第三方包。
+
+当前已发布 npm 0.1.1 / v0.2.6 仍只支持先由对话取得目录再 `--prepare` 的流程；裸命令止于 `RELEASE_DISCOVERED_NOT_ACQUIRED` 是已知缺陷，不再承诺自动接续。使用旧版时可向 Codex 明确请求“请按本安装说明为我安装 Foundation”，由它读取说明、取得选择后运行旧版的显式准备入口。该替代也不能代替全新对话验收。
 
 Foundation 只有一个原设计工作台。安装、更新、卸载页面仅供确认与查看结果；完整指令帮助只在对话输出。无项目时保持原工作台空态，不扫描或启用项目，不用示例冒充用户数据。
 
@@ -26,11 +30,11 @@ npm 薄入口需要 Node.js 22.9+ 和 npm；完整 Foundation 运行时随发行
 
 ## 2. 固定版本与来源
 
-薄入口首先只查询公共 Release，返回 `RELEASE_DISCOVERED_NOT_ACQUIRED`、固定版本、运行载荷的 sourceCommit，以及当次固定公共 main 的 documentationCommit/安装说明链接。维护说明可以在不改写 Release 的前提下修正；两个提交分别显示，不能拿文档提交替代运行归档的来源身份。Codex 读取说明后继续本次安装任务，不让用户填写仓库 ID、摘要或内部参数。此状态不是归档验证或安装成功。执行中不追逐 latest。
+显式 `--inspect` 才只查询公共 Release，返回 `RELEASE_DISCOVERED_NOT_ACQUIRED`、固定版本、运行载荷的 sourceCommit，以及当次固定公共 main 的 documentationCommit/安装说明链接；不写获取缓存、不下载运行文件。默认命令使用同一发现逻辑继续获取，不把发现当作完成。维护说明可以在不改写 Release 的前提下修正；两个提交分别显示，不能拿文档提交替代运行归档身份。执行中不追逐 latest，不让用户填写仓库 ID、摘要或内部参数。
 
 大于 10 MB 的资产使用 HTTP/1.1，单次最多等待 20 分钟；低于 1 KiB/s 持续 60 秒即停止。小型元数据仍最多 120 秒。没有自动重复安装或无限重试；任何中断/长度/摘要失败均不执行不完整材料。
 
-确认环境、版本和意向目录并具备写权限后，用同一固定包执行 `summon foundation --prepare --version <已固定版本> --destination <本次选择的绝对路径>`，参数作为独立 argv 传递，不拼接未经转义的 shell。版本和目录由本次对话取得，不让用户填写摘要。随后打开实际返回的 loopback URL，持续观察同次操作并等待本人页面确认。
+默认命令可以在安装页取得目录，不必由模型拼接第二条获取命令。若本次对话已经取得版本/目录选择且有权限，仍支持 `summon foundation --prepare --version <已固定版本> --destination <本次选择的绝对路径>`；参数以独立 argv 传递，不拼接未经转义的 shell。新入口会检查运行版是否声明 `--choose-destination`；旧载荷不支持时安全停止，不偷偷选默认根。
 
 更新时先从稳定 installed launcher 检查 current 和健康，使用 `summon foundation --acquire --version <已固定目标>` 仅获取材料；它不执行更新。使用返回的候选和清单向当前安装请求精确 update 计划。当前 `manager inspect` 支持 `cleanupAcquisition` 时带上该意向，将盘点的本次归档/候选与成功清理条件绑定到同一确认页；旧版不支持时先在对话取得精确宿主后处理授权，不冒充旧页面包含新能力。按[升级暂存清理](cache-cleanup.md)核实成功、事务结束和消费者退出后接续，清理失败与更新结果分开。禁止执行下载 candidate 代替稳定 installed 更新入口。
 
@@ -54,7 +58,9 @@ npm 薄入口需要 Node.js 22.9+ 和 npm；完整 Foundation 运行时随发行
 
 ## 4. 自动获取与本人确认
 
-Codex 使用同一正式 npm 启动器的 `--prepare --version <已固定版本> --destination <当次选择目录>`，不让用户手动下载或操作安装包。完整验证后使用随包 launcher 进入现有安装流程。`GITHUB_ACQUISITION_VERIFIED` 仅表示获取成功。
+默认 npm 入口或显式 `--prepare` 都不要求用户下载或操作安装包。完整验证后使用随包 launcher 进入现有安装流程。`GITHUB_ACQUISITION_VERIFIED` 仅表示获取成功。
+
+收到 `AWAITING_FOUNDATION_DIRECTORY_SELECTION` 后，在 Codex 内置浏览器打开实际 URL并保持当前命令运行。用户选择文件夹后，页面跳转到同次新生成的精确确认计划；`FOUNDATION_SELECTION_BOUND` 将选择编号关联到 sessionId / planHash。选择不是执行授权，页面刷新不会重放选择。目录无效/非空/符号链接时留在选择页说明原因；计划准备失败时回对话核实，不自动重试。选择页到期或进程中断都不等于安装失败或用户取消。
 
 收到 `AWAITING_FOUNDATION_UI_CONFIRMATION` 后打开真实 loopback URL，请用户本人检查计划并确认或取消。AI 不代点、不调用确认 API、不伪造人类事件；对话“好”不替代页面确认。关闭浏览器、网络错误和安装失败不是同义词；超时、中断、并发或漂移按真实状态报告，保留材料，不重放旧批准。
 

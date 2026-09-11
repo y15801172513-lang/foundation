@@ -1,32 +1,12 @@
-# AI Product Foundation Kit
+# Foundation
 
-v0.2.6 已作为独立公共发行发布，保留用户确认的唯一 Foundation 工作台与仅在对话输出的指令帮助。旧私有发行保持不变；已安装副本须经本人确认更新后才获得新能力。
+让用 AI 做产品的人，说清页面结构、对象关系和准确修改位置。
 
-页面越做越多，仍能说清它由什么组成、和哪里有关，以及这次到底要改哪一处。
+Foundation 是一个本地工作台：把项目已记录的页面、组件、关系、交互与资产放在一起，帮助你告诉 AI「要改哪一处」，并查看已知影响。它不会自动理解所有代码，也不会替你决定修改范围。
 
-AI Product Foundation Kit 把项目中已经记录的页面、组件、关系、交互、资产与变更事实，和接入预览返回的对象上下文，组织成一个本地工作台。它帮助正在用 AI 做产品的人先把对象和影响范围说清楚，再提出更具体的修改任务。
+![Foundation 工作台：示例页面预览与已登记的页面关系](docs/foundation-workbench-example.png)
 
-> 当前仅面向 macOS arm64。[公共 v0.2.6](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.6) 与 [npm 启动器 0.1.1](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.1) 已发布。匿名获取、来源与字节校验、到达隔离确认页已通过；真人安装、Skill 发现及项目接入仍需本人验收。
-
-## 用 Codex 安装
-
-在具备安装目录写权限、不属于源码建设目录的 Codex 对话中发：
-
-```text
-请按照 https://github.com/y15801172513-lang/foundation/blob/main/docs/install-with-codex.md 为我安装 Foundation。
-```
-
-Codex 按[安装说明](docs/install-with-codex.md)查询正式 [GitHub Release](https://github.com/y15801172513-lang/foundation/releases)，固定单次版本、核验来源与文件，再说明环境、目录和写入影响，在内置浏览器展示计划，等你亲自确认。无需 clone 源码或手动操作安装包。npm 薄入口需要 Node/npm（Node ≥22.9）；已安装 Foundation 使用随包运行时。缺工具或权限时先说明，不自动全局安装依赖。公共入口不要求访问开发仓库。
-
-安装后主动询问是否启用 Foundation 对话能力；Skill 注册和项目接入分别确认，不静默捆绑。完整指令帮助只在对话输出。无程序/Skill时的残留处理见[缓存清理说明](docs/cache-cleanup.md)，不依赖已删除 launcher。
-
-已有 Node/npm 的 Codex 任务也可以直接发下面的短命令；它先只读发现，再由对话说明并接续确认，不会静默安装：
-
-```text
-npx --yes --package @josephyulei/summon-foundation@0.1.1 summon foundation
-```
-
-运行文件只从正式版本化 GitHub Release 获取，Actions 临时产物不是最终下载源。公开仓库是审核后的独立快照；日常开发在私有仓库，公开内容不包含内部报告、本机信息或私有历史。采用 GitHub 自带来源证明与摘要校验，不另建发行密钥体系。尚无 Apple Developer ID 签名/公证，不绕过系统安全检查。手动更新、恢复和安全卸载保留，自动更新和 Windows 后置。
+*真实工作台截图，使用仓库内的 foundation-events 隔离示例；不是用户项目，也不是概念图。*
 
 ## 你是不是也遇到这些问题
 
@@ -38,111 +18,57 @@ npx --yes --package @josephyulei/summon-foundation@0.1.1 summon foundation
 | 一个组件用在多处，不知道改了会影响哪里 | 查看已登记组件或资产的已知使用页面、实例和相关变更，并区分修改组件资产还是当前实例 | 已知使用位置不是全部传递依赖的证明，仍需结合代码与验证复核 |
 | 换一次对话就丢掉项目背景 | 把页面、组件、关系、交互、资产和变更等长期事实保存在项目自己的 `.foundation/facts/` | facts 不会凭空保持完整或永远最新；缺失、待确认和冲突会继续显示为缺口 |
 
-## 一次具体的使用方式
 
-下面是一段基于仓库示例 `examples/foundation-events` 的说明性流程；修改要求只是示例，本轮没有执行这次产品修改。
+## 用 Codex 安装
 
-1. 打开开发预览，在 Foundation 工作台中进入一个包含 EventCard 的页面。
-2. 使用“检查对象”选择 EventCard。侧栏会显示它的页面位置、对象层级、组件身份和已知使用位置。
-3. 按任务需要复制“身份与层级”或“完整对象上下文”，再补一句具体目标，例如：“只调整当前 EventCard 的次要信息间距，不改变其他页面上的 EventCard。”
-4. 查看“相关逻辑”和“使用、影响与缺口”，确认哪些页面关系来自已登记 facts，哪些使用位置已知，哪些信息仍待确认。
-5. 把这份上下文交给 AI 或开发者，在真正修改前再次核对代码范围和受影响的已登记使用位置。
-
-这里的“相关逻辑”只由当前对象所在页面的已登记关系，加上触发词与对象名称的匹配得出。它是任务线索，不是完整因果分析。
-
-## 今天可以了解和尝试什么
-
-### 检查页面和对象
-
-本地工作台把页面预览与“页面逻辑”“检查对象”放在同一处。已接入预览可以返回对象稳定身份、角色、组件或实例身份、祖先层级，以及有限的布局和样式摘要；普通页面结构也可以被定位，而不会被伪装成缺失组件。
-
-### 查看已登记的关系和状态变化
-
-“信息与逻辑”画布展示已经登记的页面节点和关系，区分关系草稿、已登记、已验证，以及触发器未绑定、待绑定、已绑定或运行跳转已验证。保存一条关系只会更新关系事实，不会自动实现产品里的运行跳转。
-
-### 准备更具体的任务上下文
-
-对象复制分为“完整对象上下文”“身份与层级”“相关逻辑”“布局与样式”“使用、影响与缺口”。输出包含项目、页面、对象和 facts 版本线索，并给出“建议修改组件资产”或“建议只修改当前位置”的范围提示。它帮助减少含糊描述，但修改者仍需验证代码、运行结果和未登记影响。
-
-### 保存项目自己的长期事实
-
-项目启用后，`.foundation/facts/*.json` 是页面、组件、关系、交互、资产和变更等长期事实的权威来源。安装 Foundation 不会自动扫描、启用或修改产品项目；每个项目保持 `unmanaged`、`enabled`、`disabled` 的显式状态。普通停用或卸载保留项目源码、身份和 facts；永久删除是另一项需要单独确认的破坏性操作。
-
-## 运行本地开发预览
-
-要求 Node.js `>=20.19.0`。从仓库根运行：
-
-```sh
-npm ci
-npm run preview
-```
-
-预览固定使用 `http://127.0.0.1:4317/`，并在 Foundation 工作台中承载仓库内的 `examples/foundation-events`。它不会安装 Foundation，也不会启用真实产品项目。
-
-查看状态或停止：
-
-```sh
-npm run preview:status
-npm run preview:stop
-```
-
-第一次浏览开发预览建议按[入门指南](docs/getting-started.md)中的“在预览里走一遍产品”进行。实际安装请使用上方对话入口；source-candidate 安装测试仍是 developer/test-only，不能替代真实用户验收。
-
-## 当前做到哪里
-
-| 项目 | 当前事实 |
-|---|---|
-| Source / package version | `0.2.6` |
-| 公共发行源码 | `v0.2.6` 绑定 `b1813b463bf58635d71da5f9df6bd37aae036081`；后续文档提交不改变发行身份 |
-| 双仓对应 | 私有源码 `2a801c895918e19c5bf63530fb72419ca9ed7f4a` → 独立公共源码；未公开私有历史 |
-| Public Release / distribution | GitHub 不可变 `v0.2.6` 与 npm `0.1.1` 已发布并回读；旧资产不覆盖 |
-| npm 源码对应 | 私有 `76c22a3353c8303c92eea3794a74a7707e36418d` → 公共 `9cb7808f609b82dfd4ab119cb49daae87cfeadba`；与运行载荷独立递增 |
-| 真实安装 / Skill / 项目接入验收 | 新公共路径均 `pending`，不以隔离工程验证代替本人确认 |
-| macOS 历史使用 | 0.2.2 安装/重开已有用户记录；不是本次公共入口的验收 |
-| Windows 真实机器与分发 | `pending` |
-| 项目数据 | 项目内保存；默认 `unmanaged`；普通停用/卸载保留 |
-
-已接受的 028R3 历史证据包括：私有 `source-equivalent-contained` 351/351、两个 export tree 各 322/322，以及 macOS 浏览器 2 pass / 2 Windows-only skip。它们证明的是当时冻结源码和导出树，不是本次文档提交的新运行，也不替代真实用户、Windows、签名或分发验收。完整状态见[当前状态](docs/current-status.md)和[验证基线](docs/verification-baseline.md)。
-
-## 安全和控制边界
+**修正版待发布**：以下是本地准备的 npm 0.1.2 入口，配套运行版 0.2.7 尚未发布，暂不能复制试用。发布并回读核验后，在一个**不属于源码建设目录、允许写入安装位置的新 Codex 对话**里粘贴：
 
 ```text
-用户表达意图
-→ AI 读取事实或准备计划
-→ Foundation 展示准确范围
-→ 用户在 Foundation 中确认
-→ 确定性程序执行
-→ 验证结果
+npx --yes --package @josephyulei/summon-foundation@0.1.2 summon foundation
 ```
 
-AI 不能自行授权安装、更新、卸载、项目启用/停用或 capability 激活。对话中的“确认”、计划 ID、命令参数和浏览器请求都不能替代 Foundation 中针对本次操作的明确人类确认。AI 可调用面仍只有 `Foundation:inspect`、`Foundation:request-plan`、`Foundation:open-manager`、`Foundation:status`；它们不是 mutation authority。
+当前支持 **macOS Apple Silicon（arm64）**，获取入口需要 **Node.js 22.9+ 与 npm**，以及可用网络、本地命令和浏览器工具。不需要 clone 项目，也不需要自己下载、解包或填写校验参数。缺少依赖或写入权限时先解决前置条件，不会自动全局安装工具。
 
-## 文档地图
+目前已发布的运行版仍是 [v0.2.6](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.6)。npm 0.1.1 的裸短命令只查询发行，**不会自行进入安装准备**。新版会实际下载并准备目录选择页，不再只打印接续提示；但无历史新 Codex 对话是否正确打开页面、持续等待并主动告知结果，仍须真人验收。当前版本与过渡方法见[安装说明](docs/install-with-codex.md)。
 
-- [Codex 安装说明](docs/install-with-codex.md)：公共 Release 获取、目录选择、本人确认、重开和独立 Skill 接入。
-- [入门指南](docs/getting-started.md)：在开发预览中走一遍产品，以及 source-candidate 和项目数据边界。
-- [当前状态](docs/current-status.md)：版本、平台证据和未关闭门。
-- [验证基线](docs/verification-baseline.md)：公开安全的历史测试与导出证据。
-- [数据契约](docs/data-contract.md)：`.foundation/facts` 的记录范围和约束。
-- [架构与安全边界](docs/architecture.md)：本地工作台、确定性执行与授权分层。
-- [CLI 参考](docs/cli-reference.md)：开发者命令、读写范围和恢复路径。
-- [安装平台边界](docs/install-platform-024.md)：source candidate 与真实安装的区别。
-- [第三方声明](THIRD_PARTY_NOTICES.md)：依赖和生成产物的许可证义务。
+### 接下来会发生什么
 
-## 开发检查
+1. 检查环境和正式发行，说明下载缓存及其他写入位置。
+2. 自动下载并校验运行文件；此时只准备材料，还没有安装。
+3. 在安装页选择文件夹（建议位置可以修改），随后查看绑定版本、最终目录和影响范围的计划；不默认使用源码目录，也不覆盖未知已有内容。
+4. 你亲自确认或取消。仅打开页面、在对话说「好」或关闭浏览器，都不代表安装批准。
+5. 安装后核验版本与状态，说明装了什么、在哪里、什么没做，以及下一步。
 
-```sh
-npm run build
-npm test
-npm run test:browser
-npm run audit:deps
-npm run audit:ui
-```
+安装程序使用随包运行时；安装后重开不再依赖系统 Node/npm。页面可以独立展示结果；对话结束后，网页不会自动唤醒它。详情见[安装与结果恢复说明](docs/install-with-codex.md)。
 
-Windows-only 项目在非 Windows 主机上会标记为不适用；skip 不能当作 Windows 通过。完整 CLI 不在 README 重复，见[CLI 参考](docs/cli-reference.md)。
+## 开始使用
 
-## 许可证与公开仓库
+安装成功后，可继续让当前安装对话打开 Foundation。只有一个工作台；安装、更新、卸载页只是临时确认与结果页。
 
-公开仓库的自有代码采用 MIT，见根目录 `LICENSE`；第三方许可和声明保留。私有开发仓库仍为 private。软件许可证、公开范围、公开仓库名称、exact repository identity 和 exact private source commit 是独立核验门；一次明确发布授权覆盖经过这些检查的双仓流程，不允许跳过失败或扩大公开范围。公开快照的 PRIVATE→PUBLIC 提交对应关系可在生成的 provenance 中复核，两库 SHA 不要求相同。
+若希望新对话能识别「打开 Foundation」或「给我 foundation 指令 list」，需要**另行确认启用 Foundation 对话能力（Skill）**。未注册时不能承诺新对话自动发现。完整指令只在对话显示，见[对话指令说明](docs/conversation-commands.md)。
 
-开发树生成的 unsigned source candidate 不是可供普通用户安装的正式 Release；正式入口必须来自对应公共仓库的不可变发行并通过 GitHub 来源证明和完整性校验。本地区分不以独立 Foundation 签名密钥为前置，不冒充 Apple 签名/公证或真人验收。
+再选择一个你想接入的项目。Foundation 会先检查已有信息、展示独立计划，等你确认后才接入；不自动扫描或启用其他项目。没有接入项目时显示空状态，不拿示例冒充你的数据。
+
+一个典型用法：在接入的预览中选中对象，复制其身份、层级及已知关联，再告诉 AI「只调整当前实例，不修改共享组件」。这些信息帮助把任务说具体，实际修改仍须核对代码和结果。页面关系与使用位置只涵盖已登记的信息，不代表完整依赖分析。
+
+## 更新、卸载与数据
+
+- **手动更新**：先检查当前安装，再准备目标版本和独立确认计划；新版发布不等于本机已更新。
+- **失败恢复**：保留真实错误和恢复材料，不重复执行旧批准；先核验结果再继续。
+- **普通卸载**：只处理明确属于 Foundation 的内容，保留项目源码、项目事实和未获准删除的文件，不清空整个文件夹。
+- **下载缓存**：不会凭“安装成功”自动全部删除。升级暂存清理有明确条件；卸载后的回执和[独立清理说明](docs/cache-cleanup.md)仍可读取。
+
+## 当前边界
+
+本地文件 `.foundation/facts/` 保存项目已登记的长期事实；缺失、冲突和待确认的信息仍须补充。Foundation 不保证 AI 自动改对，也不会因安装而接入项目或注册 Skill。
+
+运行文件来自正式版本化 GitHub Release，经过来源证明和字节校验；这不等于 Apple 签名或公证。当前没有 Developer ID 签名/公证，不关闭 Gatekeeper、不移除隔离属性来绕过安全检查。暂不支持 Windows、自动更新或任意未接入网站。
+
+## 进一步了解
+
+- [入门指南](docs/getting-started.md)：示例体验和源码开发预览。
+- [安装说明](docs/install-with-codex.md)：环境、获取、确认、重开和独立 Skill 接入。
+- [当前状态](docs/current-status.md) · [验证基线](docs/verification-baseline.md)：版本对应、工程证据与尚待真人验收的事项。
+- [数据契约](docs/data-contract.md) · [架构与安全](docs/architecture.md) · [CLI 参考](docs/cli-reference.md)：详细实现与开发说明。
+
+公开代码采用 [MIT 许可证](https://github.com/y15801172513-lang/foundation/blob/main/LICENSE)，第三方许可证与声明见[第三方声明](THIRD_PARTY_NOTICES.md)。公共仓库只包含审核后的公开内容；私有开发历史不公开。

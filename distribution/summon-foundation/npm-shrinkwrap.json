@@ -1,12 +1,12 @@
 {
   "name": "@josephyulei/summon-foundation",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "lockfileVersion": 3,
   "requires": true,
   "packages": {
     "": {
       "name": "@josephyulei/summon-foundation",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "license": "MIT",
       "dependencies": {
         "@sigstore/bundle": "4.0.0",

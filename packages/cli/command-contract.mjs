@@ -30,7 +30,7 @@ const routes = [
   {path: ['--foundation-health'], options: {}, positionals: {min: 0, max: 0}},
   {path: ['--help'], options: {}, positionals: {min: 0, max: 0}},
   {path: ['workbench', 'open'], options: {'--root': value(true), '--project': value()}, positionals: {min: 0, max: 0}},
-  {path: ['install'], options: {'--destination': value(), '--browser': value()}, positionals: {min: 0, max: 0}},
+  {path: ['install'], options: {'--destination': value(), '--browser': value(), '--choose-destination': flag()}, positionals: {min: 0, max: 0}},
   {path: ['onboarding', 'inspect'], options: {'--destination': value()}, positionals: {min: 0, max: 0}},
   {path: ['onboarding', 'status'], options: {'--session-id': value(true)}, positionals: {min: 0, max: 0}},
   {path: ['onboarding', 'open'], options: {'--root': value(true)}, positionals: {min: 0, max: 0}},
@@ -144,6 +144,7 @@ export function parseCliInvocation(tokens) {
   for (const [name, specification] of Object.entries(route.options)) if (specification.required && !seen.has(name)) invalid(`missing required option: ${name}${name === '--root' ? '（安装根）' : ''}`);
   if (positionals.length < route.positionals.min || positionals.length > route.positionals.max || positionals.some((p) => !p)) invalid('unexpected/missing positional argument');
   if (parsedOptions['--profile'] === 'custom' && !seen.has('--ai-bridge')) invalid('custom 必须明确选择 --ai-bridge on|off');
+  if (seen.has('--choose-destination') && seen.has('--destination')) invalid('页面选择与预选目录不可同时提供');
   if (route.path[1] === 'plan' && CLI_ROUTE_GROUPS.lifecycleCommands.includes(route.path[0])) {
     if (route.path[0] === 'uninstall' && !seen.has('--mode')) invalid('uninstall 必须指定 --mode');
     if (route.path[0] !== 'uninstall' && seen.has('--mode')) invalid('--mode 仅适用于 uninstall');
