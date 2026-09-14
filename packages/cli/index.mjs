@@ -35,6 +35,7 @@ import {lifecycleMenu, runLifecycleCli} from './lifecycle.mjs';
 import {CLI_ROUTE_GROUPS, parseCliInvocation} from './command-contract.mjs';
 import {conversationHelp} from '../core/conversation-commands.mjs';
 import {readCurrentFoundationRules} from '../core/rules-delivery.mjs';
+import {inspectProjectDelivery} from '../core/project-delivery.mjs';
 import {createInstalledWorkbenchServer} from '@foundation/management-center';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
@@ -62,7 +63,7 @@ function runManagerCli(args, output) {
     const raw = option(args, '--parameters-json', '{}');
     let parameters;
     try { parameters = JSON.parse(raw); } catch { throw new Error('--parameters-json 必须是一个结构化 JSON object'); }
-    return output.log(JSON.stringify(requestLocalLifecyclePlan({operation: option(args, '--operation'), parameters}), null, 2));
+    return output.log(JSON.stringify(requestLocalLifecyclePlan({operation: option(args, '--operation'), parameters, previousPlanRef: option(args, '--previous-plan-ref'), previousSessionId:option(args, '--previous-session-id')}), null, 2));
   }
   if (command === 'status') return output.log(JSON.stringify(readLocalLifecycleOperationStatus({planRef: option(args, '--plan-ref')}), null, 2));
   if (command === 'open-manager') {
@@ -111,6 +112,7 @@ export function upgradeProject(project, {plan} = {}) {
 
 function runProjectCli(args, output) {
   const command = args[1];
+  if (command === 'delivery-check') return output.log(JSON.stringify(inspectProjectDelivery({installationRoot: option(args, '--root'), project: option(args, '--project'), changes: JSON.parse(option(args, '--changes-json')), requirePreview: args.includes('--require-preview')}), null, 2));
   if (command === 'inventory') return output.log(JSON.stringify(inventoryProject(option(args, '--project', args[2]), {installationRoot: option(args, '--root')}), null, 2));
   if (command === 'status') return output.log(JSON.stringify(inspectProjectAuthority(option(args, '--project', args[2]), {installationRoot: option(args, '--root')}), null, 2));
   if (command === 'list') return output.log(JSON.stringify(listProjectAuthorities(option(args, '--root')), null, 2));
@@ -194,7 +196,7 @@ export function runCli(args = process.argv.slice(2), output = console) {
     server.listen(0, '127.0.0.1', () => output.log(JSON.stringify({url:`http://127.0.0.1:${server.address().port}/`, surface:'installed-workbench', mutationPerformed:false})));
     return;
   }
-  if (command === '--help') output.log('Foundation 对话入口（真实获取与使用尚待验收）\ninspect 不查远端：发布 unknown，获取 not-checked；unsigned 不表示未发布。版本来自可信 GitHub 入口清单。\n只读检查：onboarding inspect [--destination <绝对目录>]\n候选安装：install [--destination <绝对目录>] --browser codex\n页面选择目录：install --choose-destination --browser codex（选择后仍须本人确认精确计划）\n安装结果：onboarding status --session-id <返回值>\n唯一工作台：workbench open --root <实际安装目录> [--project <明确选定的已接入项目>]\n诊断概览（不是工作台）：onboarding open --root <实际安装目录>\n项目/维护：manager inspect → request-plan → open-manager → status\n规则只读：rules inspect --root <安装根> [--project <项目>]\n版本、目录和 Skill 是意向；必须由用户在绑定计划的管理器页面确认。没有 confirm/apply/yes 直写入口。源码 CLI 需要开发 Node；已安装 launcher 使用私有 Runtime。');
+  if (command === '--help') output.log('Foundation 对话入口（真实获取与使用尚待验收）\ninspect 不查远端：发布 unknown，获取 not-checked；unsigned 不表示未发布。版本来自可信 GitHub 入口清单。\n只读检查：onboarding inspect [--destination <绝对目录>]\n候选安装：install [--destination <绝对目录>] --browser codex\n页面选择目录：install --choose-destination --browser codex [--journey-id <仅关联展示的标识>]（选择后仍须本人确认精确计划）\n安装结果：onboarding status --session-id <返回值>\n唯一工作台：workbench open --root <实际安装目录> [--project <明确选定的已接入项目>]\n诊断概览（不是工作台）：onboarding open --root <实际安装目录>\n项目/维护：manager inspect → request-plan → open-manager → status\n规则只读：rules inspect --root <安装根> [--project <项目>]\n版本、目录和 Skill 是意向；必须由用户在绑定计划的管理器页面确认。没有 confirm/apply/yes 直写入口。源码 CLI 需要开发 Node；已安装 launcher 使用私有 Runtime。');
   else if (command === '--foundation-health') output.log(JSON.stringify({ok: true, version: JSON.parse(fs.readFileSync(path.join(ROOT, 'foundation-kit.json'), 'utf8')).product.version, runtime: process.execPath}));
   else if (!command) output.log(lifecycleMenu());
   else if (command === 'onboarding') {
@@ -205,7 +207,7 @@ export function runCli(args = process.argv.slice(2), output = console) {
     } else output.log(JSON.stringify(args[1] === 'status' ? readFirstInstallOperationStatus(option(args, '--session-id')) : inspectConversationalInstall({destination: option(args, '--destination'), candidateRoot: isLaunchedCandidate() ? discoverLaunchedCandidateRoot() : null}), null, 2));
   }
   else if (command === 'install' && invocation.route.length === 1 && isLaunchedCandidate()) {
-    if (args.includes('--choose-destination')) runFirstInstallDestinationSelection(output, {browser: option(args, '--browser', 'codex')});
+    if (args.includes('--choose-destination')) runFirstInstallDestinationSelection(output, {browser: option(args, '--browser', 'codex'), journeyId: option(args, '--journey-id', null)});
     else runFirstInstallBootstrap(output, {destination: option(args, '--destination'), browser: option(args, '--browser', 'system')});
   }
   else if (CLI_ROUTE_GROUPS.lifecycleDispatch.includes(command)) runLifecycleCli(args, output);

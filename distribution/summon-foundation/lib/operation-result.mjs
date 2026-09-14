@@ -7,12 +7,14 @@ export function createOperation() {
 }
 // Observations from the verified runtime, never confirmation or execution authority.
 export function runtimeObservation(event) {
-  if(event.status==='AWAITING_FOUNDATION_DIRECTORY_SELECTION')return {phase:'selecting-directory',selectionId:event.selectionId,installationWrites:'none'};
-  if(['FOUNDATION_SELECTION_BOUND','AWAITING_FOUNDATION_UI_CONFIRMATION'].includes(event.status))return {phase:'awaiting-confirmation',sessionId:event.sessionId,planHash:event.planHash,installationWrites:'none'};
+  let confirmationUrl;
+  if(event.url){const url=new URL(event.url);if(url.protocol==='http:'&&url.hostname==='127.0.0.1'&&!url.username&&!url.password)confirmationUrl=url.href;}
+  if(event.status==='AWAITING_FOUNDATION_DIRECTORY_SELECTION')return {phase:'selecting-directory',selectionId:event.selectionId,journeyContext:event.journeyContext,installationWrites:'none',...(confirmationUrl?{confirmationUrl}:{})};
+  if(['FOUNDATION_SELECTION_BOUND','AWAITING_FOUNDATION_UI_CONFIRMATION'].includes(event.status))return {phase:'awaiting-confirmation',...(event.journeyContext?{journeyContext:event.journeyContext}:{}),sessionId:event.sessionId,planHash:event.planHash,installationWrites:'none',...(confirmationUrl?{confirmationUrl}:{})};
   if(event.status==='FOUNDATION_OPERATION_STATE'&&['executing','consumed'].includes(event.state))return {phase:'executing',sessionId:event.sessionId,installationWrites:'possible'};
   if(event.status==='BOOTSTRAP_OPERATION_ENDED'){
     const state=['completed','failed','cancelled','expired'].includes(event.state)?event.state:'verification-required';
-    return {phase:'runtime-ended',state,terminal:state!=='verification-required',sessionId:event.sessionId,installationRoot:event.installationRoot,installationWrites:state==='completed'?'runtime-reported-installed':'unknown',runtimeHealth:event.result?.executableHealth||'unknown',next:'只读核验稳定 installed launcher 或同次 session 结果，不重放确认'};
+    return {phase:'runtime-ended',state,terminal:state!=='verification-required',sessionId:event.sessionId,installationRoot:event.installationRoot,installationWrites:state==='completed'?'runtime-reported-installed':'unknown',runtimeHealth:event.result?.stableLauncherHealth||event.result?.lifecycleResult?.stableLauncherHealth||event.result?.executableHealth||'unknown',journeyContext:event.journeyContext,next:'只读核验稳定 installed launcher 或同次 session 结果，不重放确认'};
   }
   if(['cancelled-no-install','expired-no-install','shutdown-no-install'].includes(event.state))return {phase:'directory-selection-ended',state:event.state,terminal:true,installationWrites:'none'};
   return null;

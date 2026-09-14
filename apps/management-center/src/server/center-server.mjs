@@ -7,7 +7,7 @@ import {createLocalLifecycleManagerServer} from '../../../../packages/core/lifec
 import {workspaceDocument, workspaceModelDocument} from './workspace-document.mjs';
 import {inspectLocalLifecycle} from '@foundation/core';
 import {WORKSPACE_ASSETS} from './workspace-assets.mjs';
-import {readProjectPolicyForDisplay, projectWithEffectivePolicy, validateFacts} from '@foundation/core';
+import {readProjectPolicyForDisplay, projectWithEffectivePolicy, validateFacts, inspectProjectDeliveryFiles} from '@foundation/core';
 
 const DIST_ASSETS = path.resolve(import.meta.dirname, '../../dist/assets');
 const BINARY_ASSETS = path.join(DIST_ASSETS, 'binary');
@@ -199,6 +199,7 @@ export function createManagementCenterServer(project, {installationRoot = null, 
           // Effective display only: never rewrite the historical identity or
           // project preferences to make them agree with a new runtime.
           data.foundation = projectWithEffectivePolicy(data.foundation, readProjectPolicyForDisplay({installationRoot, project: projectRoot}));
+          data.delivery = inspectProjectDeliveryFiles({project:projectRoot});
         }
         return send(res, 200, workspaceDocument(data, preview, {writeNonce}), 'text/html;charset=utf-8');
       } catch (error) { return send(res, 409, JSON.stringify({ok:false,message:error.message,mutationPerformed:false}), 'application/json;charset=utf-8'); }

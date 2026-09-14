@@ -65,7 +65,7 @@ export function readFirstInstallOperationStatus(sessionId) {
     const record = JSON.parse(fs.readFileSync(file, 'utf8'));
     if (record.sessionId !== sessionId) throw bootstrapError('BOOTSTRAP_STATUS_IDENTITY_INVALID', '操作记录与查询编号不一致');
     const visible = visibleLocalManagerSession(record);
-    return {schemaVersion: '1.0.0', sessionId, state: visible.state, recordedState: record.state, operationId: record.operationId, planHash: record.planHash, effectHash: record.effectHash, result: record.result || null, feedback: visible.feedback, recordLocation: file, resultStatus: record.resultStatus || record.result?.status || null, failure: record.failure || null, installationRoot: record.installationRoot || record.bootstrapPreview?.installationRoot || null, targetVersion: record.targetVersion || record.bootstrapPreview?.product?.version || null, mutationPerformed: false, evidence: 'operation-record-not-installation-health-proof', next: visible.feedback.next};
+    return {schemaVersion: '1.0.0', sessionId, journeyContext:record.journeyContext || null, operationTargets:record.operationTargets || null, installId:record.installId || record.result?.current?.identity?.installId || null, state: visible.state, recordedState: record.state, operationId: record.operationId, planHash: record.planHash, effectHash: record.effectHash, result: record.result || null, feedback: visible.feedback, recordLocation: file, resultStatus: record.resultStatus || record.result?.status || null, failure: record.failure || null, installationRoot: record.installationRoot || record.bootstrapPreview?.installationRoot || null, targetVersion: record.targetVersion || record.bootstrapPreview?.product?.version || null, mutationPerformed: false, evidence: 'operation-record-not-installation-health-proof', next: visible.feedback.next};
   }
   return {schemaVersion: '1.0.0', sessionId, state: 'not-found', mutationPerformed: false, next: '记录可能已按保留策略清理；只读检查安装状态，不重放旧批准'};
 }
@@ -262,7 +262,7 @@ export function routeToInstalledAuthority(paths, output = console) {
   output.log(JSON.stringify({ok: true, status: 'ALREADY_INSTALLED_ROUTED_TO_INSTALLED_AUTHORITY', installationRoot: paths.installRoot, installedLauncher, installedResult: JSON.parse(result.stdout), duplicateInstallationCreated: false}, null, 2));
 }
 
-export function runFirstInstallDestinationSelection(output = console, {browser = 'codex'} = {}) {
+export function runFirstInstallDestinationSelection(output = console, {browser = 'codex', journeyId = null} = {}) {
   // Selection is only intent. It cannot consume a manager confirmation or apply.
   const candidateRoot = discoverLaunchedCandidateRoot();
   const checked = validateCandidate(candidateRoot, {platform: process.platform, arch: process.arch, requireRuntime: true});
@@ -270,6 +270,8 @@ export function runFirstInstallDestinationSelection(output = console, {browser =
   classifyFirstInstallCandidateTrust(checked.manifest);
   const paths = resolveFoundationPlatformPaths();
   const selectionId = `selection-${crypto.randomUUID()}`;
+  if (journeyId !== null && !/^[a-zA-Z0-9-]{1,100}$/u.test(journeyId)) throw bootstrapError('JOURNEY_ID_INVALID','流程关联标识无效');
+  const journeyContext = {id:journeyId || selectionId,selectionId,candidateVerified:true,skillChoice:'undecided'};
   const nonce = crypto.randomBytes(32).toString('hex');
   const expiresAt = Date.now() + 10 * 60 * 1000;
   const suggestion = paths.installRoot;
@@ -288,7 +290,7 @@ export function runFirstInstallDestinationSelection(output = console, {browser =
     if (req.headers.host !== new URL(origin).host || !['127.0.0.1','::ffff:127.0.0.1'].includes(req.socket.remoteAddress)) return send(res,403,{message:'仅接受本机原始地址'});
     if (req.method === 'GET' && req.url === '/') {
       if (nextUrl) {res.writeHead(303,{location:nextUrl,'cache-control':'no-store'});res.end();return;}
-      return send(res,200,renderInstallDestinationPage({version:checked.manifest.productVersion,suggestion,acquisitionRoot:path.dirname(candidateRoot),bootstrapStateRoot:paths.bootstrapStateRoot,nonce,expiresAt}),true);
+      return send(res,200,renderInstallDestinationPage({version:checked.manifest.productVersion,suggestion,acquisitionRoot:path.dirname(candidateRoot),bootstrapStateRoot:paths.bootstrapStateRoot,nonce,expiresAt,journeyContext}),true);
     }
     if (req.method !== 'POST' || req.url !== '/__foundation/install/selection') return send(res,404,{message:'页面不存在'});
     if (req.headers.origin !== origin || req.headers['content-type'] !== 'application/json') return send(res,403,{message:'请求来源不符'});
@@ -297,7 +299,7 @@ export function runFirstInstallDestinationSelection(output = console, {browser =
     try {
       for await (const chunk of req) {size+=chunk.length;if(size>8192)throw Error('请求过大');body+=chunk;}
       const choice=JSON.parse(body);
-      if (choice.nonce !== nonce || !['select','cancel'].includes(choice.action) || Object.keys(choice).some(k=>!['nonce','action','destination'].includes(k))) return send(res,403,{message:'选择请求无效'});
+      if (choice.nonce !== nonce || !['select','cancel'].includes(choice.action) || Object.keys(choice).some(k=>!['nonce','action','destination','skillChoice'].includes(k)) || choice.skillChoice !== undefined && !['undecided','selected','skipped'].includes(choice.skillChoice)) return send(res,403,{message:'选择请求无效'});
       // Recheck after the async body read: concurrent submissions must not win twice.
       if (phase !== 'waiting' || Date.now() >= expiresAt) return send(res,409,{message:'选择已处理或过期'});
       if (choice.action === 'cancel') {send(res,200,{message:'已取消，未安装；已下载的缓存保留。'});finish('cancelled-no-install');return;}
@@ -307,10 +309,11 @@ export function runFirstInstallDestinationSelection(output = console, {browser =
       resolveFoundationPlatformPaths({destination:selected.realPath});
       phase='preparing';clearTimeout(timer);
       let manager;
-      try {manager=runFirstInstallBootstrap(output,{destination:selected.realPath,browser:'codex'});}
+      journeyContext.skillChoice=choice.skillChoice || 'undecided';
+      try {manager=runFirstInstallBootstrap(output,{destination:selected.realPath,browser:'codex',journeyContext});}
       catch(error){phase='failed';send(res,409,{message:`计划准备失败，尚未取得安装确认：${error.message}。请在原对话核实，不自动重试。`});output.error(`错误：${error.message}`);process.exitCode=1;server.close();return;}
       if (!manager) {phase='existing-installation';send(res,409,{message:'安装状态已变化；请在原对话核实已有安装。'});server.close();return;}
-      manager.once('listening',()=>{nextUrl=`http://127.0.0.1:${manager.address().port}/`;phase='plan-ready';output.log(JSON.stringify({status:'FOUNDATION_SELECTION_BOUND',selectionId,destination:selected.realPath,url:nextUrl,sessionId:manager.managerSession.sessionId,planHash:manager.managerSession.planHash,installationPerformed:false}));send(res,200,{url:nextUrl});});
+      manager.once('listening',()=>{nextUrl=`http://127.0.0.1:${manager.address().port}/`;phase='plan-ready';output.log(JSON.stringify({status:'FOUNDATION_SELECTION_BOUND',journeyContext,selectionId,destination:selected.realPath,url:nextUrl,sessionId:manager.managerSession.sessionId,planHash:manager.managerSession.planHash,installationPerformed:false}));send(res,200,{url:nextUrl});});
       manager.once('error',()=>{if(!res.writableEnded)send(res,500,{message:'确认服务未能启动，请在原对话核实。'});server.close();});
       manager.once('close',()=>server.close());
     } catch(error) {if(!res.writableEnded)send(res,400,{message:`无法使用这个选择：${error.message}`,retryable:phase==='waiting'});}
@@ -323,13 +326,13 @@ export function runFirstInstallDestinationSelection(output = console, {browser =
   server.listen(0,'127.0.0.1',()=>{
     origin=`http://127.0.0.1:${server.address().port}`;
     const browserResult=browser==='system'?openFoundationManagerUrl(origin+'/'):{opened:false,requiredHostAction:'open-returned-loopback-url-in-codex-browser'};
-    output.log(JSON.stringify({status:'AWAITING_FOUNDATION_DIRECTORY_SELECTION',selectionId,url:origin+'/',version:checked.manifest.productVersion,expiresAt,browser:browserResult,installationPerformed:false,skillRegistered:false,next:'在 Codex 内置浏览器打开此页并保持同一任务等待；选择目录不是安装批准。'}));
+    output.log(JSON.stringify({status:'AWAITING_FOUNDATION_DIRECTORY_SELECTION',journeyContext,selectionId,url:origin+'/',version:checked.manifest.productVersion,expiresAt,browser:browserResult,installationPerformed:false,skillRegistered:false,next:'在 Codex 内置浏览器打开此页并保持同一任务等待；选择目录不是安装批准。'}));
     timer=setTimeout(()=>finish('expired-no-install'),Math.max(1,expiresAt-Date.now()));
   });
   return server;
 }
 
-export function runFirstInstallBootstrap(output = console, {destination = null, browser = 'system'} = {}) {
+export function runFirstInstallBootstrap(output = console, {destination = null, browser = 'system', journeyContext = null} = {}) {
   const prepared = createFirstInstallBootstrapPlan({destination});
   if (prepared.kind === 'installed') return routeToInstalledAuthority(prepared.paths, output);
   if (prepared.kind === 'transfer-installed-authority') {
@@ -344,7 +347,7 @@ export function runFirstInstallBootstrap(output = console, {destination = null, 
   try {
     recovered = recoverAbandonedBootstrapState(prepared.paths.bootstrapStateRoot);
     loadTrustedAuthorityKey({create: true});
-    server = createLocalLifecycleManagerServer({plan: prepared.plan, stateRoot: prepared.paths.bootstrapStateRoot});
+    server = createLocalLifecycleManagerServer({plan: prepared.plan, stateRoot: prepared.paths.bootstrapStateRoot, journeyContext});
   } catch (error) {
     releaseLock();
     throw error;
@@ -367,7 +370,7 @@ export function runFirstInstallBootstrap(output = console, {destination = null, 
     process.off('SIGTERM', onSigterm);
     releaseLock();
     const session = server.managerSession;
-    output.log(JSON.stringify({ok: session.state === 'completed', status: 'BOOTSTRAP_OPERATION_ENDED', sessionId: session.sessionId, state: session.state, result: session.result || null, failure: session.failure || null, installationRoot: prepared.paths.installRoot, next: session.state === 'completed' ? 'verify-installed-launcher-and-current-state' : 'inspect-operation-state-before-retry'}, null, 2));
+    output.log(JSON.stringify({ok: session.state === 'completed', status: 'BOOTSTRAP_OPERATION_ENDED', journeyContext:session.journeyContext, sessionId: session.sessionId, state: session.state, result: session.result || null, failure: session.failure || null, installationRoot: prepared.paths.installRoot, next: session.state === 'completed' ? 'verify-installed-launcher-and-current-state' : 'inspect-operation-state-before-retry'}, null, 2));
   });
   server.listen(0, '127.0.0.1', () => {
     const url = `http://127.0.0.1:${server.address().port}/`;

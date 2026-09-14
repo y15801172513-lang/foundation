@@ -21,11 +21,15 @@ description: 使用 Foundation 制作或维护已接入项目，读取当前制�
 
 ## 制作已接入项目
 
+同一任务明确使用/打开 Foundation 后，相关制作请求继续该选择，直到用户明确改选或退出；不再次询问工具，也不以独立页面替代工作台交付。工具打开不是项目接入批准；按当前规则区分已选、已启用、准备与采用。根目录不明确/多项目混杂时只问必要位置，不猜整个沙盒、安装或缓存目录。关闭页面不撤销项目接入。
+
 完整用户制作规则只来自已验证的 foundation-making.md。先查已有组件/variant/composition/实例和真实引用，明确全局与局部影响；既有项目 preserve-and-inventory，适用的新 React/shadcn 项目才 shadcn-first，用户明确技术栈优先。
 
 代码按任务授权实现。事实维护从 manager inspect 的 supportedProjectOperations 选当前已支持的封闭操作：关系沿用 relation-facts-write；页面、组件、交互、动效、变更和 token 可合并使用 asset-facts-batch。批次包含 documents 的 kind/expectedSha256/upserts、sources 的相对 path/sha256、scope、generatedAt；新增页面路由可同批提供 preview 的 expectedSha256、routes 与 assets，文件也必须包含在 sources；不自行写预览配置。每项映射真实源码，verified 项另绑定验证证据。一次批次一个完整精确计划，不逐按钮审批。机器验证的是字节与引用，不证明语义或真人验收。未支持时说明缺口，不直接写 JSON 绕过。
 
 ## 对话与执行边界
+
+源码完成后按当前规则完成事实批次、必要预览、project delivery-check 与同项目重开。需要工作台查看的页面必须接入预览；不支持时明确该交付缺口。批次取消/失败则“代码完成，Foundation同步待完成”，保留代码并只读重查，不重放或自动回滚。用户不需要手写检查 JSON，任务从明确变化生成输入；文件和摘要检查不证明真人验收。
 
 Foundation 帮助直接在对话输出，不打开 HTML。正常同义表达可用；询问、引用、否定零执行。无 Foundation 上下文的“给我指令”必要时澄清，普通 fd 文件搜索不是本产品命令。“关闭 Foundation”先明确关闭页面、停用项目或卸载的区别。
 

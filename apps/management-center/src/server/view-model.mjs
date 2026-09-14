@@ -8,5 +8,5 @@ export function buildViewModel(data, previewConfig) {
   const entryPage = pages.find((page) => page.entry)?.id || null;
   const facts = {...data, pages: {...data.pages, items: pages}, components: {...data.components, items: components}};
   const assets = projectAssets(facts);
-  return {foundationKit: {productVersion: productVersion(), versionAuthority: 'foundation-kit.json#/product/version'}, project: data.foundation, pages, relations, relationsVersion: relationsVersion(data.relations), components, assets, governance: projectGovernance(data.foundation), changes: data.changes.items, interactions: data.interactions.items, motions: data.motions.items, tokens: data['design-tokens'].items, figma: data.figma.items, entryPage, preview: previewPublicConfig(previewConfig)};
+  return {foundationKit: {productVersion: productVersion(), versionAuthority: 'foundation-kit.json#/product/version'}, project: data.foundation, delivery: data.delivery || null, pages, relations, relationsVersion: relationsVersion(data.relations), components, assets, governance: projectGovernance(data.foundation), changes: data.changes.items, interactions: data.interactions.items, motions: data.motions.items, tokens: data['design-tokens'].items, figma: data.figma.items, entryPage, preview: previewPublicConfig(previewConfig)};
 }

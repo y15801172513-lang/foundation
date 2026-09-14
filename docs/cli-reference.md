@@ -1,5 +1,13 @@
 # CLI 参考
 
+## 038 本地候选接口（尚未发布）
+
+`project delivery-check --root <安装根> --project <精确项目> --changes-json <变化数组> [--require-preview]` 只读比较本次源码摘要、事实映射及需要的静态预览配置；变化为 `{path,sha256}`，删除的摘要为 null。输入由执行任务准备，不要求用户写 JSON。没有通过时报告同步待完成；不自动执行批次，不证明业务语义或实际浏览器通过。
+
+`manager request-plan` 可附 `--previous-plan-ref <同一安装的已有计划>`，只关联已存会话的展示，不继承批准。未知版本/容量保持未知；Skill 操作显示其对象与用户/项目范围，不冒充程序安装。
+
+新版 npm 候选在真实获取前返回只读进度页，仍需 Codex 打开并等待。已发布固定 npm 0.1.3 不含此页；新版薄包及运行包分别完成发布才可使用，不靠修改本文更新旧命令。
+
 ## 036 生命周期收尾（0.2.8 / npm 0.1.3）
 
 npm 0.1.3 的 `summon foundation` 默认准备安装，只有 `--inspect` 是只读发行发现。未给目录时由已验证候选的 `install --choose-destination --browser codex` 打开目录选择阶段；选择只产生意向，下一页仍须本人确认精确计划。`--choose-destination` 与 `--destination` 互斥。系统浏览器不是自动备用，对话是否主动告知仍须真实宿主验收。

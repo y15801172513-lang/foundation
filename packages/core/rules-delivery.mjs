@@ -34,6 +34,7 @@ export function readCurrentFoundationRules({installationRoot, project = null} = 
   const documents = manifest.documents.map(name => ({name, path: path.join(directory, name), content: fs.readFileSync(path.join(directory, name), 'utf8')}));
   let adoption = null;
   if (project) {
+    if (fs.existsSync(path.join(project, 'AGENTS.override.md'))) fail('RULES_PROJECT_OVERRIDE', '项目存在优先用户规则 AGENTS.override.md；先核实冲突，不宣称 Foundation 制作已就绪');
     const file = path.join(project, '.foundation/identity/rules-adoption.json');
     try {
       const stat = fs.lstatSync(file);

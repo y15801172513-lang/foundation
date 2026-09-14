@@ -205,8 +205,8 @@ function writeAtomic(file, content, mode = undefined) {
 }
 
 function normalizeAssetBatch(project, payload) {
-  const kinds = ['pages', 'components', 'interactions', 'motions', 'changes', 'design-tokens'];
-  if (!payload || Object.keys(payload).some(key => !['documents', 'sources', 'scope', 'generatedAt', 'preview'].includes(key)) || !Array.isArray(payload.documents) || !payload.documents.length || payload.documents.length > kinds.length || !Array.isArray(payload.sources) || !payload.sources.length || typeof payload.scope !== 'string' || !payload.scope.trim() || payload.scope.length > 2000) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '资产批次需 documents、sources、精确 scope 和 generatedAt');
+  const kinds = ['pages', 'components', 'interactions', 'motions', 'changes', 'design-tokens', 'relations'];
+  if (!payload || Object.keys(payload).some(key => !['documents', 'sources', 'scope', 'generatedAt', 'preview'].includes(key)) || !Array.isArray(payload.documents) || !payload.documents.length || payload.documents.length > kinds.length || !Array.isArray(payload.sources) || typeof payload.scope !== 'string' || !payload.scope.trim() || payload.scope.length > 2000) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '资产批次需 documents、sources、精确 scope 和 generatedAt');
   iso(payload.generatedAt, 'generatedAt');
   const seen = new Set();
   const sources = payload.sources.map(source => {
@@ -225,21 +225,23 @@ function normalizeAssetBatch(project, payload) {
   const facts = readFacts(project);
   const changedKinds = new Set();
   const documents = payload.documents.map(document => {
-    if (!document || Object.keys(document).some(key => !['kind', 'expectedSha256', 'upserts'].includes(key)) || !kinds.includes(document.kind) || changedKinds.has(document.kind) || !Array.isArray(document.upserts) || !document.upserts.length) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '资产文档类型、重复项或 upserts 无效');
+    if (!document || Object.keys(document).some(key => !['kind', 'expectedSha256', 'upserts', 'removes'].includes(key)) || !kinds.includes(document.kind) || changedKinds.has(document.kind) || !Array.isArray(document.upserts) || (!document.upserts.length && !document.removes?.length) || (document.removes !== undefined && !Array.isArray(document.removes))) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '资产文档类型、重复项或 upserts/removes 无效');
     changedKinds.add(document.kind);
     const relative = `.foundation/facts/${document.kind}.json`;
     const target = safeTarget(project, relative);
     if (!fs.lstatSync(target).isFile() || fs.lstatSync(target).isSymbolicLink() || sha256(fs.readFileSync(target)) !== document.expectedSha256) throw coded('PROJECT_HANDLER_BEFORE_STATE_CHANGED', `资产文档已变化：${relative}`);
     const ids = new Set();
     const existing = facts[document.kind];
-    const items = [...existing.items];
+    const removes = document.removes || [];
+    if (new Set(removes).size !== removes.length || removes.some(id => typeof id !== 'string' || !existing.items.some(item => item.id === id) || document.upserts.some(item => item.id === id))) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '移除项必须精确存在且不能同时 upsert；不删除源码');
+    const items = existing.items.filter(item => !removes.includes(item.id));
     for (const item of document.upserts) {
       if (!item || typeof item.id !== 'string' || !/^[a-zA-Z0-9_-]+$/u.test(item.id) || ids.has(item.id) || typeof item.implementationMapping !== 'string' || !seen.has(item.implementationMapping)) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '每项资产需唯一 ID 及绑定实际源码证据的 implementationMapping');
       ids.add(item.id);
       if (!['unverified', 'verified'].includes(item.verificationStatus)) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '资产验证状态必须明确');
       if (item.verificationStatus === 'verified' && (typeof item.verificationEvidence !== 'string' || !seen.has(item.verificationEvidence))) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '已验证资产需绑定实际验证证据文件；文件摘要不等于真人验收');
       const index = items.findIndex(existingItem => existingItem.id === item.id);
-      const next = {...(index < 0 ? {} : items[index]), ...item, updatedAt: payload.generatedAt};
+      const next = {...(index < 0 ? {} : items[index]), ...item, implementationSha256: sources.find(source => source.path === item.implementationMapping).sha256, updatedAt: payload.generatedAt};
       if (index < 0) items.push(next); else items[index] = next;
     }
     facts[document.kind] = {...existing, items};
@@ -255,9 +257,12 @@ function normalizeAssetBatch(project, payload) {
     preview = JSON.parse(fs.readFileSync(previewFile, 'utf8'));
     if (preview.schemaVersion !== '0.1.0' || preview.mode !== 'local-static' || !Array.isArray(preview.routes) || !Array.isArray(preview.assets)) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '不支持现有预览配置；不覆盖');
     const proposal = payload.preview;
-    if (Object.keys(proposal).some(key => !['expectedSha256', 'routes', 'assets'].includes(key)) || sha256(fs.readFileSync(previewFile)) !== proposal.expectedSha256) throw coded('PROJECT_HANDLER_BEFORE_STATE_CHANGED', '预览映射写前摘要不匹配');
+    if (Object.keys(proposal).some(key => !['expectedSha256', 'routes', 'assets', 'removeRoutes', 'removeAssets'].includes(key)) || sha256(fs.readFileSync(previewFile)) !== proposal.expectedSha256) throw coded('PROJECT_HANDLER_BEFORE_STATE_CHANGED', '预览映射写前摘要不匹配');
     preview = structuredClone(preview);
     for (const kind of ['routes', 'assets']) {
+      const removes = proposal[kind === 'routes' ? 'removeRoutes' : 'removeAssets'] || [];
+      if (!Array.isArray(removes) || new Set(removes).size !== removes.length || removes.some(value => !preview[kind].some(item => item.path === value) || proposal[kind]?.some(item => item.path === value))) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '移除的预览路径必须精确存在且不与本次写入重复');
+      preview[kind] = preview[kind].filter(item => !removes.includes(item.path));
       if (!Array.isArray(proposal[kind])) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '预览映射需 routes 和 assets 数组');
       const paths = new Set();
       for (const entry of proposal[kind]) {

@@ -9,6 +9,7 @@ export * from './identity.mjs';
 export * from './git-identity.mjs';
 export * from './context.mjs';
 export * from './facts.mjs';
+export * from './project-delivery.mjs';
 export * from './governance.mjs';
 export * from './ui-policy.mjs';
 export * from './path-boundary.mjs';

@@ -22,7 +22,8 @@ test('037 actual candidate rules consumer, confirmed adoption, rollback, overrid
   const installationRoot=path.join(root,'installed');
   const candidate={path:built.candidate,manifestHash:manifest.candidateHash,runtimeHash:manifest.files.find(file=>file.path===manifest.runtime.path).sha256,bytes:manifest.totalBytes,version:manifest.productVersion};
   applyLifecycleForTest(createLifecyclePlan({operation:'install',targetRoot:installationRoot,sandboxRoot:root,targetVersion:manifest.productVersion,candidate}));
-  const base=readCurrentFoundationRules({installationRoot});assert.equal(base.ruleVersion,'1.0.0');assert.equal(base.documents.length,2);assert.equal(base.projectRulesReady,false);
+  const sourceRuleVersion=JSON.parse(fs.readFileSync(new URL('../../rules/manifest.json',import.meta.url))).ruleVersion;
+  const base=readCurrentFoundationRules({installationRoot});assert.equal(base.ruleVersion,sourceRuleVersion);assert.equal(base.documents.length,2);assert.equal(base.projectRulesReady,false);
   const project=projectFixturePath(root,'existing-non-shadcn');copyProjectFixture(DEMO,project);enableProjectFixture(project,installationRoot);
   const agents=path.join(project,'AGENTS.md');const original='# User rules\nKeep vanilla JavaScript.\n';fs.writeFileSync(agents,original);
   const prepare=()=>createProjectMutationPlan({operation:'project-rules-adopt',project,installationRoot,handlerPayload:{installationRoot,technology:'preserve',generatedAt:new Date().toISOString()}});
@@ -64,7 +65,7 @@ test('037 actual candidate rules consumer, confirmed adoption, rollback, overrid
     for(const scope of ['page','component','asset']) {const context=buildContextRecord({project:projectView,scope});assert.equal(context.uiPolicy.governanceMode,mode);assert(contextPlainText(context).includes('policy state: ready'));assert.equal(context.uiPolicy.currentIdentityHash,rules.currentIdentityHash);}
     assert.equal(readFacts(target).foundation.uiPolicy.governanceMode,'preserve-and-inventory');
   }
-  const rule=base.documents[0].path,bytes=fs.readFileSync(rule);fs.appendFileSync(rule,'\ntampered');assert.throws(()=>readCurrentFoundationRules({installationRoot}),{code:'RULES_CURRENT_UNAVAILABLE'});fs.writeFileSync(rule,bytes);fs.renameSync(rule,rule+'.missing-fixture');assert.throws(()=>readCurrentFoundationRules({installationRoot}));fs.renameSync(rule+'.missing-fixture',rule);assert.equal(readCurrentFoundationRules({installationRoot}).ruleVersion,'1.0.0');
+  const rule=base.documents[0].path,bytes=fs.readFileSync(rule);fs.appendFileSync(rule,'\ntampered');assert.throws(()=>readCurrentFoundationRules({installationRoot}),{code:'RULES_CURRENT_UNAVAILABLE'});fs.writeFileSync(rule,bytes);fs.renameSync(rule,rule+'.missing-fixture');assert.throws(()=>readCurrentFoundationRules({installationRoot}));fs.renameSync(rule+'.missing-fixture',rule);assert.equal(readCurrentFoundationRules({installationRoot}).ruleVersion,sourceRuleVersion);
   applyProjectForTest(createProjectAuthorityPlan({operation:'disable',project,installationRoot}));assert.throws(()=>readCurrentFoundationRules({installationRoot,project}));assert.deepEqual(JSON.parse(fs.readFileSync(record)).exceptions,adoption.exceptions);assert(fs.readFileSync(agents,'utf8').includes('停用、绑定缺失、安装失效时，本段惰性'));
   fs.writeFileSync(path.join(root,'result.json'),JSON.stringify({engineeringOnly:true,manifestHash:manifest.candidateHash,version:manifest.productVersion,ruleVersion:base.ruleVersion,project,planHash:plan.integrity.hash,hostDiscovery:'pending',realUserConfirmation:false},null,2));
 });

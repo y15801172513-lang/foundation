@@ -12,6 +12,7 @@ import {runWithLocalManagerConfirmation} from './manager-confirmation.mjs';
 import {createPendingLocalManagerSession, inspectLocalLifecycle, replaceDriftedLocalManagerPreviewForInternalHost, resolveLocalManagerPlanRefForInternalHost, revalidateLocalManagerPlan, writeLocalManagerSession} from './lifecycle-manager.mjs';
 import {transferBootstrapAuthorityToInstalledState} from './trusted-authority.mjs';
 import {renderLifecyclePage} from './lifecycle-feedback.mjs';
+import {visibleLocalManagerSession} from './lifecycle-manager.mjs';
 
 const MAX_BOOTSTRAP_TERMINAL_RECORDS = 32;
 
@@ -25,7 +26,7 @@ function send(response, status, body, type = 'application/json; charset=utf-8') 
 }
 
 function page(record, nonce, planRef = null) {
-  return renderLifecyclePage(record.session, nonce, planRef);
+  return renderLifecyclePage(visibleLocalManagerSession(record.session), nonce, planRef);
 }
 function assertRecordUnchanged(record, plan) {
   const diskSession = JSON.parse(fs.readFileSync(record.sessionFile, 'utf8'));
@@ -49,6 +50,8 @@ function finalizeBootstrapRecord(record, stateRoot) {
   pointer.result = record.session.result || null;
   pointer.preserves = record.session.preserves;
   pointer.targetRoots = record.session.targetRoots;
+  pointer.operationTargets = record.session.operationTargets;
+  pointer.journeyContext = record.session.journeyContext;
   pointer.recordLocation = path.join(terminal, `${record.session.sessionId}.json`);
   fs.writeFileSync(path.join(terminal, `${record.session.sessionId}.json`), `${JSON.stringify(pointer, null, 2)}\n`, {mode: 0o600});
   const terminalRecords = fs.readdirSync(terminal).filter((name) => name.endsWith('.json')).map((name) => {
@@ -123,7 +126,7 @@ function serverForRecord({plan, stateRoot, record, planRef = null}) {
       response.flushHeaders();
       const publish = session => {
         if (session.sessionId !== requestedId) return;
-        response.write(`data: ${JSON.stringify(session)}\n\n`);
+        response.write(`data: ${JSON.stringify(visibleLocalManagerSession(session))}\n\n`);
         if (!['pending','executing','consumed'].includes(session.state)) response.end();
       };
       const cleanup = () => { server.off('foundation-operation-state', publish); server.off('foundation-operation-result', publish); };
@@ -136,7 +139,7 @@ function serverForRecord({plan, stateRoot, record, planRef = null}) {
     if (request.method === 'GET' && request.url?.split('?')[0] === '/__foundation/manager/status') {
       const requestedId = new URL(request.url, expectedOrigin).searchParams.get('session-id');
       const record = !requestedId || requestedId === activeRecord.session.sessionId ? activeRecord : priorRecords.get(requestedId);
-      return send(response, record ? 200 : 404, record?.session || {state:'not-found', sessionId:requestedId, mutationPerformed:false});
+      return send(response, record ? 200 : 404, record ? visibleLocalManagerSession(record.session) : {state:'not-found', sessionId:requestedId, mutationPerformed:false});
     }
     if (request.method !== 'POST' || request.url !== '/__foundation/manager/confirm') return send(response, 404, {code: 'MANAGER_ROUTE_NOT_FOUND'});
     if (request.headers.origin !== expectedOrigin) return send(response, 403, {code: 'MANAGER_ORIGIN_REJECTED'});
@@ -222,8 +225,9 @@ function serverForRecord({plan, stateRoot, record, planRef = null}) {
   return server;
 }
 
-export function createLocalLifecycleManagerServer({plan, stateRoot}) {
-  return serverForRecord({plan, stateRoot, record: createPendingLocalManagerSession({plan, stateRoot})});
+export function createLocalLifecycleManagerServer({plan, stateRoot, journeyContext = null}) {
+  const record = createPendingLocalManagerSession({plan, stateRoot, journeyContext});
+  return serverForRecord({plan, stateRoot, record});
 }
 
 export function createLocalLifecycleManagerServerForPlanRef({planRef}) {

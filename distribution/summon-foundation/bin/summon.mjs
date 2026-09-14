@@ -2,8 +2,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {spawn,spawnSync} from 'node:child_process';
-import {inspectRelease,acquireRelease,plainPath} from '../lib/acquire.mjs';
+import {inspectRelease,plainPath} from '../lib/acquire.mjs';
 
+import {acquireInWorker} from '../lib/acquisition-task.mjs';
+import {startProgressPage} from '../lib/progress-page.mjs';
 import {parseSummonArgs} from '../lib/cli-options.mjs';
 import {createOperation,saveOperation,readOperation,runtimeObservation} from '../lib/operation-result.mjs';
 
@@ -37,8 +39,8 @@ function stageDirectory(){
   const stat=fs.lstatSync(cache);if(stat.uid!==process.getuid()||(stat.mode&0o777)!==0o700)fail('获取缓存必须由当前用户独占 0700；不会自动 chmod 已有目录');
   return fs.mkdtempSync(path.join(cache,'acquisition.'));
 }
-let operation=null,stage=null;
-function updateOperation(patch){if(!operation)return;Object.assign(operation,patch,{updatedAt:new Date().toISOString()});const file=saveOperation(operation,stage);console.log(JSON.stringify({status:'FOUNDATION_INSTALL_OPERATION',...operation,resultFile:file,recordSaved:!!file}));}
+let operation=null,stage=null,progressPage=null;
+function updateOperation(patch){if(!operation)return;Object.assign(operation,patch,{updatedAt:new Date().toISOString()});const file=saveOperation(operation,stage);if(file)operation.resultFile=file;progressPage?.publish();console.log(JSON.stringify({status:'FOUNDATION_INSTALL_OPERATION',...operation,resultFile:file,recordSaved:!!file}));}
 async function openInstalledWorkbench(root,env){
   let child;
   try{
@@ -66,25 +68,28 @@ try{
   if(args.prepare||args.acquire)sourceGuard();
   if(args.prepare||args.acquire){operation=createOperation();stage=stageDirectory();updateOperation({});if(!saveOperation(operation,stage))fail('无法在已披露的获取目录保存操作记录；尚未联网或安装');}
   if(args.prepare)console.log('正在准备 Foundation 安装：将查询并固定本次正式版本，说明缓存位置后下载核验。未选目录会在安装页选择；之后仍需本人确认精确计划。请保持当前 Codex 任务等待并打开返回的内置浏览器网址；不会自动改用系统浏览器。');
-  const context=inspectRelease(args.version);
-  const guide=`https://github.com/${context.repository.full_name}/blob/${context.documentationCommit}/docs/install-with-codex.md`;
   if(!args.prepare&&!args.acquire){
+    const context=inspectRelease(args.version);
+    const guide=`https://github.com/${context.repository.full_name}/blob/${context.documentationCommit}/docs/install-with-codex.md`;
     console.log(JSON.stringify({schemaVersion:'1.0.0',status:'RELEASE_DISCOVERED_NOT_ACQUIRED',product:'Foundation',version:context.version,sourceCommit:context.sourceCommit,documentationCommit:context.documentationCommit,repository:context.repository.full_name,guide,installationPerformed:false,skillRegistered:false,
       conversationNextStep:'本次 --inspect 仅查询；未下载、未安装，不自动接续写入。需要安装时由用户发起默认安装入口，并核对当前任务权限。',
       terminalBoundary:'普通终端无法创建或唤醒 Codex 对话；请在有相应权限的 Codex 任务发起安装。',
       acquisition:'尚未下载或验证运行归档。默认入口或 --prepare 执行匿名 GitHub 证明与完整性核验。'},null,2));
   }else{
     if(args.destination)plainPath(args.destination);console.log(`本次独占获取目录：${stage}`);
-    const receipt=await acquireRelease(context,stage,{operationId:operation.operationId,onProgress:download=>updateOperation({download}),onPhase:phase=>updateOperation({phase,version:context.version,sourceCommit:context.sourceCommit})});console.log(JSON.stringify({status:'GITHUB_ACQUISITION_VERIFIED',...receipt,destinationIntent:args.destination}));
+    progressPage=await startProgressPage(()=>operation);
+    updateOperation({progressUrl:progressPage.url});
+    console.log(JSON.stringify({status:'FOUNDATION_ACQUISITION_PROGRESS_PAGE',url:progressPage.url,operationId:operation.operationId,next:'在 Codex 内置浏览器打开同次只读进度页，保持任务等待；不会自动打开系统浏览器。'}));
+    const {context,receipt}=await acquireInWorker({version:args.version,stage,operationId:operation.operationId,onContext:context=>updateOperation({version:context.version,sourceCommit:context.sourceCommit}),onProgress:download=>updateOperation({download}),onPhase:phase=>updateOperation({phase})});console.log(JSON.stringify({status:'GITHUB_ACQUISITION_VERIFIED',...receipt,destinationIntent:args.destination}));
     updateOperation({phase:'acquired',version:context.version,sourceCommit:context.sourceCommit});
-    if(args.acquire){updateOperation({state:'update-input-ready',terminal:true});console.log(JSON.stringify({status:'UPDATE_INPUT_READY_NOT_APPLIED',candidate:path.dirname(receipt.launcher),receipt:path.join(stage,'acquisition.json'),next:'使用当前健康安装的稳定入口生成独立更新计划；本人确认后才更新。获取回执不是删除授权。'}));process.exit(0);}
+    if(args.acquire){updateOperation({state:'update-input-ready',terminal:true});console.log(JSON.stringify({status:'UPDATE_INPUT_READY_NOT_APPLIED',candidate:path.dirname(receipt.launcher),receipt:path.join(stage,'acquisition.json'),next:'使用当前健康安装的稳定入口生成独立更新计划；本人确认后才更新。获取回执不是删除授权。'}));await progressPage.close();progressPage=null;process.exit(0);}
     const env={...process.env};for(const key of ['NODE_OPTIONS','NODE_PATH','NODE_V8_COVERAGE','NODE_REDIRECT_WARNINGS','NODE_COMPILE_CACHE','NODE_COMPILE_CACHE_PORTABLE','NODE_PRESERVE_SYMLINKS'])delete env[key];
+    const supported=spawnSync(receipt.launcher,['--help'],{encoding:'utf8',env,timeout:15000});
     if(!args.destination){
-      const supported=spawnSync(receipt.launcher,['--help'],{encoding:'utf8',env,timeout:15000});
       if(supported.status!==0||!supported.stdout.includes('--choose-destination'))fail('本次发行尚不支持页面选择目录；未启动安装。请由当前对话取得目录后使用明确的 --destination，或等待新版发行，不静默采用默认位置');
     }
     updateOperation({phase:'starting-confirmation-service',installationWrites:'unknown'});
-    const child=spawn(receipt.launcher,['install',...(args.destination?['--destination',args.destination]:['--choose-destination']),'--browser','codex'],{stdio:['inherit','pipe','inherit'],env});
+    const child=spawn(receipt.launcher,['install',...(!args.destination&&supported.stdout?.includes('--journey-id')?['--journey-id',operation.operationId]:[]),...(args.destination?['--destination',args.destination]:['--choose-destination']),'--browser','codex'],{stdio:['inherit','pipe','inherit'],env});
     child.stdout.setEncoding('utf8');
     let pending='',json='';
     child.stdout.on('data',bytes=>{process.stdout.write(bytes);pending+=bytes.toString();if(pending.length>1_000_000){pending='';json='';return;}let end;while((end=pending.indexOf('\n'))>=0){const line=pending.slice(0,end);pending=pending.slice(end+1);if(!json&&!line.trim().startsWith('{'))continue;json+=line+'\n';if(json.length>1_000_000){json='';continue;}let e;try{e=JSON.parse(json)}catch{continue}json='';
@@ -102,4 +107,4 @@ try{
     }
     process.exitCode=ended.code;
   }
-}catch(e){updateOperation({state:operation&&operation.installationWrites!=='none'?'verification-required':'failed',terminal:true,errorCode:['ACQUISITION_TRANSPORT_FAILED','ACQUISITION_VALIDATION_FAILED'].includes(e.code)?e.code:'INSTALL_ENTRY_FAILED',diagnostic:e.diagnostic||null,next:'先核验旧工具进程已结束及同次结果；保留材料，不自动重试或重放安装确认'});const message=String(e.message).replace(/https?:\/\/\S+/g,'[已脱敏网址]').replace(/(?:github_pat_|ghp_|npm_)[A-Za-z0-9_]+/g,'[已脱敏凭据]');console.error(`错误：${message}`);process.exitCode=1;}
+}catch(e){updateOperation({state:operation&&operation.installationWrites!=='none'?'verification-required':'failed',terminal:true,errorCode:['ACQUISITION_TRANSPORT_FAILED','ACQUISITION_VALIDATION_FAILED'].includes(e.code)?e.code:'INSTALL_ENTRY_FAILED',diagnostic:e.diagnostic||null,next:'先核验旧工具进程已结束及同次结果；保留材料，不自动重试或重放安装确认'});const message=String(e.message).replace(/https?:\/\/\S+/g,'[已脱敏网址]').replace(/(?:github_pat_|ghp_|npm_)[A-Za-z0-9_]+/g,'[已脱敏凭据]');console.error(`错误：${message}`);process.exitCode=1;}finally{if(progressPage)await progressPage.close();}

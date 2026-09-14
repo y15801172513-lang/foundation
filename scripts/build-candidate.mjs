@@ -4,6 +4,7 @@ import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {buildCandidate, createFoundationRuntimeDescriptor, productVersion, readRepositoryGitCommit} from '@foundation/core';
 import {thirdPartyNotices} from './third-party-notices.mjs';
+import {auditCapabilityArtifact} from '../packages/core/capability-authority.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const option = (name, fallback) => {
@@ -19,6 +20,8 @@ const COMMIT = readRepositoryGitCommit(ROOT) || 'uncommitted-local';
 const DIRTY = spawnSync('git', ['status', '--short'], {cwd: ROOT, encoding: 'utf8'}).stdout.trim().length > 0;
 const ESBUILD = path.join(ROOT, 'examples', 'foundation-events', 'node_modules', '.bin', 'esbuild');
 const bundledInputs = new Set();
+// Validate the exact bundled Skill before creating any candidate output.
+const capability = auditCapabilityArtifact(path.join(ROOT, 'skills', 'ai-product-foundation-kit', 'capability.json')).manifest;
 
 function copyTree(source, destination, accept = () => true) {
   fs.mkdirSync(destination, {recursive: true});
@@ -102,7 +105,6 @@ const uiNotices = path.join(SOURCE, 'app', 'node_modules', '@foundation', 'manag
 if (!fs.existsSync(uiNotices)) throw new Error('发行缺少管理工作台第三方许可；请先重新构建');
 fs.writeFileSync(path.join(SOURCE, 'app', 'THIRD_PARTY_NOTICES.txt'), `${thirdPartyNotices([...bundledInputs], ROOT)}\n${fs.readFileSync(uiNotices, 'utf8')}`);
 
-const capability = JSON.parse(fs.readFileSync(path.join(ROOT, 'skills', 'ai-product-foundation-kit', 'capability.json'), 'utf8'));
 const runtimeDescriptor = createFoundationRuntimeDescriptor({
   productVersion: VERSION,
   platform: process.platform,

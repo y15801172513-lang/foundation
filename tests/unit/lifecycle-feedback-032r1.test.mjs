@@ -32,7 +32,7 @@ test('032R1 same-session event renders real execution/terminal, wrong session ig
 test('032R1 installation root first; result file inventory stays folded and user residual visible',()=>{
   const s={...session,state:'completed',installationRoot:'/安装',targetRoots:['/缓存','/安装'],lifecycleMode:'full',result:{removed:['versions/hash/internal.js'],residualPaths:['state/internal-hash','user-keep.txt'],preserved:['.foundation/facts']}};
   const dom=new JSDOM(renderLifecyclePage(s,'nonce'),{runScripts:'dangerously'}),d=dom.window.document;
-  assert.equal(d.querySelector('li').textContent,'/安装');
+  assert.equal(d.querySelector('#operation-targets code').textContent,'/安装');
   assert.doesNotMatch(d.querySelector('#result-effects').textContent,/versions\/hash|state\/internal/);
   assert.match(d.querySelector('#result-effects').textContent,/user-keep.txt|项目事实数据/);
   assert.match(d.querySelector('details').textContent,/versions\/hash\/internal.js/);

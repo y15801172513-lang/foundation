@@ -21,6 +21,8 @@ import {authorizationEffectForOfferPreferencePlan, createOfferPreferencePlan} fr
 import {currentManagerStateRoot} from './runtime-surface.mjs';
 import {classifyProcessOwner, observeProcessFingerprint} from './process-owner.mjs';
 import {lifecycleFeedback} from './lifecycle-feedback.mjs';
+import {lifecycleJourney} from './lifecycle-journey.mjs';
+import {readFirstInstallOperationStatus} from './first-install-bootstrap.mjs';
 
 export const LOCAL_LIFECYCLE_MANAGER_VERSION = '1.0.0';
 export const LOCAL_LIFECYCLE_AI_SURFACE = Object.freeze({
@@ -59,7 +61,7 @@ export const LOCAL_LIFECYCLE_AI_TOOLS = Object.freeze({
   'request-plan': Object.freeze({
     name: 'Foundation:request-plan',
     description: '根据一个明确结构化意图计算并验证 exact plan，只把它原子保存到 Foundation-owned pending manager state，返回不透明 planRef 和效果摘要；不修改任何目标。',
-    input: schema({operation: {type: 'string', description: '明确的 lifecycle/project/capability operation'}, parameters: {type: 'object', description: '该 operation 的受约束结构化参数'}}, ['operation', 'parameters']),
+    input: schema({operation: {type: 'string', description: '明确的 lifecycle/project/capability operation'}, parameters: {type: 'object', description: '该 operation 的受约束结构化参数'}, previousPlanRef: {type:'string',description:'可选：同一安装先前操作的 planRef；只读流程关联，不授权下一操作'}, previousSessionId:{type:'string',description:'可选：本机首次安装终态 sessionId，与 previousPlanRef 互斥，只读关联'}}, ['operation', 'parameters']),
     output: schema({planRef: {type: 'string'}, summary: {type: 'object'}, expiresAt: {type: 'integer'}, mutationPerformed: {const: false}, managerStateMutationPerformed: {const: true}}, ['planRef', 'summary', 'expiresAt', 'mutationPerformed', 'managerStateMutationPerformed']),
     errors: Object.freeze([error('MANAGER_OPERATION_UNSUPPORTED', false, '改用已列出的 exact operation 或先 inspect'), error('MANAGER_RUNTIME_STATE_UNAVAILABLE', true, '从当前 healthy Foundation 安装重新运行'), error('MANAGER_PLAN_INVALID', true, '刷新只读状态并重新请求计划')]),
   }),
@@ -174,7 +176,7 @@ function projectIdentitiesForPlan(plan) {
   })).filter((entry) => entry.path);
 }
 
-export function createPendingLocalManagerSession({plan, stateRoot, now = Date.now()}) {
+export function createPendingLocalManagerSession({plan, stateRoot, now = Date.now(), journeyContext = null}) {
   const root = assertStateRoot(stateRoot, {plan});
   const hash = planHash(plan);
   if (!Number.isInteger(plan.expiresAt) || now > plan.expiresAt) throw managerError('MANAGER_PLAN_EXPIRED', 'exact plan 已过期');
@@ -183,9 +185,23 @@ export function createPendingLocalManagerSession({plan, stateRoot, now = Date.no
   const sessionId = `manager-session-${crypto.randomUUID()}`;
   const session = {
     schemaVersion: LOCAL_LIFECYCLE_MANAGER_VERSION,
+    journeyContext,
     sessionId,
     operationId: plan.operationId || plan.planId,
+    installId: plan.installId || null,
     operation: plan.operation,
+    scope: plan.codexIntegration?.scope || plan.codexRemoval?.scope || plan.scope || (plan.projectScoped ? 'project' : plan.capabilityId ? 'installation' : null),
+    projectId: plan.projectId || null,
+    capabilityId: plan.capabilityId || null,
+    capabilityType: plan.capabilityType || null,
+    skillRefresh: Boolean(plan.codexIntegration?.refresh),
+    operationTargets: {
+      program: plan.targetRoot || plan.installationRoot || plan.lifecyclePlan?.targetRoot || null,
+      skill: plan.codexIntegration?.destination || plan.codexRemoval?.destination || null,
+      project: plan.project || null,
+      records: root,
+      acquisition: plan.bootstrap?.candidate?.root || null,
+    },
     planHash: hash,
     effectHash: effect.effectHash,
     effect,
@@ -196,8 +212,8 @@ export function createPendingLocalManagerSession({plan, stateRoot, now = Date.no
     replacements: stringList(plan, 'replacements', 'changes'),
     deletes: stringList(plan, 'deletes', 'removals'),
     preserves: stringList(plan, 'preserves'),
-    fileCount: Number.isInteger(plan.fileCount) ? plan.fileCount : Number(plan.candidate?.fileCount || 0),
-    byteCount: Number.isInteger(plan.byteCount) ? plan.byteCount : Number(plan.candidate?.bytes || plan.impact?.diskBytes || 0),
+    fileCount: Number.isInteger(plan.fileCount) ? plan.fileCount : plan.candidate?.fileCount ?? null,
+    byteCount: Number.isInteger(plan.byteCount) ? plan.byteCount : plan.candidate?.bytes ?? plan.impact?.diskBytes ?? null,
     protectedDataHashes: plan.protectedDataHashes || {},
     residuals: Array.isArray(plan.residuals) ? plan.residuals : [],
     expectedBeforeState: plan.expectedBeforeState || effect.expectedBeforeState,
@@ -246,8 +262,26 @@ export function visibleLocalManagerSession(session, now = Date.now()) {
   if (['executing', 'consumed'].includes(state) && classifyProcessOwner(session.owner) !== 'live') state = 'verification-required';
   if (state === 'pending' && now > session.expiresAt) state = 'expired';
   else if (state === 'pending' && session.owner && classifyProcessOwner(session.owner) !== 'live') state = 'verification-required';
-  const visible = {...session, state, recordedState: session.state};
-  return {...visible, feedback: lifecycleFeedback(visible)};
+  const previousSteps = (session.journeyRefs || []).map(reference => {
+    try {
+      if (reference.bootstrapSessionId) {
+        const record = readFirstInstallOperationStatus(reference.bootstrapSessionId);
+        if (!session.installationRoot || record.installationRoot !== session.installationRoot || !record.planHash || session.installId && record.result?.current?.identity?.installId && session.installId !== record.result.current.identity.installId) throw new Error('首次安装关联不一致');
+        return {...record,operation:'install'};
+      }
+      const root = assertStateRoot(path.dirname(path.dirname(session.recordLocation)));
+      const previous = readPending(root, validatePlanRef(reference.planRef)).record;
+      if (previous.sessionId !== reference.sessionId || !/^manager-session-[0-9a-f-]+$/u.test(reference.sessionId)) throw new Error('关联会话失效');
+      const file = path.join(root, 'sessions', `${reference.sessionId}.json`);
+      if (!fs.lstatSync(file).isFile() || fs.lstatSync(file).isSymbolicLink()) throw new Error('关联记录不安全');
+      const record = JSON.parse(fs.readFileSync(file, 'utf8'));
+      if (record.sessionId !== reference.sessionId || record.planHash !== previous.planHash || record.installationRoot !== session.installationRoot || session.installId && record.installId && session.installId!==record.installId) throw new Error('关联身份不一致');
+      const {journeyRefs:_refs,previousSteps:_steps,...single} = record;
+      return visibleLocalManagerSession(single, now);
+    } catch { return {sessionId:reference.sessionId,state:'verification-required',operation:'unknown',recordLocation:'原步骤记录不可核实'}; }
+  });
+  const visible = {...session, state, recordedState: session.state, previousSteps};
+  return {...visible, feedback: lifecycleFeedback(visible), journey:lifecycleJourney(visible)};
 }
 
 export function revalidateLocalManagerPlan(plan, {now = Date.now(), consumedEffectHashes = []} = {}) {
@@ -348,18 +382,34 @@ function readPending(root, planRef) {
 
 function planSummary(plan) {
   const effect = managerEffectForPlan(plan);
-  return Object.freeze({operation: plan.operation, operationId: plan.operationId || plan.planId, planHash: plan.integrity.hash, targetRoots: targetRoots(effect), creates: stringList(plan, 'creates'), replacements: stringList(plan, 'replacements', 'changes'), deletes: stringList(plan, 'deletes', 'removals'), preserves: stringList(plan, 'preserves'), fileCount: Number.isInteger(plan.fileCount) ? plan.fileCount : Number(plan.candidate?.fileCount || 0), byteCount: Number.isInteger(plan.byteCount) ? plan.byteCount : Number(plan.candidate?.bytes || plan.impact?.diskBytes || 0), residuals: Array.isArray(plan.residuals) ? structuredClone(plan.residuals) : []});
+  return Object.freeze({operation: plan.operation, operationId: plan.operationId || plan.planId, planHash: plan.integrity.hash, targetRoots: targetRoots(effect), creates: stringList(plan, 'creates'), replacements: stringList(plan, 'replacements', 'changes'), deletes: stringList(plan, 'deletes', 'removals'), preserves: stringList(plan, 'preserves'), fileCount: Number.isInteger(plan.fileCount) ? plan.fileCount : (plan.candidate?.fileCount ?? null), byteCount: Number.isInteger(plan.byteCount) ? plan.byteCount : (plan.candidate?.bytes ?? plan.impact?.diskBytes ?? null), residuals: Array.isArray(plan.residuals) ? structuredClone(plan.residuals) : []});
 }
 
-function storeRequestedPlan({operation, parameters = {}} = {}) {
+function storeRequestedPlan({operation, parameters = {}, previousPlanRef = null, previousSessionId = null} = {}) {
   if (typeof operation !== 'string' || !operation) throw managerError('MANAGER_OPERATION_REQUIRED', 'request-plan 需要一个明确 operation');
   const requestParameters = structuredClone(parameters);
   if (operation === 'uninstall' && !Array.isArray(requestParameters.projects)) requestParameters.projects = listProjectAuthorityRecords(requestParameters.targetRoot);
   const plan = buildRequestedPlan(operation, requestParameters);
   planHash(plan);
   const stateRoot = assertStateRoot(currentManagerStateRoot(), {plan});
+  let journeyRefs = [];
+  if (previousPlanRef && previousSessionId) throw managerError('MANAGER_JOURNEY_IDENTITY_MISMATCH', '只选择一个上一步操作');
+  if (previousSessionId) {
+    const previous = readFirstInstallOperationStatus(previousSessionId);
+    const root = plan.installationRoot || plan.targetRoot || plan.lifecyclePlan?.targetRoot;
+    if (!root || previous.installationRoot !== root || !previous.planHash) throw managerError('MANAGER_JOURNEY_IDENTITY_MISMATCH', '首次安装步骤必须属于同一安装');
+    journeyRefs = [{bootstrapSessionId:previousSessionId}];
+  }
+  if (previousPlanRef) {
+    const previous = readPending(stateRoot, validatePlanRef(previousPlanRef)).record;
+    const root = plan.installationRoot || plan.targetRoot || plan.lifecyclePlan?.targetRoot;
+    const previousRoot = previous.plan.installationRoot || previous.plan.targetRoot || previous.plan.lifecyclePlan?.targetRoot;
+    if (!root || root !== previousRoot || !previous.sessionId) throw managerError('MANAGER_JOURNEY_IDENTITY_MISMATCH', '流程关联必须来自同一安装的已有会话；不授予下一步批准');
+    journeyRefs = [...(previous.journeyRefs || []), {planRef:previousPlanRef,sessionId:previous.sessionId}];
+    if (journeyRefs.length > 16) throw managerError('MANAGER_JOURNEY_LIMIT', '本次关联步骤超过 16 项，请独立核实新操作');
+  }
   const planRef = `foundation-plan-${crypto.randomBytes(32).toString('hex')}`;
-  const record = {schemaVersion: LOCAL_LIFECYCLE_MANAGER_VERSION, planRef, planHash: plan.integrity.hash, operation: plan.operation, requestParameters, createdAt: Date.now(), expiresAt: plan.expiresAt, state: 'pending', plan};
+  const record = {schemaVersion: LOCAL_LIFECYCLE_MANAGER_VERSION, planRef, planHash: plan.integrity.hash, operation: plan.operation, requestParameters, journeyRefs, createdAt: Date.now(), expiresAt: plan.expiresAt, state: 'pending', plan};
   atomicJson(pendingFile(stateRoot, planRef), record);
   return {stateRoot, plan, record, publicResult: {schemaVersion: LOCAL_LIFECYCLE_MANAGER_VERSION, planRef, summary: planSummary(plan), expiresAt: plan.expiresAt, aiMayApply: false, next: 'open-manager', mutationPerformed: false, managerStateMutationPerformed: true}};
 }
@@ -376,6 +426,7 @@ export function resolveLocalManagerPlanRefForInternalHost(input = {}) {
   if (Date.now() > pending.expiresAt) throw managerError('MANAGER_PLAN_EXPIRED', 'pending exact plan 已过期；请刷新检查并生成新计划');
   if (pending.state !== 'pending') throw managerError('MANAGER_PLAN_ALREADY_OPENED', '该 planRef 已建立 manager session；请只读查询 status', {state: pending.state, sessionId: pending.sessionId || null});
   const session = createPendingLocalManagerSession({plan: pending.plan, stateRoot});
+  if (pending.journeyRefs?.length) writeLocalManagerSession(session, {journeyRefs:pending.journeyRefs});
   const updated = {...pending, state: 'preview', openedAt: Date.now(), sessionId: session.session.sessionId};
   atomicJson(file, updated);
   return {schemaVersion: LOCAL_LIFECYCLE_MANAGER_VERSION, planRef, sessionId: session.session.sessionId, state: 'preview', mutationPerformed: false, managerStateMutationPerformed: true, internal: {record: session, plan: pending.plan, stateRoot, pendingFile: file}};
@@ -394,7 +445,7 @@ export function replaceDriftedLocalManagerPreviewForInternalHost(input = {}) {
   if (previous.state !== 'preview' || !previous.requestParameters) throw managerError('MANAGER_DRIFT_REPLAN_UNAVAILABLE', '旧 preview 不包含可重新验证的原始 exact intent；请重新 request-plan');
   const parameters = structuredClone(previous.requestParameters);
   delete parameters.now;
-  const replacement = storeRequestedPlan({operation: previous.operation, parameters});
+  const replacement = storeRequestedPlan({operation: previous.operation, parameters, previousPlanRef:previous.journeyRefs?.at(-1)?.planRef || null, previousSessionId:previous.journeyRefs?.at(-1)?.bootstrapSessionId || null});
   const opened = resolveLocalManagerPlanRefForInternalHost({planRef: replacement.publicResult.planRef});
   return {previousPlanRef: planRef, ...opened};
 }
@@ -408,5 +459,5 @@ export function readLocalLifecycleOperationStatus(input = {}) {
   const session = readLocalLifecycleStatus({stateRoot, sessionId: pending.sessionId});
   const visibleSessionState = session.state === 'pending' && pending.state === 'preview' ? 'preview' : session.state;
   const state = Date.now() > pending.expiresAt && ['pending', 'preview'].includes(visibleSessionState) ? 'expired' : visibleSessionState;
-  return {schemaVersion: LOCAL_LIFECYCLE_MANAGER_VERSION, planRef, sessionId: pending.sessionId, state, result: session.result || null, failure: session.failure || null, feedback: session.feedback, recordLocation: session.recordLocation, expiresAt: pending.expiresAt, mutationPerformed: false, recovery: ['failed','verification-required'].includes(state) ? session.failure?.recovery || '只读核实当前安装与操作记录，不自动重试' : state === 'expired' ? '刷新 inspect 并生成新计划' : null};
+  return {schemaVersion: LOCAL_LIFECYCLE_MANAGER_VERSION, planRef, sessionId: pending.sessionId, state, result: session.result || null, failure: session.failure || null, feedback: session.feedback, journey:session.journey, recordLocation: session.recordLocation, expiresAt: pending.expiresAt, mutationPerformed: false, recovery: ['failed','verification-required'].includes(state) ? session.failure?.recovery || '只读核实当前安装与操作记录，不自动重试' : state === 'expired' ? '刷新 inspect 并生成新计划' : null};
 }
