@@ -2,8 +2,8 @@
   "schemaVersion": "2.0.0",
   "exportContractSchemaVersion": "2.0.0",
   "exportContractSha256": "554d97881422f5a4218c05106e93dbff74edf7a041d21f8dfa804a35db67667c",
-  "sourceCommit": "c2a0d16dfb2e753ae93f3476d797fbb1075a13ea",
-  "approvedSourceCommit": "c2a0d16dfb2e753ae93f3476d797fbb1075a13ea",
+  "sourceCommit": "68cc38fcb0f17f4046b4d5900f14b7314b3c7e93",
+  "approvedSourceCommit": "68cc38fcb0f17f4046b4d5900f14b7314b3c7e93",
   "sourceState": "clean-exact-commit-approved",
   "productVersion": "0.2.10",
   "licenseStatus": "approved",
@@ -14,17 +14,17 @@
   "publicationEligible": true,
   "commitBinding": {
     "schemaVersion": "2.0.0",
-    "approvedCommit": "c2a0d16dfb2e753ae93f3476d797fbb1075a13ea",
-    "gitTree": "b9d59283269138f3a5705fb1fef8785a1073d975",
+    "approvedCommit": "68cc38fcb0f17f4046b4d5900f14b7314b3c7e93",
+    "gitTree": "266f96bf2b366e01fbbb620f884dcef41af44cb0",
     "contractSha256": "554d97881422f5a4218c05106e93dbff74edf7a041d21f8dfa804a35db67667c",
-    "expectedTreeHash": "fd9915f3ee77a8d9764aa53396e26ca1a820e670cfb52a5eb3ec888faa19eb19",
+    "expectedTreeHash": "145640bda7800a04ba58fde0d642d42f41f3c3754d4b2edf5162c8ff73b05b1b",
     "fileCount": 363
   },
   "fileCount": 365,
   "privateExportedCount": 363,
   "generatedPublicCount": 2,
-  "treeHash": "fd9915f3ee77a8d9764aa53396e26ca1a820e670cfb52a5eb3ec888faa19eb19",
-  "inventoryHash": "5f0232d5014eb236cd58b1dde13a4da125dc5b6bdc9f60b73c151afcd8cb4ae3",
+  "treeHash": "145640bda7800a04ba58fde0d642d42f41f3c3754d4b2edf5162c8ff73b05b1b",
+  "inventoryHash": "9ccf197ef6c684fe0134de913ca8b37a147236c576fe83826b2e39d85cf67178",
   "files": [
     {
       "path": ".gitignore",
@@ -47,15 +47,15 @@
       "type": "file",
       "mode": 420,
       "bytes": 1082,
-      "sha256": "8e7f1bab44d0eb5655e9f37b14e3bb48b0efbb99c8857c5f36305903376429ad",
+      "sha256": "dadfcd67a547ad6a48175a48c62478579dd04adf5421b3fd8dfa231a1540c74a",
       "ownership": "generated-public"
     },
     {
       "path": "README.md",
       "type": "file",
       "mode": 420,
-      "bytes": 7664,
-      "sha256": "85369256e900e044a92305693482da93d4b047d30d2bb6a8040ab9a3e11878db",
+      "bytes": 7676,
+      "sha256": "bd0d925ccdd92a12038fcbe27dac8da9bac992fdd3848ed27db817cafbd03503",
       "ownership": "private-exported"
     },
     {
@@ -542,8 +542,8 @@
       "path": "distribution/summon-foundation/README.md",
       "type": "file",
       "mode": 420,
-      "bytes": 3530,
-      "sha256": "cc90b8b7324280071c9e11af6d116b3a8e08266d7d57ad837b0cb933fffe54e9",
+      "bytes": 3510,
+      "sha256": "9d522320fe1e1506ef166f79de9874b4fb599a6ec75f6464fa449fdbb29e60c0",
       "ownership": "private-exported"
     },
     {
@@ -686,8 +686,8 @@
       "path": "docs/cli-reference.md",
       "type": "file",
       "mode": 420,
-      "bytes": 12927,
-      "sha256": "90f483b0a270acdc4f237509c7f7cc2f30ae5ac717d3c4d4cb85ec91b5e670a5",
+      "bytes": 12978,
+      "sha256": "67abb3a515053e44aa6591422ac3382600b448d6e5aba5a9230a59e107a6dcff",
       "ownership": "private-exported"
     },
     {
@@ -718,8 +718,8 @@
       "path": "docs/current-status.md",
       "type": "file",
       "mode": 420,
-      "bytes": 7629,
-      "sha256": "458a4ab77b839b3cf37ba06a0005f3eabac0444ae11fd3b1a34866a22cab7f8a",
+      "bytes": 8810,
+      "sha256": "c3f3f642dafc125c746d6bb0fc8ff16a835bc9e4deefc283f317ac270592be28",
       "ownership": "private-exported"
     },
     {
@@ -766,8 +766,8 @@
       "path": "docs/install-with-codex.md",
       "type": "file",
       "mode": 420,
-      "bytes": 19754,
-      "sha256": "28546a10d6f8a51228228425e79080219fdbae8e42a4e763580ae808c622d221",
+      "bytes": 19772,
+      "sha256": "5de5a97b7c7167fbe33844444708ebb9b4dd49ae19190ec7f4d1af062bd7f51a",
       "ownership": "private-exported"
     },
     {
@@ -782,8 +782,8 @@
       "path": "docs/verification-baseline.md",
       "type": "file",
       "mode": 420,
-      "bytes": 4651,
-      "sha256": "e00d210d5616ab163e3cb343b934d5c285d6fb38491612fb4add7a4d240d95d9",
+      "bytes": 5887,
+      "sha256": "5bb0426fb2e29c565065689b9fbbe53b16471112e2289b43c443eb71a7cfdfa9",
       "ownership": "private-exported"
     },
     {
