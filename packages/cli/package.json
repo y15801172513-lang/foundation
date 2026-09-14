@@ -1,6 +1,6 @@
 {
   "name": "@foundation/cli",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "private": true,
   "type": "module",
   "bin": {
@@ -10,7 +10,7 @@
     ".": "./index.mjs"
   },
   "dependencies": {
-    "@foundation/core": "0.2.8",
-    "@foundation/management-center": "0.2.8"
+    "@foundation/core": "0.2.9",
+    "@foundation/management-center": "0.2.9"
   }
 }

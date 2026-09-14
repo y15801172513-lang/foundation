@@ -44,7 +44,9 @@ test('列表比较字段由类型能力驱动，不拼接通用治理字段', ()
 });
 
 test('真实资产预览合同区分 iframe、缺少上下文与不支持类型', () => {
-  assert.deepEqual(assetPreviewContract(assets[0]), {status: 'iframe', route: '/events'});
+  assert.equal(assetPreviewContract(assets[0]).status, 'missing-context');
+  assert.deepEqual(assetPreviewContract({...assets[0], previewRoute:'/events'}), {status: 'iframe', route: '/events'});
+  assert.equal(assetPreviewContract({...assets[0], previewRoute:'//other.example'}).status, 'missing-context');
   assert.equal(assetPreviewContract(assets[1]).status, 'missing-context');
   assert.equal(assetPreviewContract(assets[2]).status, 'unsupported');
 });

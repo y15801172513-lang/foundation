@@ -18,7 +18,10 @@ test('032R1 one catalog, six conversation-only intents, help independent of inst
 });
 
 test('032R1 static guidance covers semantic corpus and zero-action boundaries (not host semantics evidence)', () => {
-  const skill=fs.readFileSync(new URL('../../skills/ai-product-foundation-kit/SKILL.md',import.meta.url),'utf8');
+  const thin=fs.readFileSync(new URL('../../skills/ai-product-foundation-kit/SKILL.md',import.meta.url),'utf8');
+  assert.match(thin,/rules inspect/);
+  assert.match(thin,/lifecycle-guide\.md/);
+  const skill=thin+'\n'+fs.readFileSync(new URL('../../rules/lifecycle-guide.md',import.meta.url),'utf8');
   for(const text of ['给我foundation指令list','Foundation 有哪些命令','Foundation 怎么用','Foundation 能做什么','fd help','给我指令','不要卸载，只给我命令','更新会删除什么','多工具','不是有限关键词','缺注册记录时仍可解释','不扫描','同一记录','不要在此发送 final','capability-uninstall','capability-register']) assert.ok(skill.includes(text),text);
   assert.match(skill,/旧安装.*未声明 workbench/);
   assert.match(skill,/installed current/);

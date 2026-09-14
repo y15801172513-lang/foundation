@@ -12,7 +12,7 @@ import {probeDiskAvailableBytes} from './platform-bootstrap.mjs';
 import {resolveFoundationPlatformPaths} from './platform-paths.mjs';
 import {openFoundationManagerUrl} from './browser-launch.mjs';
 import {renderInstallDestinationPage} from './lifecycle-feedback.mjs';
-import {inspectInstallDestination} from './install-destination.mjs';
+import {inspectInstallDestination, normalizeInstallDestinationInput} from './install-destination.mjs';
 import {sanitizeNodeStartupEnvironment} from './node-startup-environment.mjs';
 import {activateFirstInstallBootstrapAuthority, deriveTrustedLifecycleAuthority, loadTrustedAuthorityKey, transferBootstrapAuthorityToInstalledState, verifyTrustedPayload} from './trusted-authority.mjs';
 import {classifyProcessOwner, observeProcessFingerprint} from './process-owner.mjs';
@@ -301,7 +301,7 @@ export function runFirstInstallDestinationSelection(output = console, {browser =
       // Recheck after the async body read: concurrent submissions must not win twice.
       if (phase !== 'waiting' || Date.now() >= expiresAt) return send(res,409,{message:'选择已处理或过期'});
       if (choice.action === 'cancel') {send(res,200,{message:'已取消，未安装；已下载的缓存保留。'});finish('cancelled-no-install');return;}
-      const selected=inspectInstallDestination(choice.destination,{requiredBytes:checked.manifest.totalBytes});
+      const selected=inspectInstallDestination(normalizeInstallDestinationInput(choice.destination),{requiredBytes:checked.manifest.totalBytes});
       if (!selected.empty) return send(res,409,{message:'文件夹已有内容；不会覆盖，请选择空文件夹。',retryable:true});
       // Check the real parent and overlap before any bootstrap state is created.
       resolveFoundationPlatformPaths({destination:selected.realPath});

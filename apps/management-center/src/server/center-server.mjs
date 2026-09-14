@@ -5,8 +5,9 @@ import crypto from 'node:crypto';
 import {assertProjectMutationAuthority, createProjectMutationPlan, readFacts, readPreviewConfig, readRepositoryGitCommit, realProject, relationsVersion, verify} from '@foundation/core';
 import {createLocalLifecycleManagerServer} from '../../../../packages/core/lifecycle-manager-host.mjs';
 import {workspaceDocument, workspaceModelDocument} from './workspace-document.mjs';
-import {inspectLocalLifecycle} from '../../../../packages/core/lifecycle-manager.mjs';
+import {inspectLocalLifecycle} from '@foundation/core';
 import {WORKSPACE_ASSETS} from './workspace-assets.mjs';
+import {readProjectPolicyForDisplay, projectWithEffectivePolicy, validateFacts} from '@foundation/core';
 
 const DIST_ASSETS = path.resolve(import.meta.dirname, '../../dist/assets');
 const BINARY_ASSETS = path.join(DIST_ASSETS, 'binary');
@@ -152,9 +153,11 @@ function resolveManagedFont(projectRoot, pathname) {
 
 export function createManagementCenterServer(project, {installationRoot = null, validateContext = null} = {}) {
   const projectRoot = realProject(project);
-  const verification = verify(projectRoot);
+  const withoutPreview = installationRoot && !fs.existsSync(path.join(projectRoot, '.foundation/preview.json'));
+  const errors = withoutPreview ? validateFacts(readFacts(projectRoot), {projectRoot}) : null;
+  const verification = withoutPreview ? {ok: errors.length === 0, errors} : verify(projectRoot);
   if (!verification.ok) throw new Error(`项目校验失败：\n${verification.errors.join('\n')}`);
-  const preview = readPreviewConfig(projectRoot);
+  const preview = withoutPreview ? {schemaVersion: '0.1.0', mode: 'unconfigured', routes: [], assets: []} : readPreviewConfig(projectRoot);
   const writeNonce = crypto.randomBytes(18).toString('base64url');
   const managerServers = new Set();
   const declared = new Map([...preview.routes, ...preview.assets].map((entry) => [entry.path, entry.absoluteFile]));
@@ -189,7 +192,17 @@ export function createManagementCenterServer(project, {installationRoot = null, 
         return send(res, relationErrorStatus(error, projectRoot), JSON.stringify({ok: false, error: error.message, code: error?.code || 'io', ...conflict}), 'application/json;charset=utf-8');
       }
     }
-    if (pathname === '/' || pathname === '/index.html') return send(res, 200, workspaceDocument(readFacts(projectRoot), preview, {writeNonce}), 'text/html;charset=utf-8');
+    if (pathname === '/' || pathname === '/index.html') {
+      try {
+        const data = readFacts(projectRoot);
+        if (installationRoot) {
+          // Effective display only: never rewrite the historical identity or
+          // project preferences to make them agree with a new runtime.
+          data.foundation = projectWithEffectivePolicy(data.foundation, readProjectPolicyForDisplay({installationRoot, project: projectRoot}));
+        }
+        return send(res, 200, workspaceDocument(data, preview, {writeNonce}), 'text/html;charset=utf-8');
+      } catch (error) { return send(res, 409, JSON.stringify({ok:false,message:error.message,mutationPerformed:false}), 'application/json;charset=utf-8'); }
+    }
     if (pathname === WORKSPACE_ASSETS.script) return sendFile(res, path.join(DIST_ASSETS, 'workspace.js'));
     if (pathname === WORKSPACE_ASSETS.stylesheet) return sendFile(res, path.join(DIST_ASSETS, 'workspace.css'));
     const chunk = resolveChunk(pathname);

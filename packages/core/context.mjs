@@ -31,7 +31,7 @@ export function buildContextRecord({project, pages = [], relations = [], assets 
   const impactPages = [...new Set([...scopedAssets.flatMap((item) => item.impactPages || []), ...usagePages])].sort();
   const impactComponents = [...new Set([...scopedAssets.flatMap((item) => item.impactComponents || []), ...selfComponents])].sort();
   const gaps = scopeGaps(assetScope ? asset : page);
-  const uiPolicy = project?.uiPolicy || foundationUiPolicyRecord(project?.governanceMode === 'shadcn-first' ? 'new' : 'existing');
+  const uiPolicy = project?.effectivePolicy || project?.uiPolicy || foundationUiPolicyRecord(project?.governanceMode === 'shadcn-first' ? 'new' : 'existing');
   return {scope, project, uiPolicy, page, asset, selection, mode, pageAssets, relations: related, interactions: related.map((item) => ({id: item.id, trigger: item.trigger, condition: item.condition, from: item.from, to: item.to})), recentChanges: changes, impactPages, impactComponents, figmaImpact: asset?.figma || {status: '未映射'}, ...gaps, factsVersion: project?.dataFormatVersion || 'unknown', pageById, assetById};
 }
 
@@ -49,6 +49,11 @@ export function contextPlainText(record) {
     `ui policy version: ${valueOrUnknown(record.uiPolicy?.version)}`,
     `ui governance mode: ${valueOrUnknown(record.uiPolicy?.governanceMode)}`,
     `ui classification: ${valueOrUnknown(record.uiPolicy?.classification)}`,
+    `policy source: ${valueOrUnknown(record.uiPolicy?.authority)}`,
+    `policy state: ${record.uiPolicy?.state || 'historical-unverified'}`,
+    `current rule version: ${record.uiPolicy?.ruleVersion || 'unknown'}`,
+    `adopted rule version: ${record.uiPolicy?.adoptedRuleVersion || 'none'}`,
+    `policy exceptions: ${JSON.stringify(record.uiPolicy?.exceptions || [])}`,
     `work mode: ${valueOrUnknown(record.mode)}`,
     `page: ${valueOrUnknown(record.page?.id)}`,
     `page name: ${valueOrUnknown(record.page?.name)}`,

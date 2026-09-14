@@ -5,6 +5,7 @@ import path from 'node:path';
 import {canonicalStringify, LifecycleError, sha256} from './install-contract.mjs';
 import {PROJECT_LAYOUT_PATHS, PROJECT_LAYOUT_VERSION, inspectProjectLayout, snapshotProtectedProjectData} from './project-layout.mjs';
 import {inventoryExistingProject} from './governance.mjs';
+import {readCurrentFoundationRules} from './rules-delivery.mjs';
 import {foundationUiPolicyRecord} from './ui-policy.mjs';
 import {
   authorizationEffectForProjectPlan,
@@ -228,10 +229,13 @@ export function inspectProjectAuthority(project, {installationRoot = null} = {})
   return {schemaVersion: '1.0.0', state: 'unmanaged', project: target, role: role.role, projectId: portable.value?.projectId || null, reason: portable.value ? 'portable-and-machine-authority-disagree' : 'no-portable-binding', agreement: false, mutationPerformed: false};
 }
 
-export function inventoryProject(project) {
+export function inventoryProject(project, {installationRoot = null} = {}) {
   const target = projectPath(project);
   const before = sourceRole(target);
-  return {...inventoryExistingProject(target), authorityState: 'inventory-only', role: before.role, writesPerformed: false};
+  const inventory = inventoryExistingProject(target);
+  if (!installationRoot) return {...inventory, policyScope: 'inventory-only-not-effective-project-policy', effectivePolicy: null, authorityState: 'inventory-only', role: before.role, writesPerformed: false};
+  const rules = readCurrentFoundationRules({installationRoot, project: target});
+  return {...inventory, governanceMode: rules.effectivePolicy.executable ? rules.effectivePolicy.governanceMode : 'unconfigured', uiPolicy: rules.effectivePolicy, effectivePolicy: rules.effectivePolicy, projectRulesReady: rules.projectRulesReady, policyScope: 'verified-current-project', authorityState: 'inventory-only', role: before.role, writesPerformed: false};
 }
 
 function planIntegrity(seed) {
@@ -401,13 +405,15 @@ function copyTemplate(source, destination) {
   }
 }
 
-function ensureCreatedProjectFacts(project, projectId, now) {
+function ensureCreatedProjectFacts(project, projectId, now, createFromTemplate = false) {
   const root = path.join(project, '.foundation');
   fs.mkdirSync(path.join(root, 'facts'), {recursive: true});
   fs.mkdirSync(path.join(root, 'generated-cache', 'management-center'), {recursive: true});
   fs.mkdirSync(path.join(root, 'backups'), {recursive: true});
   const identityFile = path.join(project, ...IDENTITY_RELATIVE.split('/'));
-  if (!fs.existsSync(identityFile)) writeJsonAtomic(identityFile, {schemaVersion: '1.0.0', layoutVersion: PROJECT_LAYOUT_VERSION, projectId, identityScheme: 'foundation-project-id-v2', name: path.basename(project), governanceMode: 'shadcn-first', uiPolicy: foundationUiPolicyRecord('new'), dataFormatVersion: '0.1.0', createdAt: new Date(now).toISOString(), updatedAt: new Date(now).toISOString()});
+  // A facts template declares no React/shadcn implementation. Preserve the actual
+  // stack until an explicit applicable project adoption is reviewed.
+  if (!fs.existsSync(identityFile)) writeJsonAtomic(identityFile, {schemaVersion: '1.0.0', layoutVersion: PROJECT_LAYOUT_VERSION, projectId, identityScheme: 'foundation-project-id-v2', name: path.basename(project), projectKind: createFromTemplate ? 'new' : 'existing', governanceMode: 'preserve-and-inventory', uiPolicy: foundationUiPolicyRecord('existing'), dataFormatVersion: '0.1.0', createdAt: new Date(now).toISOString(), updatedAt: new Date(now).toISOString()});
 }
 
 function portableBinding(projectId, state) {
@@ -468,7 +474,7 @@ export function applyProjectAuthorityPlan({plan, now = Date.now()}) {
         writeProjectJournal(journalFile, journal, 'project-root-created', 'project-root-created');
         copyTemplate(template.path, plan.project);
       }
-      ensureCreatedProjectFacts(plan.project, plan.projectId, now);
+      ensureCreatedProjectFacts(plan.project, plan.projectId, now, plan.createFromTemplate);
       const portable = portableBinding(plan.projectId, 'enabled');
       writeJsonAtomic(portableFile, portable);
       writeProjectOwnership(plan.project, plan.projectId, portableFile);
@@ -670,6 +676,7 @@ export function createProjectMutationPlan({operation, project, installationRoot,
   const target = projectPath(project);
   const context = installationContext(installationRoot);
   const authority = assertProjectMutationAuthority(target, {installationRoot: context.root, capability: operation});
+  if (operation === 'project-rules-adopt' && handlerPayload?.installationRoot !== context.root) throw new LifecycleError('PROJECT_HANDLER_BINDING_MISMATCH', '规则采用必须绑定同一安装', {stage: 'project-mutation-plan'});
   const handler = deriveClosedHandlerBinding({operation, project: target, handlerPayload});
   const seed = {
     schemaVersion: '1.0.0',
@@ -682,7 +689,7 @@ export function createProjectMutationPlan({operation, project, installationRoot,
     capabilityIds: [...capabilityIds].sort(),
     actions: handler.actions, creates: handler.creates, changes: handler.changes, deletes: handler.deletes, preserves: [...preserves],
     handler: {handlerId: handler.handlerId, handlerVersion: handler.handlerVersion, payload: handler.payload, payloadHash: handler.payloadHash, allowedWriteSet: handler.allowedWriteSet, beforeStateHash: handler.beforeStateHash},
-    projectSnapshot: {identity: projectIdentity(target), portableHash: fs.existsSync(path.join(target, ...PORTABLE_RELATIVE.split('/'))) ? sha256(fs.readFileSync(path.join(target, ...PORTABLE_RELATIVE.split('/')))) : null, protected: snapshotProtectedProjectData(target)},
+    projectSnapshot: {identity: projectIdentity(target), currentIdentityHash: sha256(canonicalStringify(context.current)), portableHash: fs.existsSync(path.join(target, ...PORTABLE_RELATIVE.split('/'))) ? sha256(fs.readFileSync(path.join(target, ...PORTABLE_RELATIVE.split('/')))) : null, protected: snapshotProtectedProjectData(target)},
     authorityState: authority.state,
     createdAt: now,
     expiresAt: now + ttlMs,
@@ -699,6 +706,10 @@ function validateProjectMutationPlan(plan, now = Date.now()) {
 
 export function applyProjectMutationPlan({plan, now = Date.now()}) {
   validateProjectMutationPlan(plan, now);
+  const checkCurrent = () => {
+    if (plan.projectSnapshot.currentIdentityHash !== sha256(canonicalStringify(installationContext(plan.installationRoot).current))) throw new LifecycleError('PROJECT_TASK_CURRENT_CHANGED', '当前安装已变化或旧计划未绑定 current；重新读取规则并准备新计划', {stage: 'project-mutation'});
+  };
+  checkCurrent();
   const target = projectPath(plan.project);
   if (!sameIdentity(projectIdentity(target), plan.projectSnapshot.identity)) throw new LifecycleError('PROJECT_REPLACED_AFTER_PLAN', 'project mutation plan 后目录被移动或替换', {stage: 'project-mutation'});
   const authority = assertProjectMutationAuthority(target, {installationRoot: plan.installationRoot, capability: plan.operation});
@@ -718,6 +729,7 @@ export function applyProjectMutationPlan({plan, now = Date.now()}) {
     operationCheckpoint('after-project-durable-pre-intent');
     trustedGuard = acquireTrustedTargetGuard(preIntent);
     operationCheckpoint('after-project-exclusive-acquire');
+    checkCurrent();
     if (!sameIdentity(projectIdentity(target), plan.projectSnapshot.identity)) throw new LifecycleError('PROJECT_REPLACED_AFTER_PLAN', '取得项目互斥权后目录已变化', {stage: 'project-mutation'});
     const currentAuthority = assertProjectMutationAuthority(target, {installationRoot: plan.installationRoot, capability: plan.operation});
     if (currentAuthority.projectId !== plan.projectId) throw new LifecycleError('PROJECT_AUTHORITY_CHANGED', '取得项目互斥权后 authority 已变化', {stage: 'project-mutation'});

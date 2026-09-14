@@ -1,3 +1,4 @@
+import {buildRepositoryCandidateForTest} from '../helpers/repository-candidate.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -23,10 +24,10 @@ const SOURCE_TMP = path.join(ROOT, '.tmp');
 let sharedRoot;
 let sharedInstallationRoot;
 
+let currentCandidate;
 function actualCandidate() {
-  const root = path.join(SOURCE_TMP, 'candidates', `foundation-0.2.0-${process.platform}-${process.arch}`);
-  assert.equal(fs.existsSync(root), true, 'run npm run candidate in the isolated nested source before 026R5 tests');
-  return {root, manifest: JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8'))};
+  if (!currentCandidate) { const {candidate: root} = buildRepositoryCandidateForTest(); currentCandidate = {root, manifest: JSON.parse(fs.readFileSync(path.join(root, "manifest.json"), "utf8"))}; }
+  return currentCandidate;
 }
 
 async function candidateCli() {

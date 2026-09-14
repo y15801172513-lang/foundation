@@ -1,3 +1,4 @@
+import {writeLegacyCapabilityFixture} from '../helpers/legacy-capability-fixture.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import http from 'node:http';
@@ -258,8 +259,8 @@ test('026R1 version-neutral bridge follows compatible 0.2 to 0.3 descriptor and 
     const capabilityRoot = path.join(endpointRoot, 'skills', 'ai-product-foundation-kit');
     fs.mkdirSync(capabilityRoot, {recursive: true});
     fs.writeFileSync(path.join(endpointRoot, 'rules.json'), '{}\n');
-    fs.copyFileSync(path.join(path.resolve(import.meta.dirname, '../..'), 'skills', 'ai-product-foundation-kit', 'SKILL.md'), path.join(capabilityRoot, 'SKILL.md'));
-    fs.copyFileSync(path.join(path.resolve(import.meta.dirname, '../..'), 'skills', 'ai-product-foundation-kit', 'capability.json'), path.join(capabilityRoot, 'capability.json'));
+
+  writeLegacyCapabilityFixture(capabilityRoot);
     fs.writeFileSync(path.join(source, 'app', 'foundation-runtime-descriptor.json'), `${JSON.stringify(createFoundationRuntimeDescriptor({productVersion: version, platform: process.platform, arch: process.arch, buildIdentity: `test-${version}`, supportedProjectDataFormats: formats, ruleCapabilityEndpoint: endpointRelative, ruleCapabilityEndpointRoot: endpointRoot, capabilityFacts: {bundled: [{capabilityId: 'ai-product-foundation-kit', type: 'codex-skill', version: '0.2.0', manifestPath: 'skills/ai-product-foundation-kit/capability.json', installed: true, active: false, projectScoped: false}], installedStateSource: 'state/capabilities.json', activeStateSource: 'state/capabilities.json', registrationStateSource: 'state/capability-host-registrations.json'}}), null, 2)}\n`);
     fs.cpSync(path.join(path.resolve(import.meta.dirname, '../..'), 'templates'), path.join(source, 'app', 'templates'), {recursive: true});
     const built = buildCandidate({sourceRoot: source, outputRoot: path.join(root, `candidate-${version}`), productVersion: version, platform: process.platform, arch: process.arch, runtimeSource: runtime, entrypoint: 'app/foundation-smoke.mjs', sourceKind: 'local-test'});

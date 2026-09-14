@@ -40,3 +40,13 @@ export function revalidateInstallDestination(proposal) {
   if (current.snapshotHash !== proposal.snapshotHash) fail('INSTALL_DESTINATION_DRIFT', '目录在预览后变化，旧计划失效；请重新检查并确认');
   return current;
 }
+// UI input only. Exact plans still use the canonical, revalidated real path.
+export function normalizeInstallDestinationInput(input) {
+  if (typeof input !== 'string') throw new Error('请输入完整的 macOS 文件夹路径');
+  let value = input.trim();
+  const pairs = {'"': '"', "'": "'", '“': '”', '‘': '’'};
+  if (pairs[value[0]] && value.at(-1) === pairs[value[0]]) value = value.slice(1, -1).trim();
+  if (/^[a-z]:/iu.test(value) || value.startsWith('\\\\') || value.startsWith('//')) throw new Error('这是 Windows 盘符或网络共享路径；当前 macOS 版本不支持。请使用本机绝对路径。');
+  if (!value.startsWith('/') || /[\u0000-\u001f\u007f]/u.test(value)) throw new Error('请输入完整的 macOS 绝对路径；不会展开 ~、变量或执行命令');
+  return value;
+}

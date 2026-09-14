@@ -3,8 +3,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import {canonicalStringify, LifecycleError, sha256} from './install-contract.mjs';
-import {isWithin, realProject} from './path-boundary.mjs';
+import {isWithin, realProject, normalizePublicPath} from './path-boundary.mjs';
 import {foundationUiPolicyRecord} from './ui-policy.mjs';
+import {prepareProjectRulesAdoption} from './project-rules.mjs';
+import {readFacts, validateFacts, inspectProjectPreparation} from './facts.mjs';
 
 export const CLOSED_PROJECT_HANDLER_VERSION = '1.0.0';
 export const CLOSED_PROJECT_HANDLER_IDS = Object.freeze([
@@ -14,6 +16,8 @@ export const CLOSED_PROJECT_HANDLER_IDS = Object.freeze([
   'foundation-skeleton-and-facts-create',
   'relation-facts-write',
   'page-facts-write',
+  'project-rules-adopt',
+  'asset-facts-batch',
 ]);
 const FACT_FILES = Object.freeze(['project', 'pages', 'relations', 'design-tokens', 'components', 'interactions', 'motions', 'changes', 'figma']);
 
@@ -101,6 +105,13 @@ function normalizedUpgradePayload(payload) {
 
 function normalize(operation, project, payload) {
   const root = realProject(project);
+  if (operation === 'asset-facts-batch') return normalizeAssetBatch(root, payload);
+  if (operation === 'project-rules-adopt') {
+    iso(payload?.generatedAt, 'generatedAt');
+    const prepared = prepareProjectRulesAdoption(root, payload);
+    const writes = prepared.files.map(file => file.path).sort();
+    return {handlerId: operation, payload: {...payload}, allowedWriteSet: writes, actions: [{action: operation, files: prepared.files.map(file => ({path: file.path, sha256: sha256(file.content), bytes: Buffer.byteLength(file.content)})), currentIdentityHash: prepared.currentIdentityHash, endpointIdentity: prepared.endpointIdentity, governanceMode: prepared.adoption.governanceMode, hostDiscoveryVerified: false}], creates: writes.filter(relative => !fs.existsSync(safeTarget(root, relative))), changes: writes.filter(relative => fs.existsSync(safeTarget(root, relative))), deletes: []};
+  }
   if (operation === 'page-facts-write') {
     const draft = payload?.draft;
     const allowed = ['id', 'name', 'route', 'description', 'expectedVersion'];
@@ -116,9 +127,13 @@ function normalize(operation, project, payload) {
     return {handlerId: operation, payload: {draft: normalized, generatedAt: iso(payload.generatedAt || new Date().toISOString(), 'generatedAt')}, allowedWriteSet: writes, actions: writes.map((relative) => `write:${relative}`), creates: writes.filter((relative) => !fs.existsSync(safeTarget(root, relative))), changes: writes.filter((relative) => fs.existsSync(safeTarget(root, relative))), deletes: []};
   }
   if (operation === 'foundation-skeleton-and-facts-create') {
+    if (!payload || Object.keys(payload).some(key => !['generatedAt', 'includePreview'].includes(key)) || (payload.includePreview !== undefined && typeof payload.includePreview !== 'boolean')) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '准备操作仅支持 generatedAt 与明确的 includePreview');
     const generatedAt = iso(payload?.generatedAt, 'generatedAt');
-    const allowedWriteSet = ['.foundation/identity/project.json', '.foundation/preview.json', ...FACT_FILES.map((name) => `.foundation/facts/${name}.json`)].sort();
-    return {handlerId: operation, payload: {generatedAt}, allowedWriteSet, actions: allowedWriteSet.map((entry) => `create-if-absent:${entry}`), creates: allowedWriteSet, changes: [], deletes: []};
+    const preparation = inspectProjectPreparation(root);
+    const includePreview = payload.includePreview ?? true;
+    if (preparation.state === 'blocked' || preparation.preview.state === 'invalid' || (includePreview && preparation.preview.state === 'unsupported')) throw coded('PROJECT_PREPARATION_CONFLICT', [...preparation.errors, preparation.preview.message].filter(Boolean).join('；'));
+    const allowedWriteSet = [...preparation.missing, ...(includePreview && preparation.preview.state === 'absent' ? ['.foundation/preview.json'] : [])].sort();
+    return {handlerId: operation, payload: {generatedAt, includePreview}, allowedWriteSet, actions: allowedWriteSet.map((entry) => `create-if-absent:${entry}`), creates: allowedWriteSet, changes: [], deletes: []};
   }
   if (operation === 'relation-facts-write') {
     const draft = payload?.draft || (payload?.semantics ? {...payload.semantics, expectedVersion: payload.expectedVersion} : null);
@@ -175,17 +190,91 @@ export function deriveClosedHandlerBinding({operation, project, handlerPayload})
 }
 
 export function assertClosedHandlerBinding(plan) {
+  if (plan.operation === 'project-rules-adopt' && plan.handler?.payload?.installationRoot !== plan.installationRoot) throw coded('PROJECT_HANDLER_BINDING_MISMATCH', '规则采用必须绑定同一安装');
   const derived = deriveClosedHandlerBinding({operation: plan.operation, project: plan.project, handlerPayload: plan.handler?.payload});
   for (const field of ['handlerId', 'handlerVersion', 'payloadHash', 'beforeStateHash']) if (plan.handler?.[field] !== derived[field]) throw coded('PROJECT_HANDLER_BINDING_MISMATCH', `project handler ${field} 与当前内建实现/写前状态不匹配`);
   if (canonicalStringify(plan.handler.allowedWriteSet) !== canonicalStringify(derived.allowedWriteSet) || canonicalStringify(plan.actions) !== canonicalStringify(derived.actions) || canonicalStringify(plan.creates) !== canonicalStringify(derived.creates) || canonicalStringify(plan.changes) !== canonicalStringify(derived.changes) || canonicalStringify(plan.deletes) !== canonicalStringify(derived.deletes)) throw coded('PROJECT_HANDLER_WRITE_SET_MISMATCH', 'project handler 写集合或 action effect 不匹配');
   return derived;
 }
 
-function writeAtomic(file, content) {
+function writeAtomic(file, content, mode = undefined) {
   fs.mkdirSync(path.dirname(file), {recursive: true});
   const temporary = `${file}.${process.pid}.${crypto.randomUUID()}.tmp`;
-  fs.writeFileSync(temporary, content, {flag: 'wx'});
+  fs.writeFileSync(temporary, content, {flag: 'wx', ...(mode === undefined ? {} : {mode})});
   fs.renameSync(temporary, file);
+}
+
+function normalizeAssetBatch(project, payload) {
+  const kinds = ['pages', 'components', 'interactions', 'motions', 'changes', 'design-tokens'];
+  if (!payload || Object.keys(payload).some(key => !['documents', 'sources', 'scope', 'generatedAt', 'preview'].includes(key)) || !Array.isArray(payload.documents) || !payload.documents.length || payload.documents.length > kinds.length || !Array.isArray(payload.sources) || !payload.sources.length || typeof payload.scope !== 'string' || !payload.scope.trim() || payload.scope.length > 2000) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '资产批次需 documents、sources、精确 scope 和 generatedAt');
+  iso(payload.generatedAt, 'generatedAt');
+  const seen = new Set();
+  const sources = payload.sources.map(source => {
+    if (!source || Object.keys(source).some(key => !['path', 'sha256'].includes(key)) || !/^[a-f0-9]{64}$/u.test(source.sha256 || '')) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '源码证据需精确相对路径和 SHA-256');
+    const target = safeTarget(project, source.path);
+    const stat = fs.lstatSync(target);
+    if (!stat.isFile() || stat.isSymbolicLink() || sha256(fs.readFileSync(target)) !== source.sha256) throw coded('PROJECT_HANDLER_SOURCE_CHANGED', `源码证据失效：${source.path}`);
+    if (seen.has(source.path)) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '源码证据路径重复');
+    seen.add(source.path);
+    return {...source};
+  });
+  for (const kind of FACT_FILES) {
+    const file = safeTarget(project, `.foundation/facts/${kind}.json`);
+    if (!fs.lstatSync(file).isFile() || fs.lstatSync(file).isSymbolicLink()) throw coded('PROJECT_HANDLER_SYMLINK_REJECTED', '事实输入必须为普通文件');
+  }
+  const facts = readFacts(project);
+  const changedKinds = new Set();
+  const documents = payload.documents.map(document => {
+    if (!document || Object.keys(document).some(key => !['kind', 'expectedSha256', 'upserts'].includes(key)) || !kinds.includes(document.kind) || changedKinds.has(document.kind) || !Array.isArray(document.upserts) || !document.upserts.length) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '资产文档类型、重复项或 upserts 无效');
+    changedKinds.add(document.kind);
+    const relative = `.foundation/facts/${document.kind}.json`;
+    const target = safeTarget(project, relative);
+    if (!fs.lstatSync(target).isFile() || fs.lstatSync(target).isSymbolicLink() || sha256(fs.readFileSync(target)) !== document.expectedSha256) throw coded('PROJECT_HANDLER_BEFORE_STATE_CHANGED', `资产文档已变化：${relative}`);
+    const ids = new Set();
+    const existing = facts[document.kind];
+    const items = [...existing.items];
+    for (const item of document.upserts) {
+      if (!item || typeof item.id !== 'string' || !/^[a-zA-Z0-9_-]+$/u.test(item.id) || ids.has(item.id) || typeof item.implementationMapping !== 'string' || !seen.has(item.implementationMapping)) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '每项资产需唯一 ID 及绑定实际源码证据的 implementationMapping');
+      ids.add(item.id);
+      if (!['unverified', 'verified'].includes(item.verificationStatus)) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '资产验证状态必须明确');
+      if (item.verificationStatus === 'verified' && (typeof item.verificationEvidence !== 'string' || !seen.has(item.verificationEvidence))) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '已验证资产需绑定实际验证证据文件；文件摘要不等于真人验收');
+      const index = items.findIndex(existingItem => existingItem.id === item.id);
+      const next = {...(index < 0 ? {} : items[index]), ...item, updatedAt: payload.generatedAt};
+      if (index < 0) items.push(next); else items[index] = next;
+    }
+    facts[document.kind] = {...existing, items};
+    return {path: relative, content: `${JSON.stringify(facts[document.kind], null, 2)}\n`};
+  });
+  const previewFile = safeTarget(project, '.foundation/preview.json');
+  let preview;
+  // Only preview-changing batches consume this optional configuration. Asset
+  // maintenance neither converts nor rewrites a project's existing preview.
+  if (payload.preview) {
+    if (!fs.existsSync(previewFile)) throw coded('PROJECT_PREVIEW_PREPARATION_REQUIRED', '尚无预览配置；先单独确认预览准备，事实维护无需预览');
+    if (!fs.lstatSync(previewFile).isFile() || fs.lstatSync(previewFile).isSymbolicLink()) throw coded('PROJECT_HANDLER_SYMLINK_REJECTED', '预览配置必须为普通文件');
+    preview = JSON.parse(fs.readFileSync(previewFile, 'utf8'));
+    if (preview.schemaVersion !== '0.1.0' || preview.mode !== 'local-static' || !Array.isArray(preview.routes) || !Array.isArray(preview.assets)) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '不支持现有预览配置；不覆盖');
+    const proposal = payload.preview;
+    if (Object.keys(proposal).some(key => !['expectedSha256', 'routes', 'assets'].includes(key)) || sha256(fs.readFileSync(previewFile)) !== proposal.expectedSha256) throw coded('PROJECT_HANDLER_BEFORE_STATE_CHANGED', '预览映射写前摘要不匹配');
+    preview = structuredClone(preview);
+    for (const kind of ['routes', 'assets']) {
+      if (!Array.isArray(proposal[kind])) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '预览映射需 routes 和 assets 数组');
+      const paths = new Set();
+      for (const entry of proposal[kind]) {
+        if (!entry || Object.keys(entry).some(key => !['path', 'file'].includes(key)) || !seen.has(entry.file) || paths.has(entry.path)) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '每个预览映射需唯一公开路径及绑定的实际源码文件');
+        normalizePublicPath(entry.path, '批次预览路径'); paths.add(entry.path);
+        const index = preview[kind].findIndex(item => item.path === entry.path);
+        if (index < 0) preview[kind].push({...entry}); else preview[kind][index] = {...preview[kind][index], ...entry};
+      }
+    }
+    const paths = [...preview.routes, ...preview.assets].map(item => item.path);
+    if (new Set(paths).size !== paths.length) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '预览路由与资源路径重复');
+    documents.push({path: '.foundation/preview.json', content: `${JSON.stringify(preview, null, 2)}\n`});
+  }
+  const validation = validateFacts(facts, {projectRoot: project, previewConfig: preview});
+  if (validation.length) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', `资产批次引用或格式无效：${validation.join('；')}`);
+  const writes = documents.map(document => document.path).sort();
+  return {handlerId: 'asset-facts-batch', payload: structuredClone(payload), allowedWriteSet: writes, actions: [{action: 'asset-facts-batch', scope: payload.scope, sources, documents: documents.map(document => ({path: document.path, sha256: sha256(document.content), bytes: Buffer.byteLength(document.content)})), semanticVerification: 'recorded-evidence-not-human-acceptance'}], creates: [], changes: writes, deletes: [], documents};
 }
 
 function stableId(type, key) {
@@ -193,16 +282,19 @@ function stableId(type, key) {
 }
 
 function executeSkeleton(project, payload) {
+  // Revalidate before touching any file; the caller also verifies the exact
+  // handler binding and journal snapshots immediately before execution.
+  normalize('foundation-skeleton-and-facts-create', project, payload);
   const root = path.join(project, '.foundation');
   for (const directory of ['identity', 'facts', 'generated-cache/management-center', 'backups']) fs.mkdirSync(path.join(root, directory), {recursive: true});
   const foundationFile = path.join(root, 'identity', 'project.json');
-  if (!fs.existsSync(foundationFile)) fs.writeFileSync(foundationFile, JSON.stringify({schemaVersion: '1.0.0', layoutVersion: '2.0.0', projectId: stableId('project', path.basename(project)), identityScheme: 'foundation-project-id-v2', name: path.basename(project), governanceMode: 'shadcn-first', uiPolicy: foundationUiPolicyRecord('new'), dataFormatVersion: '0.1.0', createdAt: payload.generatedAt, updatedAt: payload.generatedAt}, null, 2));
+  if (!fs.existsSync(foundationFile)) fs.writeFileSync(foundationFile, JSON.stringify({schemaVersion: '1.0.0', layoutVersion: '2.0.0', projectId: stableId('project', path.basename(project)), identityScheme: 'foundation-project-id-v2', name: path.basename(project), projectKind: 'existing', governanceMode: 'preserve-and-inventory', uiPolicy: foundationUiPolicyRecord('existing'), dataFormatVersion: '0.1.0', createdAt: payload.generatedAt, updatedAt: payload.generatedAt}, null, 2));
   for (const name of FACT_FILES) {
     const file = path.join(root, 'facts', `${name}.json`);
     if (!fs.existsSync(file)) fs.writeFileSync(file, JSON.stringify({schemaVersion: '0.1.0', items: [], kind: name}, null, 2));
   }
   const previewFile = path.join(root, 'preview.json');
-  if (!fs.existsSync(previewFile)) fs.writeFileSync(previewFile, `${JSON.stringify({schemaVersion: '0.1.0', mode: 'local-static', routes: [], assets: []}, null, 2)}\n`);
+  if (payload.includePreview && !fs.existsSync(previewFile)) fs.writeFileSync(previewFile, `${JSON.stringify({schemaVersion: '0.1.0', mode: 'local-static', routes: [], assets: []}, null, 2)}\n`);
   return root;
 }
 
@@ -308,6 +400,19 @@ function executeUpgrade(project, payload) {
 
 export function executeClosedProjectHandler(plan) {
   const binding = assertClosedHandlerBinding(plan);
+  if (binding.handlerId === 'asset-facts-batch') {
+    const prepared = normalizeAssetBatch(plan.project, binding.payload);
+    for (const document of prepared.documents) writeAtomic(safeTarget(plan.project, document.path), document.content);
+    return {ok: true, changed: prepared.allowedWriteSet, scope: binding.payload.scope, preserved: ['unmentioned-records', 'project-code', 'user-data'], verification: 'evidence-linked-not-human-acceptance'};
+  }
+  if (binding.handlerId === 'project-rules-adopt') {
+    const prepared = prepareProjectRulesAdoption(plan.project, binding.payload);
+    for (const file of prepared.files) {
+      const target = safeTarget(plan.project, file.path);
+      writeAtomic(target, file.content, fs.existsSync(target) ? fs.lstatSync(target).mode & 0o777 : 0o644);
+    }
+    return {ok: true, adoption: prepared.adoption, changed: prepared.files.map(file => file.path), preserved: ['existing-AGENTS-content', 'project-code', 'project-facts'], hostDiscoveryVerified: false};
+  }
   if (binding.handlerId === 'foundation-skeleton-and-facts-create') return executeSkeleton(plan.project, binding.payload);
   if (binding.handlerId === 'relation-facts-write') return executeRelation(plan.project, binding.payload);
   if (binding.handlerId === 'page-facts-write') return executePage(plan.project, binding.payload);
@@ -341,6 +446,8 @@ export function closedProjectHandlerCatalog() {
     'foundation-skeleton-and-facts-create',
     'relation-facts-write',
     'page-facts-write',
+    'project-rules-adopt',
+    'asset-facts-batch',
     'extension-shadcn-apply',
     'extension-shadcn-remove-owned',
     'foundation-facts-upgrade',

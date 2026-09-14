@@ -1,7 +1,7 @@
 import {previewPublicConfig, productVersion, projectAssets, projectGovernance, relationsVersion} from '@foundation/core';
 
 export function buildViewModel(data, previewConfig) {
-  const pages = data.pages.items.map((page) => ({...page, route: page.preview}));
+  const pages = data.pages.items.map((page) => ({...page, route: page.route || page.preview, ...(previewConfig.mode === 'unconfigured' ? {preview: null} : {})}));
   const pageById = new Map(pages.map((page) => [page.id, page]));
   const relations = data.relations.items.map((relation) => ({...relation, fromName: relation.fromName || pageById.get(relation.from)?.name || relation.from, toName: relation.toName || pageById.get(relation.to)?.name || relation.to}));
   const components = data.components.items.map((component) => ({...component, usageLocations: component.usageLocations || []}));

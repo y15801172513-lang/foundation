@@ -49,6 +49,8 @@ export {OFFER_STATES, inspectFoundationOfferPreference, evaluateFoundationOffer,
 export {LOCAL_LIFECYCLE_MANAGER_VERSION, LOCAL_LIFECYCLE_AI_SURFACE, LOCAL_LIFECYCLE_AI_TOOLS, inspectLocalLifecycle, requestLocalLifecyclePlan, openLocalLifecycleManagerPlan, readLocalLifecycleOperationStatus} from './lifecycle-manager.mjs';
 export {PROJECT_LAYOUT_VERSION, PROJECT_LAYOUT_PATHS, inspectProjectLayout, snapshotProtectedProjectData, createProjectLayoutMigrationPlan, createProjectDataPurgePlan, createNormalUninstallProjectPlan, createNormalUninstallCompositePlan} from './project-layout.mjs';
 
+export {readCurrentFoundationRules, readProjectPolicyForDisplay} from './rules-delivery.mjs';
+
 export function verify(project) {
   const root = foundationFiles(project);
   if (!fs.existsSync(root)) return {ok: false, errors: ['缺少 .foundation']};

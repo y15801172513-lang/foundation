@@ -8,7 +8,9 @@
     "foundation-facts-upgrade",
     "foundation-skeleton-and-facts-create",
     "relation-facts-write",
-    "page-facts-write"
+    "page-facts-write",
+    "project-rules-adopt",
+    "asset-facts-batch"
   ],
   "entrypoints": [
     {

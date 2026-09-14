@@ -34,6 +34,7 @@ import {listenManagementCenter} from '@foundation/management-center';
 import {lifecycleMenu, runLifecycleCli} from './lifecycle.mjs';
 import {CLI_ROUTE_GROUPS, parseCliInvocation} from './command-contract.mjs';
 import {conversationHelp} from '../core/conversation-commands.mjs';
+import {readCurrentFoundationRules} from '../core/rules-delivery.mjs';
 import {createInstalledWorkbenchServer} from '@foundation/management-center';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
@@ -110,7 +111,7 @@ export function upgradeProject(project, {plan} = {}) {
 
 function runProjectCli(args, output) {
   const command = args[1];
-  if (command === 'inventory') return output.log(JSON.stringify(inventoryProject(option(args, '--project', args[2])), null, 2));
+  if (command === 'inventory') return output.log(JSON.stringify(inventoryProject(option(args, '--project', args[2]), {installationRoot: option(args, '--root')}), null, 2));
   if (command === 'status') return output.log(JSON.stringify(inspectProjectAuthority(option(args, '--project', args[2]), {installationRoot: option(args, '--root')}), null, 2));
   if (command === 'list') return output.log(JSON.stringify(listProjectAuthorities(option(args, '--root')), null, 2));
   if (command === 'explain') {
@@ -185,6 +186,7 @@ export function runCli(args = process.argv.slice(2), output = console) {
   const invocation = parseCliInvocation(args);
   args = invocation.argv;
   const command = args[0];
+  if (command === 'rules') return output.log(JSON.stringify(readCurrentFoundationRules({installationRoot: option(args, '--root'), project: option(args, '--project')}), null, 2));
   if (command === '--help') output.log(conversationHelp());
   if (command === 'workbench') {
     const server = createInstalledWorkbenchServer({installationRoot: option(args, '--root'), project: option(args, '--project')});
@@ -192,7 +194,7 @@ export function runCli(args = process.argv.slice(2), output = console) {
     server.listen(0, '127.0.0.1', () => output.log(JSON.stringify({url:`http://127.0.0.1:${server.address().port}/`, surface:'installed-workbench', mutationPerformed:false})));
     return;
   }
-  if (command === '--help') output.log('Foundation 对话入口（真实获取与使用尚待验收）\ninspect 不查远端：发布 unknown，获取 not-checked；unsigned 不表示未发布。版本来自可信 GitHub 入口清单。\n只读检查：onboarding inspect [--destination <绝对目录>]\n候选安装：install [--destination <绝对目录>] --browser codex\n页面选择目录：install --choose-destination --browser codex（选择后仍须本人确认精确计划）\n安装结果：onboarding status --session-id <返回值>\n唯一工作台：workbench open --root <实际安装目录> [--project <明确选定的已接入项目>]\n诊断概览（不是工作台）：onboarding open --root <实际安装目录>\n项目/维护：manager inspect → request-plan → open-manager → status\n版本、目录和 Skill 是意向；必须由用户在绑定计划的管理器页面确认。没有 confirm/apply/yes 直写入口。源码 CLI 需要开发 Node；已安装 launcher 使用私有 Runtime。');
+  if (command === '--help') output.log('Foundation 对话入口（真实获取与使用尚待验收）\ninspect 不查远端：发布 unknown，获取 not-checked；unsigned 不表示未发布。版本来自可信 GitHub 入口清单。\n只读检查：onboarding inspect [--destination <绝对目录>]\n候选安装：install [--destination <绝对目录>] --browser codex\n页面选择目录：install --choose-destination --browser codex（选择后仍须本人确认精确计划）\n安装结果：onboarding status --session-id <返回值>\n唯一工作台：workbench open --root <实际安装目录> [--project <明确选定的已接入项目>]\n诊断概览（不是工作台）：onboarding open --root <实际安装目录>\n项目/维护：manager inspect → request-plan → open-manager → status\n规则只读：rules inspect --root <安装根> [--project <项目>]\n版本、目录和 Skill 是意向；必须由用户在绑定计划的管理器页面确认。没有 confirm/apply/yes 直写入口。源码 CLI 需要开发 Node；已安装 launcher 使用私有 Runtime。');
   else if (command === '--foundation-health') output.log(JSON.stringify({ok: true, version: JSON.parse(fs.readFileSync(path.join(ROOT, 'foundation-kit.json'), 'utf8')).product.version, runtime: process.execPath}));
   else if (!command) output.log(lifecycleMenu());
   else if (command === 'onboarding') {

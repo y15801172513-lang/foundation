@@ -41,6 +41,50 @@ export function readFacts(project) {
   return output;
 }
 
+// Read-only preparation assessment. Missing files are proposals, never writes.
+// Preview is an independent capability, not a prerequisite for fact maintenance.
+export function inspectProjectPreparation(project) {
+  const root = realProject(project), missing = [], errors = [], documents = {};
+  const read = (relative) => {
+    let cursor = root;
+    for (const part of relative.split('/')) {
+      cursor = path.join(cursor, part);
+      let stat;
+      try { stat = fs.lstatSync(cursor); } catch (error) { if (error.code === 'ENOENT') return null; throw error; }
+      if (stat.isSymbolicLink() || (cursor !== path.join(root, relative) && !stat.isDirectory())) throw new Error(`${relative} 路径不安全，保留并停止`);
+    }
+    if (!fs.lstatSync(cursor).isFile()) throw new Error(`${relative} 不是普通文件，保留并停止`);
+    return JSON.parse(fs.readFileSync(cursor, 'utf8'));
+  };
+  for (const kind of FACT_FILES) {
+    const relative = `.foundation/facts/${kind}.json`;
+    try {
+      const value = read(relative);
+      if (value === null) { missing.push(relative); documents[kind] = emptyFact(kind); }
+      else {
+        documents[kind] = value;
+        if (value.schemaVersion !== '0.1.0' || (value.kind && value.kind !== kind) || !Array.isArray(value.items)) errors.push(`${relative} 格式不兼容，保留并停止`);
+      }
+    } catch (error) { errors.push(`${relative}: ${error.message}`); }
+  }
+  if (!errors.length) errors.push(...validateFacts(documents, {projectRoot: root}));
+  let identity = null;
+  try {
+    identity = read('.foundation/identity/project.json');
+    if (!identity) missing.push('.foundation/identity/project.json');
+    else if (identity.schemaVersion !== '1.0.0' || !identity.projectId || (identity.projectKind !== undefined && !['new', 'existing'].includes(identity.projectKind))) errors.push('项目身份格式不兼容，保留并停止');
+  } catch (error) { errors.push(error.message); }
+  let preview = {state: 'absent', requiredForFacts: false};
+  try {
+    const value = read('.foundation/preview.json');
+    if (value) preview = value.schemaVersion === '0.1.0' && value.mode === 'local-static' && Array.isArray(value.routes) && Array.isArray(value.assets)
+      ? {state: 'configured', requiredForFacts: false}
+      : {state: 'unsupported', requiredForFacts: false, message: '保留现有预览；不自动转换。需要预览时单独核实配置'};
+  } catch (error) { preview = {state: 'invalid', requiredForFacts: false, message: error.message}; }
+  const state = errors.length ? 'blocked' : missing.length ? 'preparation-required' : 'complete';
+  return {state, factsReady: state === 'complete', missing: missing.sort(), errors, preview, identity, mutationPerformed: false};
+}
+
 export function registerPageRelation(project, draft, {mutationPlan = null} = {}) {
   const root = realProject(project);
   const normalized = normalizeRelationHandlerPayload(draft, {generatedAt: mutationPlan?.handler?.payload?.generatedAt || new Date().toISOString()});
@@ -127,6 +171,7 @@ export function validateFacts(facts, {previewConfig, projectRoot} = {}) {
   }
   if (previewConfig) {
     const routePaths = new Set(previewConfig.routes.map((entry) => entry.path));
+    for (const component of components) if (component.previewRoute && !routePaths.has(component.previewRoute)) errors.push(`components.json 资产 ${component.id} 的独立预览入口未在 preview.json.routes 声明`);
     for (const [index, page] of pages.entries()) if (!routePaths.has(page.preview)) errors.push(`pages.json.items[${index}].preview 未在 preview.json.routes 声明：${page.preview ?? '缺失'}`);
   }
   return errors;

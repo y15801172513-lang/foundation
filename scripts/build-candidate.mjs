@@ -96,6 +96,7 @@ bundle('apps/management-center/src/server/index.mjs', 'node_modules/@foundation/
 copy('packages/core/runtime-surface.mjs', 'node_modules/@foundation/management-center/src/server/runtime-surface.mjs');
 copy('templates');
 copy('skills', 'artifacts/skills');
+copy('rules', 'artifacts/rules');
 copy('migrations');
 const uiNotices = path.join(SOURCE, 'app', 'node_modules', '@foundation', 'management-center', 'dist', 'THIRD_PARTY_NOTICES.txt');
 if (!fs.existsSync(uiNotices)) throw new Error('发行缺少管理工作台第三方许可；请先重新构建');

@@ -1,3 +1,4 @@
+import {writeLegacyCapabilityFixture} from '../helpers/legacy-capability-fixture.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -44,8 +45,8 @@ function candidate(root, version = '0.2.0', endpoint = `artifacts/rules-${versio
   fs.mkdirSync(capabilityRoot, {recursive: true});
   fs.writeFileSync(path.join(app, 'foundation-smoke.mjs'), `console.log(JSON.stringify({ok:true,version:${JSON.stringify(version)}}))\n`);
   fs.writeFileSync(path.join(endpointRoot, 'rules.json'), `${JSON.stringify({version})}\n`);
-  fs.copyFileSync(path.join(ROOT, 'skills', CAPABILITY_ID, 'SKILL.md'), path.join(capabilityRoot, 'SKILL.md'));
-  fs.copyFileSync(path.join(ROOT, 'skills', CAPABILITY_ID, 'capability.json'), path.join(capabilityRoot, 'capability.json'));
+
+  writeLegacyCapabilityFixture(capabilityRoot);
   fs.cpSync(path.join(ROOT, 'templates'), path.join(app, 'templates'), {recursive: true});
   let descriptor = createFoundationRuntimeDescriptor({
     productVersion: version,

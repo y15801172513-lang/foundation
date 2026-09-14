@@ -89,11 +89,13 @@ test('024R1 tampered shared runtime、缺文件和同版本不同 manifest 均�
   fs.copyFileSync(path.join(v1.root, 'payload', ...v1.manifest.runtime.path.split('/')), path.join(target, current.runtimePath));
   fs.chmodSync(path.join(target, current.runtimePath), 0o755);
   fs.rmSync(path.join(target, current.appPath, 'extra.txt'));
-  assert.throws(() => apply(planFor({operation: 'update', root, target, built: v1, version: '0.2.0', currentVersion: '0.2.0'})), (error) => error.code === 'APP_VERSION_COLLISION');
+  assert.throws(() => apply(planFor({operation: 'update', root, target, built: v1, version: '0.2.0', currentVersion: '0.2.0'})), (error) => error.code === 'UPDATE_VERSION_ALREADY_CURRENT');
+  assert.equal(fs.existsSync(path.join(target, current.appPath, 'extra.txt')), false, 'rejected update does not silently repair');
 
   fs.copyFileSync(path.join(v1.root, 'payload', 'app', 'extra.txt'), path.join(target, current.appPath, 'extra.txt'));
   const different = candidate(root, '0.2.0', {entrypoint: 'console.log(JSON.stringify({ok:true,version:"0.2.0"}))\n// same version, different manifest\n'});
-  assert.throws(() => apply(planFor({operation: 'update', root, target, built: different, version: '0.2.0', currentVersion: '0.2.0'})), (error) => error.code === 'APP_VERSION_COLLISION');
+  assert.throws(() => apply(planFor({operation: 'update', root, target, built: different, version: '0.2.0', currentVersion: '0.2.0'})), (error) => error.code === 'UPDATE_VERSION_ALREADY_CURRENT');
+  assert.throws(() => apply(planFor({operation: 'repair', root, target, built: different, version: '0.2.0', currentVersion: '0.2.0'})), (error) => error.code === 'REPAIR_IDENTITY_MISMATCH');
 });
 
 test('024R1 install identity 贯穿 current/receipt，repair 必须完全匹配当前 identity', (t) => {

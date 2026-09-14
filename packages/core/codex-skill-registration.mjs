@@ -32,14 +32,22 @@ export function prepareCodexSkillRegistration({installationRoot, installId, mani
   const account = readCurrentPlatformAccount();
   const destination = path.join(account.homedir, '.agents', 'skills', name);
   const snapshot = inspectInstallDestination(destination);
-  if (!snapshot.empty) fail('CODEX_SKILL_NAME_CONFLICT', '同名 Skill 已存在；保留用户内容，不覆盖或静默合并');
+  let refresh = null;
+  if (!snapshot.empty) {
+    const owned = inspectCodexSkillOwnership(installationRoot);
+    if (owned.state !== 'files-installed-host-discovery-unverified') fail('CODEX_SKILL_NAME_CONFLICT', '同名 Skill 已存在且不能验证完整归属；保留用户内容');
+    const receiptFile = path.join(installationRoot, 'state', 'codex-skill-registration.json');
+    const receipt = JSON.parse(fs.readFileSync(receiptFile, 'utf8'));
+    if (receipt.installId !== installId) fail('CODEX_SKILL_NAME_CONFLICT', '同名 Skill 属于其他安装；不覆盖');
+    refresh = {receiptSha256: sha256(fs.readFileSync(receiptFile)), files: receipt.files, preserves: '未知文件不更改；仅刷新本安装完整归属的两文件，仍需独立精确确认'};
+  }
   const skill = fs.readFileSync(path.join(path.dirname(manifestFile), 'SKILL.md'), 'utf8');
   const binding = `${JSON.stringify({schemaVersion: '1.0.0', installationRoot, installId, resolver: 'installed-current', authority: 'discovery-hint-only'}, null, 2)}\n`;
   const files = [{path: 'SKILL.md', content: skill}, {path: 'foundation-installation.json', content: binding}].map((entry) => ({...entry, sha256: sha256(entry.content), bytes: Buffer.byteLength(entry.content)}));
   const directories = [];
   let cursor = snapshot.ancestors.at(-1).path;
   for (const part of path.relative(cursor, destination).split(path.sep).filter(Boolean)) { cursor = path.join(cursor, part); directories.push(cursor); }
-  return {schemaVersion: '1.0.0', host: 'codex', name, scope: 'user', destination, installationRoot, installId, snapshot, directories, files, registeredWithHost: 'unverified-until-new-task', mutationAuthority: false};
+  return {schemaVersion: '1.0.0', host: 'codex', name, scope: 'user', destination, installationRoot, installId, snapshot, directories, files, ...(refresh ? {refresh} : {}), registeredWithHost: 'unverified-until-new-task', mutationAuthority: false};
 }
 
 export function verifyCodexSkillRegistration(registration) {
@@ -49,7 +57,13 @@ export function verifyCodexSkillRegistration(registration) {
   if (registration.destination !== path.join(account.homedir, '.agents', 'skills', name) || registration.name !== name) fail('CODEX_SKILL_DESTINATION_CHANGED', 'Skill 目标与当前 OS account 不一致');
   if (registration.snapshot.realPath !== registration.destination) fail('CODEX_SKILL_PLAN_INVALID', 'Skill 快照与目标目录不一致');
   revalidateInstallDestination(registration.snapshot);
-  if (!registration.snapshot.empty || registration.files.length !== 2 || registration.files.map((entry) => entry.path).join('|') !== 'SKILL.md|foundation-installation.json' || registration.files.some((entry) => sha256(entry.content) !== entry.sha256 || Buffer.byteLength(entry.content) !== entry.bytes)) fail('CODEX_SKILL_PLAN_INVALID', 'Skill 精确文件计划无效');
+  if (registration.refresh) {
+    const owned = inspectCodexSkillOwnership(registration.installationRoot);
+    const receiptFile = path.join(registration.installationRoot, 'state', 'codex-skill-registration.json');
+    const receipt = JSON.parse(fs.readFileSync(receiptFile, 'utf8'));
+    if (owned.state !== 'files-installed-host-discovery-unverified' || receipt.installId !== registration.installId || sha256(fs.readFileSync(receiptFile)) !== registration.refresh.receiptSha256 || canonicalStringify(receipt.files) !== canonicalStringify(registration.refresh.files)) fail('CODEX_SKILL_PLAN_INVALID', 'Skill 刷新前归属或字节变化，保留并停止');
+  }
+  if ((!registration.snapshot.empty && !registration.refresh) || registration.files.length !== 2 || registration.files.map((entry) => entry.path).join('|') !== 'SKILL.md|foundation-installation.json' || registration.files.some((entry) => sha256(entry.content) !== entry.sha256 || Buffer.byteLength(entry.content) !== entry.bytes)) fail('CODEX_SKILL_PLAN_INVALID', 'Skill 精确文件计划无效');
 }
 
 // Internal dispatcher only. The caller must have consumed the capability
@@ -57,6 +71,23 @@ export function verifyCodexSkillRegistration(registration) {
 export function applyCodexSkillRegistration(registration) {
   verifyCodexSkillRegistration(registration);
   const receiptFile = path.join(registration.installationRoot, 'state', 'codex-skill-registration.json');
+  if (registration.refresh) {
+    // The capability dispatcher has already persisted each before/after file in
+    // its durable journal. A crash or partial refresh requires that recovery;
+    // it is not reported as a successful registration.
+    const replace = (file, content, expectedHash) => {
+      if (fs.realpathSync(file) !== file || !fs.lstatSync(file).isFile() || sha256(fs.readFileSync(file)) !== expectedHash) fail('CODEX_SKILL_PLAN_INVALID', '刷新写入前文件变化，停止并保留恢复记录');
+      const temporary = `${file}.${crypto.randomUUID()}.pending`;
+      const descriptor = fs.openSync(temporary, fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL | fs.constants.O_NOFOLLOW, 0o600);
+      try { fs.writeFileSync(descriptor, content); fs.fsyncSync(descriptor); } finally { fs.closeSync(descriptor); }
+      fs.renameSync(temporary, file);
+      const directory = fs.openSync(path.dirname(file), 'r');
+      try { fs.fsyncSync(directory); } finally { fs.closeSync(directory); }
+    };
+    for (const entry of registration.files) replace(path.join(registration.destination, entry.path), entry.content, registration.refresh.files.find(before => before.path === entry.path).sha256);
+    replace(receiptFile, codexSkillReceiptContent(registration), registration.refresh.receiptSha256);
+    return {filesInstalled: true, refreshedOwnedFiles: true, hostDiscoveryVerified: false, scope: 'user', destination: registration.destination};
+  }
   if (fs.existsSync(receiptFile)) fail('CODEX_SKILL_RECEIPT_EXISTS', '既有 Skill 归属记录需要单独核对；不覆盖');
   const createdDirectories = [];
   const createdFiles = [];

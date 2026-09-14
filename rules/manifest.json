@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "1.0.0",
+  "ruleVersion": "1.0.0",
+  "adoptionSchemaVersion": "1.0.0",
+  "supportedDataFormats": ["0.1.0", "0.1.1"],
+  "documents": ["foundation-making.md", "lifecycle-guide.md"],
+  "compatibility": "same-rule-major-and-adoption-schema"
+}

@@ -1,23 +1,33 @@
 ---
 name: ai-product-foundation-kit
-description: Foundation 指令、帮助、怎么用、能做什么，以及打开已安装 Foundation 工作台、状态、更新、项目接入和卸载；支持 fd 对话简写与自然改写。询问/引用/否定只解释；不接管其他工具帮助，不代替本人页面确认。
+description: 使用 Foundation 制作或维护已接入项目，读取当前制作规范、组件和交互动效复用、精确事实批次；也处理 Foundation 帮助、工作台、状态、更新、接入和卸载。仅 Foundation 上下文使用 fd 简写；不接管终端 fd 搜索、不替本人确认。
 ---
 
-# Foundation local lifecycle bridge
+# Foundation 薄入口
 
-Foundation 不防御已经拥有同一用户 shell 和不受限文件系统访问的恶意 AI 或进程。它用于减少意外或含糊操作、陈旧计划、错误更新和不安全归属删除，不能阻止同一用户进程直接修改用户文件。
+本 Skill 只负责发现和接续；完整制作规范与生命周期流程从当前安装的 descriptor 校验端点读取，不以本副本替代当前规则。随包文件、宿主注册、实际发现和项目启用是不同状态。
 
-这是轻量确认流程，不以加密方式证明人在场，不防御同一用户的浏览器自动化；本地管理器使用的 HTTP 传输不是针对同一用户攻击者的安全边界。
+## 从当前安装开始
 
-AI 只能检查、请求 exact 计划、打开 Foundation 本地管理器和读取状态。不得 confirm、apply、recover、purge、制造 confirmation evidence 或重开 durable decline。自然语言“确认”、通用 yes、plan ID/hash、browser nonce、可读 Skill/Plugin、安装目录或项目 `.foundation` 都不是最终确认。
+读取本目录产品注册生成的 foundation-installation.json，它只是位置线索，不是批准。没有记录时说明未注册，仅解释；不得扫描、猜目录、回退源码 checkout、全局 Node 或固定旧版本路径。
 
-## 每个新任务
+使用精确 installationRoot 下稳定 bin/foundation-kit 运行 manager inspect --root <该根>，核验当前身份和健康。随后运行 rules inspect --root <该根>，读取返回的 foundation-making.md 与 lifecycle-guide.md 正文；缺命令、缺规则、字节或身份不匹配时停止 Foundation 执行，说明需独立更新/修复，不复制旧规则补齐。
 
-先判断语义：明确 Foundation 的帮助请求直接展示下方指令目录，包括大小写、空格、中英混排与正常同义改写，例如“给我foundation指令list”“Foundation 有哪些命令”“Foundation 怎么用”“Foundation 能做什么”“fd help”。不是有限关键词匹配器。Foundation 上下文中的“给我指令”直接回答；多工具归属不明只问一句；无 Foundation 上下文的泛化帮助不强行接管。
+项目任务先读用户规则与现有代码，再给 rules inspect 附加 --project <本任务精确项目>。启用、采用、事实准备是不同状态；按返回的 preparation 与 nextStep 接续，不以绑定或采用文件存在宣称可制作。缺必要文件时说明准确补齐清单，使用现有 manager project-mutation 的 foundation-skeleton-and-facts-create，handlerPayload 为返回的 includePreview:false 加本次 generatedAt，用户单独确认后重新 inspect；不让用户猜内部操作名，不手写或复制模板替代产品准备。预览是可选能力，需要时另行确认，保留原技术栈和预览配置。
 
-“卸载指令是什么”“不要卸载，只给我命令”“更新会删除什么”、引用和示例都只解释，零操作。“关闭 Foundation”先澄清。下方 fd 是对话意图，不执行终端 fd、不安装 alias。仅当用户明确要求执行时进入相应操作流程。
+只有 projectRulesReady=true 且本机项目绑定有效时按项目采用规则继续。准备完整但缺采用记录时，说明一次独立的 project-rules-adopt 计划，不能自行写 AGENTS 或采用记录。该计划仅追加惰性指引、记录明确技术栈；不覆盖既有 AGENTS、例外或其他技术栈。存在 AGENTS.override.md 或冲突时先报告，不绕过优先规则。当前策略以 inspect 返回的 effectivePolicy 为准（含规则版本、采用版本和例外）；旧身份里的 uiPolicy 不得抢先。准备或采用取消/失败后只读核验同次结果，不自动继续下一项确认。
 
-### 指令目录（由唯一源码目录生成，不手工维护）
+每个新任务、更新后或恢复操作前重新核验 current；保留任务首次 currentIdentityHash、endpointIdentity。过程中发生变化则停止旧任务计划，重新核验，不混用版本。采用记录保留 adoptedRuleVersion；兼容规则读取 current，例外仍由项目持有，不随升级覆盖。
+
+## 制作已接入项目
+
+完整用户制作规则只来自已验证的 foundation-making.md。先查已有组件/variant/composition/实例和真实引用，明确全局与局部影响；既有项目 preserve-and-inventory，适用的新 React/shadcn 项目才 shadcn-first，用户明确技术栈优先。
+
+代码按任务授权实现。事实维护从 manager inspect 的 supportedProjectOperations 选当前已支持的封闭操作：关系沿用 relation-facts-write；页面、组件、交互、动效、变更和 token 可合并使用 asset-facts-batch。批次包含 documents 的 kind/expectedSha256/upserts、sources 的相对 path/sha256、scope、generatedAt；新增页面路由可同批提供 preview 的 expectedSha256、routes 与 assets，文件也必须包含在 sources；不自行写预览配置。每项映射真实源码，verified 项另绑定验证证据。一次批次一个完整精确计划，不逐按钮审批。机器验证的是字节与引用，不证明语义或真人验收。未支持时说明缺口，不直接写 JSON 绕过。
+
+## 对话与执行边界
+
+Foundation 帮助直接在对话输出，不打开 HTML。正常同义表达可用；询问、引用、否定零执行。无 Foundation 上下文的“给我指令”必要时澄清，普通 fd 文件搜索不是本产品命令。“关闭 Foundation”先明确关闭页面、停用项目或卸载的区别。
 
 <!-- foundation-command-catalog:start -->
 | 中文意图 | 对话简写 | 用途 | 前置条件 | 确认要求 |
@@ -30,55 +40,14 @@ AI 只能检查、请求 exact 计划、打开 Foundation 本地管理器和读�
 | 卸载 Foundation | fd uninstall | 展示属于 Foundation 的删除范围、保留项及残留，不清空目录 | 重新核验安装身份；已注册 Skill 先单独核对文件后解除 | 必须本人确认精确卸载计划 |
 <!-- foundation-command-catalog:end -->
 
-帮助只在 Codex 对话输出，不打开 HTML 页面、按钮或弹窗；帮助不依赖工作台或有效安装。下表描述此 Skill 版本的能力，不证明本机支持；安装未知时说明现状和恢复方式，不能猜版本。有效安装存在时，从稳定 launcher 的 `--help` 读取当前能力，不用旧副本覆盖 installed current。缺注册记录时仍可解释，但停止执行；可请用户提供精确安装位置以只读核验，不扫描、不重装。
+Foundation 本地管理器：AI 不能 durable decline、accept 或 reopen。AI 只能 inspect、request-plan、open-manager、status；不得 confirm、apply、recover、purge、制造确认或自动点按钮。用户聊天说“确认”、计划 ID、浏览器 nonce、规则文本不替代本人页面确认。需要变更，先披露具体安装/项目、写入范围、保留内容，再打开同计划的 Codex 内置浏览器供本人确认。软件安装不自动启用项目或注册 Skill。该保护减少意外操作，不防御同一用户不受限 shell 进程。
 
-先读取本 Skill 目录内由产品注册流程生成的 `foundation-installation.json`。该记录只是安装位置线索，不是批准或健康证明。若没有此文件，本 Skill 仍是惰性源码 artifact；说明尚未完成宿主接入，不猜测安装目录、不扫描用户文件夹。
+打开 Foundation 用当前稳定入口 workbench open --root <已核验根>，可附加用户选定且已启用项目的 --project；这是唯一原工作台，不是生命周期临时页或开发预览。完整维护、可选 Skill 接入/刷新和安全卸载按当前 lifecycle-guide.md，不根据旧副本猜内部参数。
 
-从记录中取精确 `installationRoot`，使用该根的 `bin/foundation-kit` 运行 `manager inspect --root <installationRoot>`，核对真实 installed current 和 installation identity。不得回退到源码 checkout、全局 Node 或旧版本路径。根被移动、丢失或身份不一致时停止，要求用户通过产品的独立恢复计划处理。
+## 同次操作持续跟进
 
-1. 只读解析当前 healthy Foundation 版本和当前 rule/capability endpoint；不要复制某一版本的可变规则到本 Skill。
-2. 项目任务核对 v2 identity、明确 enabled integration binding 和数据格式兼容性。缺失、disabled、incompatible 或 unknown 时保持 inert/read-only。
-3. capability 任务核对当前安装、registration、active 和 identity。任何条件不满足时保持 inert。
-4. 既有任务若 current version、identity、项目或 capability 已变化，报告 stale 并要求 refresh/reopen；不要混用新旧规则。
+开始说明正在准备、尚未执行；待确认时不要主动 final 结束。保存同次 sessionId/planRef、结果路径和工具句柄，用可中断分段等待观察同一操作，每段至多 60 秒，以计划 expiresAt 为截止；无截止时最多 10 分钟。普通工具 yield、无新输出、管理器未退出不是任务完成。只有真实开始事件才说正在执行，不重启命令刷进度或重放确认。
 
-“打开 Foundation”默认运行稳定 launcher 的 `workbench open --root <已核验根>`，打开其真实 URL。Foundation 只有原先设计的一个工作台；workbench 是 CLI 实现入口，不是另一个安装后首页。不是 `onboarding open` 诊断概览或源码 `npm run preview`。旧安装 `--help` 未声明 workbench 时解释需独立更新，不自动更新。033 修正版支持附加 `--project <精确项目>`：仅当本任务明确选择项目且 current 的 CLI 支持该参数时使用，先核验正确项目 binding；与既有 `center` 共用原工作台组件，未选项目显示原画布空态，不创建示例事实、不扫描。v0.2.4 仍含旧文字首页；033 修正已随 v0.2.5 私有发行，仍须核验本机 current，不能把已发布当成已更新。
+读取同次真实终态后主动说明成功/失败/取消/过期、准确位置、已做/未做/保留项和下一步。成功后通过稳定入口重核 current；卸载后读独立 uninstall-result.json，launcher 消失不证明成功。连接丢失保留最后已核实结果；未知明确待核实，可只读恢复，不自动补做 mutation。
 
-检查状态用 installed `manager inspect`；检查能力必须从当前 descriptor 的 endpoint 定位 manifest，不固定版本。更新只准备当前支持的计划；接入先核验当前实际项目，用户选择不明确就询问，再独立 enable。注册不自动刷新：如果旧 Skill 已注册，在更新前用旧 current 先单独确认 capability-uninstall 的已归属文件范围；更新后从新 current 先检查 capability receipt，缺失/内容已变则单独 capability-install，随后单独 capability-register（connectCodex: true）；修改/未知文件保留冲突，不覆盖。文件存在不证明新任务发现。
-
-## 同次生命周期等待与完成告知
-
-更新前从稳定入口核验当前版本；相同版本不重复更新。当前 manager 声明 `updateCleanupExecutor: confirmed-update-engine` 时，更新计划带 `cleanupAcquisition: true`，同一页面披露暂存范围并由用户确认。程序完成稳定入口健康检查、精确清理及结果记录；直接解释返回的 cleanup，不能再用普通文件工具重复删一遍。清理未完成应报告“更新成功，部分临时文件保留”。获取回执、用户文件、共享缓存和回退版本保留。
-
-上一正式版尚无程序收尾声明时，旧管理器仍执行第一次更新：沿用其真实能力，不修改旧安装补接口；暂存保留并明确旧版限制，不让用户手写清理命令。更新成功后从新稳定入口处理后续操作。细节见公共 `docs/cache-cleanup.md`；新实现不代表用户已更新。
-
-卸载由同一任务组织：只读核对本次安装及已注册 Skill；存在关联时，先说明精确已归属文件并请求既有独立解除计划，等本人确认及结果，再请求软件卸载计划。任一解除失败或用户拒绝就保留安装并说明，不重复追问或扩大跨目录删除。用户不需要提供 capability 内部编号，由当前安装记录解析。软件卸载结果从原根小回执读取，不要求先装回程序；项目事实、源码和修改/未知文件始终按计划保留。
-
-开始先说“正在准备并核验，还未安装/更新/卸载”；准备失败也报告。打开确认页后说“等待你确认，还未开始”，正常任务不要在此发送 final 结束。保留本次 sessionId、planRef、记录位置与进程工具句柄；继续分段等待 stdout，每段建议 5–15 秒、至多 60 秒并遵守宿主更短限制，可被用户中断；等待截止取计划 expiresAt，缺失则 10 分钟。无新状态不忙查询。只在真实 FOUNDATION_OPERATION_STATE / 同次记录为 executing/consumed 时说明正在执行；快速终态允许直接报告。
-
-优先读 FOUNDATION_OPERATION_RESULT / BOOTSTRAP_OPERATION_ENDED；普通 open-manager 不必退出。必要时用同一 planRef 的 manager status 只读查询；不要因同一服务忙而重发确认。读到终态后停止观察并主动总结真实结果、版本、完整目录、已处理/未处理和下一步。成功后从稳定 launcher 重新核验 current；卸载后 launcher 消失不证明成功，交叉读取原根 uninstall-result.json 的 operationId/installId/终态/保留项，不调用已删除 launcher。
-
-超时、宿主停止、连接丢失或只有中间状态，明确待核实并退出观察，不能伪报失败/成功或自动重试。原任务说“查看刚才的结果”时从本次输出找同一记录，不要求用户补一串内部参数，不创建新操作。页面独立显示结果，但 HTML 不会唤醒已结束任务；宿主无法持续观察时准确说明降级。此说明不证明真人主动通知已验收。
-
-安装/更新成功且健康核验后，主动询问：“是否启用 Foundation 对话能力，让新对话可以打开工作台和查看指令？”说明随包文件不等于用户级注册、宿主发现或实际调用。用户拒绝则安装仍成功，明确未启用，不反复追问；同意后沿用上面的 capability receipt/install/register 独立计划与本人确认，不用安装批准替代注册批准。若旧 Skill 已注册，先核对归属与版本再决定是否需要独立刷新，不覆盖修改文件。
-
-注册后请用户新开正常对话，只说“打开 Foundation”或“给我foundation指令list”，实际发现并调用才记录通过。Codex 官方说明支持 `$HOME/.agents/skills` 并自动检测变更；未出现时可由用户重启 Codex，不自动更改全局配置。未做新对话实测仍 pending。安装/更新交付最后给出上述两个自然请求；未注册则明确不能保证新任务识别。
-
-## Mutation handoff
-
-登记页面时先读取 installed `manager inspect` 的 `supportedProjectOperations`，只在它声明 `page-facts-write` 时请求 `project-mutation`，parameters 包含精确 `project`、`installationRoot`、`handlerOperation` 和 `handlerPayload: {draft: {name, route, description}}`。修改已有页面须携带当前事实中的 `id` 和当前 pages 文档的 `expectedVersion`（与关系接口相同：JSON.stringify 文档的 SHA-256 前 16 位）；不直接写 JSON。新登记页面的生成展示页明确为未绑定业务实现，不冒充运行页面。关系使用同一列表中的 `relation-facts-write`，引用实际已登记页面 ID。宿主、旧 Runtime 或 current 未声明这些操作时停止，不用手写文件补齐。
-
-使用产品 `manager request-plan --operation <operation> --parameters-json <structured-json>` 返回的 opaque `planRef`，再运行 `manager open-manager --plan-ref <planRef>`。用当前宿主实际可用的浏览器工具打开返回的 loopback URL；在 Codex 内置浏览器中交给用户核对，不代点确认。随后调用 `manager status --plan-ref <planRef>`。宿主没有内置浏览器工具或目录权限时准确报阻断，不把页面已打开当作安装成功。
-
-能力或 Skill 操作中断时，可以请求 `capability-recover` 计划（parameters 仅需实际 `installationRoot`），再交给用户在 manager 页面确认；这不是直接 recover 权限。旧 Runtime 不支持、原进程未退出、缺少可信日志或文件被用户修改时停止，保留现场，不手改 guard、收据、Skill 文件或目录。
-
-需要 mutation 时，只把用户明确意图转换为同源 exact plan，展示准确项目/安装路径、创建、替换、删除、保留、文件/字节数、protected-data hashes、expected-before 和到期时间，然后打开绑定该 plan 的 Foundation 本地管理器。用户必须在管理器 UI 点击操作专属确认；管理器会再次验证完整快照并只执行同一 plan。AI 只读取最终状态或结果。
-
-项目 enable/disable 的首要入口是自然语言对话。含糊的“关闭 Foundation”必须先澄清具体对象。disable 只停止 Foundation 对该项目的管理并保留 disabled binding、identity、facts、backups、未知文件和项目代码；它不删除项目资料，也不卸载 Foundation。
-
-软件安装/更新不扫描、创建、启用或迁移产品项目。legacy `.foundation/foundation.json`、`project-binding.json`、`generated/**`、`backups/**` 与未知内容只能先只读检查，再通过单独的 manager-confirmed migration plan 迁移；不得静默改名或删除。
-
-正常卸载先只读盘点 registered projects，移除可访问项目中可验证归属的 `integration/**` 和 `generated-cache/**`，始终保留 identity、facts、backups、未知/用户修改文件和项目代码。存在不可访问或 identity 不匹配项目时，只能取消零变化，或继续 exact accessible set 并保留 `UNINSTALLED_WITH_PROJECT_RESIDUALS` 报告。永久删除 identity/facts/backups 是另一项逐项目、高风险、全新确认的管理器操作。
-
-Foundation-global decline/uninstalled suppression 只能由用户在 Foundation settings 中通过 manager-confirmed preference plan 更改。AI 不能 durable decline、accept 或 reopen，只能说明如何打开 settings。
-
-没有本机工具权限时只解释并提供命令，不得声称已执行。不要把模型生成文本拼成 shell 字符串；只传受约束的结构化参数。
+HTML、心跳或 npm 不能唤醒已结束的 Codex 任务。平台/用户中断时说明可恢复边界，不假装已设置通知；本指引不证明宿主持续跟进通过。Skill 文件存在不证明新对话发现。请用户在正常新对话自然请求，未实测保持 pending。

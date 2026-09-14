@@ -25,9 +25,9 @@ import {DEMO, ROOT, makeTempDirectory, removeTempDirectory} from '../helpers/pro
 
 test('024 单一产品版本权威贯穿 package 镜像与管理中心模型', () => {
   const manifest = readProductManifest(ROOT);
-  assert.equal(manifest.product.version, '0.2.1');
-  assert.equal(productVersion(ROOT), '0.2.1');
-  assert.deepEqual(validateVersionMirrors(ROOT), {ok: true, authority: '0.2.1', mismatches: []});
+  assert.match(manifest.product.version, /^\d+\.\d+\.\d+$/u);
+  assert.equal(productVersion(ROOT), manifest.product.version);
+  assert.deepEqual(validateVersionMirrors(ROOT), {ok: true, authority: manifest.product.version, mismatches: []});
   const lock = JSON.parse(fs.readFileSync(path.join(ROOT, 'package-lock.json'), 'utf8'));
   assert.equal(lock.version, manifest.product.version);
   for (const location of ['', 'apps/management-center', 'packages/core', 'packages/cli']) {
@@ -40,7 +40,7 @@ test('024 单一产品版本权威贯穿 package 镜像与管理中心模型', (
   }
   const facts = Object.fromEntries(fs.readdirSync(path.join(DEMO, '.foundation', 'facts')).map((name) => [name.replace('.json', ''), JSON.parse(fs.readFileSync(path.join(DEMO, '.foundation', 'facts', name), 'utf8'))]));
   const preview = JSON.parse(fs.readFileSync(path.join(DEMO, '.foundation', 'preview.json'), 'utf8'));
-  assert.equal(buildViewModel(facts, preview).foundationKit.productVersion, '0.2.1');
+  assert.equal(buildViewModel(facts, preview).foundationKit.productVersion, manifest.product.version);
 });
 
 test('024 install-contract schema 有版本、兼容策略和未知字段策略', () => {

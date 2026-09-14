@@ -1,3 +1,4 @@
+import {buildRepositoryCandidateForTest} from '../helpers/repository-candidate.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -30,10 +31,10 @@ function writeJson(file, value) {
   fs.writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`);
 }
 
+let currentCandidate;
 function actualCandidate() {
-  const root = path.join(ROOT, '.tmp', 'candidates', `foundation-0.2.0-${process.platform}-${process.arch}`);
-  assert.equal(fs.existsSync(root), true, 'run npm run candidate before the 026R3 focused gate');
-  return {root, manifest: JSON.parse(fs.readFileSync(path.join(root, 'manifest.json'), 'utf8'))};
+  if (!currentCandidate) { const {candidate: root} = buildRepositoryCandidateForTest(); currentCandidate = {root, manifest: JSON.parse(fs.readFileSync(path.join(root, "manifest.json"), "utf8"))}; }
+  return currentCandidate;
 }
 
 function install(root, candidate = actualCandidate()) {
@@ -329,7 +330,7 @@ test('026R3 strict signed capability state and registration identities fail clos
 
   const validRegistrationDocument = JSON.parse(validRegistration.toString('utf8'));
   assert.equal(validRegistrationDocument.registrations[CAPABILITY_ID].type, 'codex-skill');
-  assert.equal(validRegistrationDocument.registrations[CAPABILITY_ID].version, '0.2.0');
+  assert.equal(validRegistrationDocument.registrations[CAPABILITY_ID].version, JSON.parse(validState).capabilities[CAPABILITY_ID].version);
   assert.equal(validRegistrationDocument.registrations[CAPABILITY_ID].projectScoped, false);
 
   const registrationCases = [

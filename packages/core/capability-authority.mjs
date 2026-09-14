@@ -272,6 +272,7 @@ export function createCapabilityPlan({operation, installationRoot, manifestFile,
   if (connectCodex) {
     seed.codexIntegration = prepareCodexSkillRegistration({installationRoot: context.root, installId: context.current.identity.installId, manifestFile: file});
     seed.creates = [...seed.codexIntegration.directories, ...seed.codexIntegration.files.map((entry) => path.join(seed.codexIntegration.destination, entry.path)), path.join(context.root, 'state', 'codex-skill-registration.json')];
+    if (seed.codexIntegration.refresh) { seed.replacements = seed.creates; seed.creates = []; seed.preserves.push('unknown-skill-files'); }
     seed.fileCount = seed.codexIntegration.files.length;
     seed.byteCount = seed.codexIntegration.files.reduce((sum, entry) => sum + entry.bytes, 0);
   }

@@ -75,5 +75,6 @@ export function assetPreviewContract(asset) {
   if (!asset) return {status: 'missing-context', reason: '尚未选择资产。'};
   if (asset.assetType !== 'component') return {status: 'unsupported', reason: `${ASSET_TYPE_CAPABILITIES[asset.assetType]?.label || '此类资产'}当前没有可安全运行的组件预览。`};
   if (!asset.implementationPath) return {status: 'missing-context', reason: '组件尚未登记实现路径，无法确认真实实现。'};
-  return {status: 'iframe', route: '/events'};
+  if (typeof asset.previewRoute !== 'string' || !asset.previewRoute.startsWith('/') || asset.previewRoute.startsWith('//') || /[?#\s\\]/u.test(asset.previewRoute)) return {status: 'missing-context', reason: '尚未登记独立资产预览入口；可在页面预览核验实际使用，不套用其他项目的预览路径。'};
+  return {status: 'iframe', route: asset.previewRoute};
 }

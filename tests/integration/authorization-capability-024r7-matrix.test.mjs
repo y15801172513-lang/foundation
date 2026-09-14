@@ -1,3 +1,4 @@
+import {writeLegacyCapabilityFixture} from '../helpers/legacy-capability-fixture.mjs';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -56,7 +57,7 @@ function candidate(root, version = '0.2.0') {
   fs.mkdirSync(path.join(source, 'app'), {recursive: true});
   fs.writeFileSync(path.join(source, 'app', 'foundation-smoke.mjs'), `console.log(JSON.stringify({ok:true,version:${JSON.stringify(version)}}))\n`);
   fs.cpSync(path.join(ROOT, 'templates'), path.join(source, 'app', 'templates'), {recursive: true});
-  fs.cpSync(path.join(ROOT, 'skills'), path.join(source, 'app', 'artifacts', 'skills'), {recursive: true});
+  writeLegacyCapabilityFixture(path.join(source, 'app', 'artifacts', 'skills', 'ai-product-foundation-kit'));
   const runtime = path.join(root, 'private-node');
   if (!fs.existsSync(runtime)) { fs.copyFileSync(process.execPath, runtime); fs.chmodSync(runtime, 0o755); }
   return buildCandidate({sourceRoot: source, outputRoot: path.join(root, `candidate-${version}-${crypto.randomUUID()}`), productVersion: version, platform: process.platform, arch: process.arch, runtimeSource: runtime, entrypoint: 'app/foundation-smoke.mjs', sourceKind: 'local-test'});

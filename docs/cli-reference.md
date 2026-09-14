@@ -140,3 +140,6 @@ Foundation:status
 `manager open-manager` 返回 URL、planRef、sessionId 和记录位置，随后可输出同次 `FOUNDATION_OPERATION_RESULT`，不以进程退出作为普通维护完成条件。页面本人确认，AI 不代提交。
 
 同次查询使用 `manager status --plan-ref <原返回值>`；首次安装使用 `onboarding status --session-id <原返回值>`。它们只读、不重放操作；中断且无终态时需核实，不能宣称成功。卸载后若 launcher 已移除，只读核对原安装根 `uninstall-result.json` 和先前记录的操作/安装身份，不自动补做 mutation。临时页面失效后，按已记录路径恢复，不承诺网页唤醒对话。
+# 当前制作规范（037 本地实现，发布待验）
+
+`rules inspect --root <installation-root> [--project <project-root>]` 只读核验 installed current、完整规则端点、必要事实准备与项目采用状态；无写入、无修复。返回 preparation、nextStep、effectivePolicy 与 projectRulesReady，不能只凭 binding/adoption 判断就绪。准备、采用与资产批次仍经 `manager request-plan` → `open-manager` → 本人确认 → `status`；每项完成重新 inspect，不重放批准。缺必要文件使用既有 foundation-skeleton-and-facts-create，includePreview:false 只补缺，不覆盖模板；预览可选。详见 [规则与项目使用](rules-and-project-use.md)。稳定旧版未声明该命令时不要调用或假装已支持。
