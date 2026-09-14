@@ -1,5 +1,15 @@
 # Verification baseline
 
+## 0.2.9 release verification (2026-09-14)
+
+Private source `fff9d0e635613781a6b58e21ceb126b559bc2427` maps to independent public source `920b9e6ef699f83aea09b061a423b8f06c6f42d3` and immutable [v0.2.9](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.9). Documentation commits are separate from the runtime source identity. The unchanged npm launcher remains 0.1.3.
+
+The reviewed source suite passed 400 tests with 0 failures and 5 named skips; two skipped entry fixtures were separately activated. The clean public export's directly affected combination passed 29/29, and the final archive entry combination passed 2/2. Two builds matched the committed generated files; the archive's 56 members and bundled official runtime were reverified. Exact project readiness and policy propagation were exercised through isolated installation, upgrade/rollback/re-upgrade, owned Skill refresh, original-application development, browser label/copy output and uninstall preservation. Engineering confirmation fixtures are not human approval. Original failures were retained and their full combinations rerun, not skipped to publish.
+
+GitHub release/asset proofs and npm registry bytes were verified. Real-user installation, fresh-task Skill discovery and unsolicited completion feedback remain pending. Older evidence below is historical, not the current release or a substitute for human acceptance.
+
+## Historical 0.2.0 source-candidate evidence
+
 This is the compact public-safe evidence map for the `0.2.0` source candidate. The complete private engineering record and local raw logs are intentionally not exported.
 
 | Baseline | Evidence |

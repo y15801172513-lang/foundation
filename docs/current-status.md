@@ -1,6 +1,14 @@
 # 当前状态与发布就绪度
 
-## 035 当前发行（2026-09-11）
+## 当前发行：0.2.9（2026-09-14）
+
+公共不可变 [v0.2.9](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.9) 已发布，三项发行资产身份与 GitHub 证明已核验。运行载荷绑定公共源码 `920b9e6ef699f83aea09b061a423b8f06c6f42d3`；对应私有源码 `fff9d0e635613781a6b58e21ceb126b559bc2427`，两库历史独立。后续文档提交不改变运行载荷身份。
+
+获取入口复用 [npm 0.1.3](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.3)，启动器 11 个发布文件未变，registry tarball 再次核验一致，没有机械发包。最新安装入口见[安装说明](install-with-codex.md)。
+
+本版修复已有项目的必要准备接续与有效策略传播。精确准备只补缺失事实，保留原技术栈/用户规则/预览；工作台、CLI 和复制上下文使用一致策略。最终干净提交归档的隔离首装、0.2.8 升级/回退/再次升级、Skill 刷新、项目制作和卸载保留已验证；确认是工程夹具。真人安装、Skill 新对话发现、真实项目及无追问主动告知仍 pending，新版发布不等于用户安装已更新。
+
+## 历史记录：035 与更早版本（非当前发行）
 
 公共不可变 [v0.2.7](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.7) 与 [npm 0.1.2](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.2) 已发布，发行证明、资产长度/摘要及 npm registry 实际 tarball 已回读。运行载荷绑定公共提交 `1f99eecd4b21bf29b004e1110ef515466f7f3ed8`；安装说明跟随当前 main，不替代该不可变身份。
 

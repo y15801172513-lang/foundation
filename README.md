@@ -21,7 +21,7 @@ Foundation 是一个本地工作台：把项目已记录的页面、组件、关
 
 ## 用 Codex 安装
 
-在一个**不属于源码建设目录、允许写入安装位置的新 Codex 对话**里粘贴以下命令。npm 0.1.3 与配套运行版 0.2.8 已发布并完成发行字节核验；新对话安装体验仍待真人验收：
+在一个**不属于源码建设目录、允许写入安装位置的新 Codex 对话**里粘贴以下命令。运行版 0.2.9 已发布并完成发行字节核验，获取入口继续使用未变的 npm 0.1.3；新对话安装体验仍待真人验收：
 
 ```text
 npx --yes --package @josephyulei/summon-foundation@0.1.3 summon foundation
@@ -29,7 +29,7 @@ npx --yes --package @josephyulei/summon-foundation@0.1.3 summon foundation
 
 当前支持 **macOS Apple Silicon（arm64）**，获取入口需要 **Node.js 22.9+ 与 npm**，以及可用网络、本地命令和浏览器工具。不需要 clone 项目，也不需要自己下载、解包或填写校验参数。缺少依赖或写入权限时先解决前置条件，不会自动全局安装工具。
 
-当前运行版为 [v0.2.8](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.8)。新版入口会实际下载并准备目录选择页，不再只打印接续提示；但无历史新 Codex 对话是否正确打开页面、持续等待并主动告知结果，仍须真人验收。默认使用 Codex 内置浏览器，系统浏览器仅在告知并同意后备用。当前版本与过渡方法见[安装说明](docs/install-with-codex.md)。
+当前运行版为 [v0.2.9](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.9)。新版入口会实际下载并准备目录选择页，不再只打印接续提示；但无历史新 Codex 对话是否正确打开页面、持续等待并主动告知结果，仍须真人验收。默认使用 Codex 内置浏览器，系统浏览器仅在告知并同意后备用。当前版本与过渡方法见[安装说明](docs/install-with-codex.md)。
 
 ### 接下来会发生什么
 
@@ -48,6 +48,8 @@ npx --yes --package @josephyulei/summon-foundation@0.1.3 summon foundation
 若希望新对话能识别「打开 Foundation」或「给我 foundation 指令 list」，需要**另行确认启用 Foundation 对话能力（Skill）**。未注册时不能承诺新对话自动发现。完整指令只在对话显示，见[对话指令说明](docs/conversation-commands.md)。
 
 再选择一个你想接入的项目。Foundation 会先检查已有信息、展示独立计划，等你确认后才接入；不自动扫描或启用其他项目。没有接入项目时显示空状态，不拿示例冒充你的数据。
+
+接入不等于制作准备完成：对话会检查必要资料，分别取得准备与采用规则的确认，只补缺失内容，保留原技术栈、用户规则和已有事实。预览接入是独立选择，不是维护资产的隐含前提。详见[规则与项目使用](docs/rules-and-project-use.md)。
 
 一个典型用法：在接入的预览中选中对象，复制其身份、层级及已知关联，再告诉 AI「只调整当前实例，不修改共享组件」。这些信息帮助把任务说具体，实际修改仍须核对代码和结果。页面关系与使用位置只涵盖已登记的信息，不代表完整依赖分析。
 
