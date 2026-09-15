@@ -2,8 +2,8 @@
   "schemaVersion": "2.0.0",
   "exportContractSchemaVersion": "2.0.0",
   "exportContractSha256": "2b31f0414d4f1c94038af31cb7db1362f49108e08199c7447581c8b796760e5f",
-  "sourceCommit": "2f247a333a2f42f5b640f98469b5058b6eea8761",
-  "approvedSourceCommit": "2f247a333a2f42f5b640f98469b5058b6eea8761",
+  "sourceCommit": "a4b34b7ad20cc8235518ed3e2dfb8eb2574f2fd7",
+  "approvedSourceCommit": "a4b34b7ad20cc8235518ed3e2dfb8eb2574f2fd7",
   "sourceState": "clean-exact-commit-approved",
   "productVersion": "0.2.11",
   "licenseStatus": "approved",
@@ -14,17 +14,17 @@
   "publicationEligible": true,
   "commitBinding": {
     "schemaVersion": "2.0.0",
-    "approvedCommit": "2f247a333a2f42f5b640f98469b5058b6eea8761",
-    "gitTree": "92fadce63b92a2772c04a1c58b6b151da24dcf4d",
+    "approvedCommit": "a4b34b7ad20cc8235518ed3e2dfb8eb2574f2fd7",
+    "gitTree": "119206acc3b58b93a1b5239eab7179ac9535b4d1",
     "contractSha256": "2b31f0414d4f1c94038af31cb7db1362f49108e08199c7447581c8b796760e5f",
-    "expectedTreeHash": "e4b741bb8402f3bfb67d33c9463c4cb6928535236e552f793c3fcba7b2a30963",
+    "expectedTreeHash": "cbee3cae2c23d62750f0ce45af2da76b41456ca5fc0370bdfe9b6ea44bfb9ca0",
     "fileCount": 368
   },
   "fileCount": 370,
   "privateExportedCount": 368,
   "generatedPublicCount": 2,
-  "treeHash": "e4b741bb8402f3bfb67d33c9463c4cb6928535236e552f793c3fcba7b2a30963",
-  "inventoryHash": "9e37a67dbd7e7ff1ebc8eade6e09ca878e2494af8e58c6e97f3b1879aaa8cea0",
+  "treeHash": "cbee3cae2c23d62750f0ce45af2da76b41456ca5fc0370bdfe9b6ea44bfb9ca0",
+  "inventoryHash": "3212a3f20a647d0a1d7c4436b17ea0c89bbc927d40eddfda30800bf1f3664fbc",
   "files": [
     {
       "path": ".gitignore",
@@ -47,15 +47,15 @@
       "type": "file",
       "mode": 420,
       "bytes": 1082,
-      "sha256": "aaf92d00110f8f5327308681646478f9f1fe3c1b0dea49997be69687a46d4ffb",
+      "sha256": "46cae34f827c159232c615eeb8871e80c0a1dc1db380586ad02e7a4b3903a52b",
       "ownership": "generated-public"
     },
     {
       "path": "README.md",
       "type": "file",
       "mode": 420,
-      "bytes": 7891,
-      "sha256": "a0b2ef86f2db68b4a6abd0e62481c18e30ae4da31dae75e225833cdbab4d0be0",
+      "bytes": 7829,
+      "sha256": "ccd2bdfde53397d680928e5fbef87a8d9164140bcc719605fc39614618ce34a3",
       "ownership": "private-exported"
     },
     {
@@ -542,8 +542,8 @@
       "path": "distribution/summon-foundation/README.md",
       "type": "file",
       "mode": 420,
-      "bytes": 3944,
-      "sha256": "8fa4c511d05872b10c1af6deb2d9b19d382122f8577e84fc24bad8698101ec4f",
+      "bytes": 3803,
+      "sha256": "feffc13e15b2d69f3ab08da07b324999da15b3ff7439f9c48b5b5dc0b93e76b2",
       "ownership": "private-exported"
     },
     {
@@ -719,7 +719,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 12978,
-      "sha256": "67abb3a515053e44aa6591422ac3382600b448d6e5aba5a9230a59e107a6dcff",
+      "sha256": "664bb36c0c0453b54f9281c740460f1f9aa6e3daaed09f3242b6db9413dfc40c",
       "ownership": "private-exported"
     },
     {
@@ -750,8 +750,8 @@
       "path": "docs/current-status.md",
       "type": "file",
       "mode": 420,
-      "bytes": 8810,
-      "sha256": "c3f3f642dafc125c746d6bb0fc8ff16a835bc9e4deefc283f317ac270592be28",
+      "bytes": 9346,
+      "sha256": "47654f5ce9b227395702828b657e75d6db5766c7f28db6222ab06459f847b7b7",
       "ownership": "private-exported"
     },
     {
@@ -798,8 +798,8 @@
       "path": "docs/install-with-codex.md",
       "type": "file",
       "mode": 420,
-      "bytes": 19841,
-      "sha256": "85d636ce2de336cb7d1c54bb5983d23dfe205f7442f8396707583c007d0f9611",
+      "bytes": 19713,
+      "sha256": "d0e4b8e6fe0e2d91a1a2695e9ec3399f0fc7500c2fa0435e94db1cd9e093bbde",
       "ownership": "private-exported"
     },
     {
@@ -814,8 +814,8 @@
       "path": "docs/verification-baseline.md",
       "type": "file",
       "mode": 420,
-      "bytes": 5887,
-      "sha256": "5bb0426fb2e29c565065689b9fbbe53b16471112e2289b43c443eb71a7cfdfa9",
+      "bytes": 6681,
+      "sha256": "9bd8409b7221c7670001ee8528009bb0a433c6cd990e29ead7bf48350812c7e4",
       "ownership": "private-exported"
     },
     {

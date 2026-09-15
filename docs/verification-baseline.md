@@ -1,5 +1,9 @@
 # Verification baseline
 
+## 0.2.11 release verification (2026-09-15)
+
+Private source `2f247a333a2f42f5b640f98469b5058b6eea8761` maps to independent public source `ede0dd48296f7498f77d733996c663f55663721c` and [v0.2.11](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.11). The thin launcher is 0.1.5. Clean rebuilds are identical; targeted source checks, final payload entry, Skill continuation, normal/no-Skill/modified-Skill update and owned uninstall checks passed in contained engineering fixtures. Transport/proof fixtures are not anonymous release acceptance; release bytes/proofs and online acquisition are independently checked during publication. Fresh Codex discovery and human confirmation remain separate acceptance gates. Documentation commits do not alter the immutable runtime binding.
+
 ## 0.2.10 release verification (2026-09-14)
 
 Private source `c2a0d16dfb2e753ae93f3476d797fbb1075a13ea` maps to independent public source `163972c56c94f8b89f09e72411d28c8540dc4f0c` and immutable [v0.2.10](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.10). The updated thin launcher is 0.1.4; documentation commits do not change the runtime source binding.
