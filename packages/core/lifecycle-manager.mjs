@@ -15,6 +15,7 @@ import {canonicalStringify, createLifecyclePlan, LifecycleError, sha256, validat
 import {inspectInstallation} from './transaction-engine.mjs';
 import {createProjectAuthorityPlan, createProjectAuthorityRecoveryPlan, createProjectMutationPlan, createProjectMutationRecoveryPlan, inspectProjectAuthority, listProjectAuthorityRecords} from './project-authority.mjs';
 import {createCapabilityPlan} from './capability-authority.mjs';
+import {inspectCodexSkillOwnership} from './codex-skill-registration.mjs';
 import {resolveFoundationBridgeContext} from './ai-bridge.mjs';
 import {authorizationEffectForNormalUninstallCompositePlan, authorizationEffectForNormalUninstallProjectPlan, authorizationEffectForProjectLayoutPlan, authorizationEffectsForNormalUninstallCompositePlan, createNormalUninstallCompositePlan, createNormalUninstallProjectPlan, createProjectDataPurgePlan, createProjectLayoutMigrationPlan, snapshotProtectedProjectData} from './project-layout.mjs';
 import {authorizationEffectForOfferPreferencePlan, createOfferPreferencePlan} from './offer-consent.mjs';
@@ -212,6 +213,7 @@ export function createPendingLocalManagerSession({plan, stateRoot, now = Date.no
     replacements: stringList(plan, 'replacements', 'changes'),
     deletes: stringList(plan, 'deletes', 'removals'),
     preserves: stringList(plan, 'preserves'),
+    plannedImpact: plan.impact || plan.lifecyclePlan?.impact || null,
     fileCount: Number.isInteger(plan.fileCount) ? plan.fileCount : plan.candidate?.fileCount ?? null,
     byteCount: Number.isInteger(plan.byteCount) ? plan.byteCount : plan.candidate?.bytes ?? plan.impact?.diskBytes ?? null,
     protectedDataHashes: plan.protectedDataHashes || {},
@@ -325,6 +327,8 @@ export function inspectLocalLifecycle({installationRoot, project = null, operati
   if (installationRoot) result.installation = inspectInstallation(installationRoot);
   if (project) result.project = inspectProjectAuthority(project, {installationRoot});
   if (installationRoot) {
+    try { result.codexSkill = inspectCodexSkillOwnership(installationRoot); }
+    catch (error) { result.codexSkill = {state:'verification-required',code:error.code,hostDiscoveryVerified:false,mutationPerformed:false}; }
     result.bridge = resolveFoundationBridgeContext({installationRoot, project, operationRequirement: operationRequirement || (project || capabilityId ? 'project-skill-use' : 'lifecycle-inspect'), ...(capabilityId ? {capabilityId} : {})});
     if (result.bridge.capability) result.capability = result.bridge.capability;
   }

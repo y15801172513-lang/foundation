@@ -69,8 +69,13 @@ function runManagerCli(args, output) {
   if (command === 'open-manager') {
     for (const forbidden of ['--plan', '--path', '--root', '--target-root', '--state-root', '--action', '--port']) if (args.includes(forbidden)) throw new Error(`open-manager 不接受 ${forbidden}；只接受 opaque --plan-ref`);
     const server = createLocalLifecycleManagerServerForPlanRef({planRef: option(args, '--plan-ref')});
+    // Preserve completed HTTP/SSE replies when the observing launcher releases
+    // this temporary manager. A stopped pending page does not become approval.
+    const stopManager=()=>{server.close();if(['pending','preview'].includes(server.managerSession.state))server.closeAllConnections();};
+    process.once('SIGTERM',stopManager);process.once('SIGINT',stopManager);
+    server.once('close',()=>{process.off('SIGTERM',stopManager);process.off('SIGINT',stopManager);});
     server.on('foundation-operation-state', session => output.log(JSON.stringify({status:'FOUNDATION_OPERATION_STATE', planRef:option(args,'--plan-ref'), sessionId:session.sessionId, operationId:session.operationId, operation:session.operation, state:session.state})));
-    server.on('foundation-operation-result', session => output.log(JSON.stringify({status:'FOUNDATION_OPERATION_RESULT', planRef:option(args,'--plan-ref'), sessionId:session.sessionId, operationId:session.operationId, state:session.state, result:session.result || null, failure:session.failure || null, recordLocation:session.recordLocation}, null, 2)));
+    server.on('foundation-operation-result', session => output.log(JSON.stringify({status:'FOUNDATION_OPERATION_RESULT',responseFinished:true, planRef:option(args,'--plan-ref'), sessionId:session.sessionId, operationId:session.operationId, state:session.state, result:session.result || null, failure:session.failure || null, recordLocation:session.recordLocation}, null, 2)));
     server.listen(0, '127.0.0.1', () => output.log(JSON.stringify({ok: true, status:'AWAITING_FOUNDATION_UI_CONFIRMATION', url: `http://127.0.0.1:${server.address().port}/`, planRef:option(args,'--plan-ref'), sessionId: server.managerSession.sessionId, recordLocation:server.managerSession.recordLocation, resultRecovery:'manager status --plan-ref；卸载后只读核验安装根 uninstall-result.json，launcher 消失不是成功证明', mutationPerformed: false, managerStateMutationPerformed: true}, null, 2)));
     return;
   }

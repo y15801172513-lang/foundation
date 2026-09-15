@@ -14,7 +14,8 @@ export function runtimeObservation(event) {
   if(event.status==='FOUNDATION_OPERATION_STATE'&&['executing','consumed'].includes(event.state))return {phase:'executing',sessionId:event.sessionId,installationWrites:'possible'};
   if(event.status==='BOOTSTRAP_OPERATION_ENDED'){
     const state=['completed','failed','cancelled','expired'].includes(event.state)?event.state:'verification-required';
-    return {phase:'runtime-ended',state,terminal:state!=='verification-required',sessionId:event.sessionId,installationRoot:event.installationRoot,installationWrites:state==='completed'?'runtime-reported-installed':'unknown',runtimeHealth:event.result?.stableLauncherHealth||event.result?.lifecycleResult?.stableLauncherHealth||event.result?.executableHealth||'unknown',journeyContext:event.journeyContext,next:'只读核验稳定 installed launcher 或同次 session 结果，不重放确认'};
+    const selectedPending=state==='completed'&&event.journeyContext?.skillChoice==='selected';
+    return {phase:'runtime-ended',programState:state,state:selectedPending?'awaiting-skill':state,terminal:state!=='verification-required'&&!selectedPending,sessionId:event.sessionId,installationRoot:event.installationRoot,installationWrites:state==='completed'?'runtime-reported-installed':'unknown',runtimeHealth:event.result?.stableLauncherHealth||event.result?.lifecycleResult?.stableLauncherHealth||event.result?.executableHealth||'unknown',journeyContext:event.journeyContext,next:selectedPending?'程序已完成，正在准备所选 Codex 接入的独立确认':'只读核验稳定 installed launcher 或同次 session 结果，不重放确认'};
   }
   if(['cancelled-no-install','expired-no-install','shutdown-no-install'].includes(event.state))return {phase:'directory-selection-ended',state:event.state,terminal:true,installationWrites:'none'};
   return null;

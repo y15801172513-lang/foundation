@@ -1,11 +1,11 @@
 {
   "schemaVersion": "2.0.0",
-  "productVersion": "0.2.10",
-  "sourceCommit": "68cc38fcb0f17f4046b4d5900f14b7314b3c7e93",
-  "approvedSourceCommit": "68cc38fcb0f17f4046b4d5900f14b7314b3c7e93",
+  "productVersion": "0.2.11",
+  "sourceCommit": "2f247a333a2f42f5b640f98469b5058b6eea8761",
+  "approvedSourceCommit": "2f247a333a2f42f5b640f98469b5058b6eea8761",
   "exportContractSchemaVersion": "2.0.0",
-  "exportContractSha256": "554d97881422f5a4218c05106e93dbff74edf7a041d21f8dfa804a35db67667c",
-  "exportedTreeHash": "145640bda7800a04ba58fde0d642d42f41f3c3754d4b2edf5162c8ff73b05b1b",
+  "exportContractSha256": "2b31f0414d4f1c94038af31cb7db1362f49108e08199c7447581c8b796760e5f",
+  "exportedTreeHash": "e4b741bb8402f3bfb67d33c9463c4cb6928535236e552f793c3fcba7b2a30963",
   "sourceState": "clean-exact-commit-approved",
   "licenseStatus": "approved",
   "scopeReviewStatus": "approved",
@@ -15,10 +15,10 @@
   "publicationEligible": true,
   "commitBinding": {
     "schemaVersion": "2.0.0",
-    "approvedCommit": "68cc38fcb0f17f4046b4d5900f14b7314b3c7e93",
-    "gitTree": "266f96bf2b366e01fbbb620f884dcef41af44cb0",
-    "contractSha256": "554d97881422f5a4218c05106e93dbff74edf7a041d21f8dfa804a35db67667c",
-    "expectedTreeHash": "145640bda7800a04ba58fde0d642d42f41f3c3754d4b2edf5162c8ff73b05b1b",
-    "fileCount": 363
+    "approvedCommit": "2f247a333a2f42f5b640f98469b5058b6eea8761",
+    "gitTree": "92fadce63b92a2772c04a1c58b6b151da24dcf4d",
+    "contractSha256": "2b31f0414d4f1c94038af31cb7db1362f49108e08199c7447581c8b796760e5f",
+    "expectedTreeHash": "e4b741bb8402f3bfb67d33c9463c4cb6928535236e552f793c3fcba7b2a30963",
+    "fileCount": 368
   }
 }

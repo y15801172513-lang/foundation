@@ -6,6 +6,9 @@ import {inspectRelease,plainPath} from '../lib/acquire.mjs';
 
 import {acquireInWorker} from '../lib/acquisition-task.mjs';
 import {startProgressPage} from '../lib/progress-page.mjs';
+import {followSelectedSkill} from '../lib/skill-handoff.mjs';
+import {followMaintenance} from '../lib/maintenance-handoff.mjs';
+import {resumeSkillHandoff} from '../lib/resume-handoff.mjs';
 import {parseSummonArgs} from '../lib/cli-options.mjs';
 import {createOperation,saveOperation,readOperation,runtimeObservation} from '../lib/operation-result.mjs';
 
@@ -14,11 +17,16 @@ summon foundation --inspect [--version x.y.z]
 summon foundation --prepare --version x.y.z --destination /absolute/folder
 summon foundation --acquire --version x.y.z
 summon foundation --status /absolute/acquisition/operation-result.json
+summon foundation --update --root /absolute/installed-folder --version x.y.z
+summon foundation --uninstall --root /absolute/installed-folder
+summon foundation --resume /absolute/acquisition/operation-result.json
 默认命令下载并验证正式发行，进入安装准备；未给目录时在安装页选择。不会静默安装或注册 Skill。
 --inspect 才只读查询发行，不下载运行归档。
 --prepare 下载并核验固定发行，打开 Foundation 本人确认流程；不会代替确认。
 --acquire 仅下载并核验更新材料，返回候选与回执；不启动安装或执行更新。
 --status 只读本次结果记录；中间记录不证明进程仍在运行，不重试或重放确认。
+--update / --uninstall 从已安装稳定入口组织必要步骤；每一步仍需页面独立确认，不自动注册原本没有的 Skill。
+--resume 明确恢复程序已完成后的所选 Skill；核验当前安装与旧记录后仅准备未完成项的新确认，不重复安装。
 仅 macOS arm64。npm 入口需要 Node/npm；已安装 Foundation 使用随包运行时。
 普通终端不能控制 Codex 对话或内置浏览器。无需 npm 的引导见公共仓库安装说明。`;
 function fail(message){throw Error(message);}
@@ -65,10 +73,30 @@ try{
   const [major,minor]=process.versions.node.split('.').map(Number);
   if(major<22||(major===22&&minor<9))fail('获取入口需要 Node.js 22.9 或以上；尚未安装，不自动安装依赖');
   if(process.platform!=='darwin'||process.arch!=='arm64')fail('当前仅支持 macOS arm64；尚未安装');
-  if(args.prepare||args.acquire)sourceGuard();
-  if(args.prepare||args.acquire){operation=createOperation();stage=stageDirectory();updateOperation({});if(!saveOperation(operation,stage))fail('无法在已披露的获取目录保存操作记录；尚未联网或安装');}
+  const maintenance=args.update||args.uninstall;
+  if(args.prepare||args.acquire||maintenance||args.resume)sourceGuard();
+  if(args.prepare||args.acquire||maintenance){operation=createOperation();stage=stageDirectory();updateOperation({});if(!saveOperation(operation,stage))fail('无法在已披露的获取目录保存操作记录；尚未联网或安装');}
   if(args.prepare)console.log('正在准备 Foundation 安装：将查询并固定本次正式版本，说明缓存位置后下载核验。未选目录会在安装页选择；之后仍需本人确认精确计划。请保持当前 Codex 任务等待并打开返回的内置浏览器网址；不会自动改用系统浏览器。');
-  if(!args.prepare&&!args.acquire){
+  if(args.resume){
+    const env={...process.env};for(const key of ['NODE_OPTIONS','NODE_PATH','NODE_V8_COVERAGE','NODE_REDIRECT_WARNINGS','NODE_COMPILE_CACHE','NODE_COMPILE_CACHE_PORTABLE','NODE_PRESERVE_SYMLINKS'])delete env[key];
+    const result=await resumeSkillHandoff({file:args.resume,env,onChange:patch=>{if(!operation){operation=patch;stage=path.dirname(plainPath(args.resume));}updateOperation(patch);}});
+    updateOperation(result);process.exitCode=result.state==='completed'?0:1;
+  }else if(maintenance){
+    plainPath(args.root);
+    const env={...process.env};for(const key of ['NODE_OPTIONS','NODE_PATH','NODE_V8_COVERAGE','NODE_REDIRECT_WARNINGS','NODE_COMPILE_CACHE','NODE_COMPILE_CACHE_PORTABLE','NODE_PRESERVE_SYMLINKS'])delete env[key];
+    updateOperation({kind:args.update?'update':'uninstall',installationRoot:args.root});
+    progressPage=await startProgressPage(()=>operation);updateOperation({progressUrl:progressPage.url});
+    let candidate;
+    if(args.update){
+      const {context,receipt}=await acquireInWorker({version:args.version,stage,operationId:operation.operationId,onContext:context=>updateOperation({version:context.version,sourceCommit:context.sourceCommit}),onProgress:download=>updateOperation({download}),onPhase:phase=>updateOperation({phase})});
+      const directory=plainPath(path.dirname(receipt.launcher)),manifest=JSON.parse(fs.readFileSync(plainPath(path.join(directory,'manifest.json'))));
+      if(manifest.productVersion!==context.version)fail('获取版本与候选不一致');
+      candidate={path:directory,manifestHash:manifest.candidateHash,version:manifest.productVersion,bytes:manifest.totalBytes,runtimeHash:manifest.files.find(f=>f.path===manifest.runtime.path)?.sha256};
+    }
+    updateOperation(await followMaintenance({operation,kind:operation.kind,candidate,env,onChange:updateOperation}));
+    process.exitCode=operation.state==='completed'?0:1;
+    await progressPage.close();progressPage=null;
+  }else if(!args.prepare&&!args.acquire){
     const context=inspectRelease(args.version);
     const guide=`https://github.com/${context.repository.full_name}/blob/${context.documentationCommit}/docs/install-with-codex.md`;
     console.log(JSON.stringify({schemaVersion:'1.0.0',status:'RELEASE_DISCOVERED_NOT_ACQUIRED',product:'Foundation',version:context.version,sourceCommit:context.sourceCommit,documentationCommit:context.documentationCommit,repository:context.repository.full_name,guide,installationPerformed:false,skillRegistered:false,
@@ -100,11 +128,15 @@ try{
     process.once('SIGINT',int);process.once('SIGTERM',term);
     const ended=await new Promise((resolve,reject)=>{child.once('error',reject);child.once('close',(code,signal)=>resolve({code,signal}));}).finally(()=>{process.off('SIGINT',int);process.off('SIGTERM',term);});
     if(ended.signal||ended.code===null)fail(`确认服务未正常返回；结果待核实，保留 ${stage}，不要自动重试安装`);
+    if(operation.state==='awaiting-skill'){
+      try{updateOperation(await followSelectedSkill({operation,env,onChange:updateOperation}));}
+      catch(error){updateOperation({state:'partial',phase:'finished',terminal:true,skillRegistered:false,handoffFailure:{code:error.code||'SKILL_HANDOFF_REQUIRES_VERIFICATION',command:error.command||null,exitCode:error.exitCode??null},next:'程序已安装，Skill 接续未完成；保留当前计划与结果，仅核实未完成步骤，不重装程序或重放确认。'});}
+    }
     if(!operation.terminal)updateOperation({state:'verification-required',terminal:true,childExitCode:ended.code,next:'服务退出不等于成功或取消；只读核验原 session 与 installed 状态，不自动重试'});
     if(operation.state==='completed'&&operation.installationRoot){
       const workbench=await openInstalledWorkbench(operation.installationRoot,env);
-      updateOperation({phase:'finished',workbench,next:workbench.state==='ready'?'在 Codex 内置浏览器打开已就绪工作台；Skill 与项目仍未接入，按用户偏好另行询问':'安装已完成，但工作台未就绪；保留安装结果并只读检查'});
+      updateOperation({phase:'finished',workbench,next:workbench.state==='ready'?(operation.skillRegistered?'打开已安装工作台；Skill 文件已注册，新对话识别与项目接入另验':'打开已安装工作台；本次未注册 Skill，项目接入另行确认'):'安装已完成，但工作台未就绪；保留安装结果并只读检查'});
     }
-    process.exitCode=ended.code;
+    process.exitCode=operation.state==='partial'?1:ended.code;
   }
-}catch(e){updateOperation({state:operation&&operation.installationWrites!=='none'?'verification-required':'failed',terminal:true,errorCode:['ACQUISITION_TRANSPORT_FAILED','ACQUISITION_VALIDATION_FAILED'].includes(e.code)?e.code:'INSTALL_ENTRY_FAILED',diagnostic:e.diagnostic||null,next:'先核验旧工具进程已结束及同次结果；保留材料，不自动重试或重放安装确认'});const message=String(e.message).replace(/https?:\/\/\S+/g,'[已脱敏网址]').replace(/(?:github_pat_|ghp_|npm_)[A-Za-z0-9_]+/g,'[已脱敏凭据]');console.error(`错误：${message}`);process.exitCode=1;}finally{if(progressPage)await progressPage.close();}
+}catch(e){const message=String(e.message).replace(/https?:\/\/\S+/g,'[已脱敏网址]').replace(/(?:github_pat_|ghp_|npm_)[A-Za-z0-9_]+/g,'[已脱敏凭据]');updateOperation({state:operation?.programState==='completed'?'partial':operation&&operation.installationWrites!=='none'?'verification-required':'failed',terminal:true,...(operation?.programState==='completed'?{failedPhase:operation.phase,phase:'finished'}:{}),errorCode:['ACQUISITION_TRANSPORT_FAILED','ACQUISITION_VALIDATION_FAILED'].includes(e.code)?e.code:'INSTALL_ENTRY_FAILED',diagnostic:e.diagnostic||null,next:message+'。先核验旧工具进程已结束及同次结果；保留材料，不自动重试或重放安装确认'});console.error(`错误：${message}`);process.exitCode=1;}finally{if(progressPage)await progressPage.close();}

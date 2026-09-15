@@ -25,7 +25,7 @@ test('038 projection preserves prior program result when independent Skill fails
 });
 test('038 progress uses actual bytes and bounded loopback URL from verified runtime event',()=>{
   const p=acquisitionProgress({operationId:'one',phase:'fetching-and-verifying-runtime',state:'running',terminal:false,installationWrites:'none',download:{downloadedBytes:7,totalBytes:null}});
-  assert.equal(p.download.totalBytes,null);assert.match(p.program,/尚未/);assert.match(p.skill,/未自动/);
+  assert.equal(p.download.totalBytes,null);assert.match(p.program,/尚未/);assert.equal(p.skill,'Codex 接入可选，尚未选择');assert.equal(p.journey.steps.find(step=>step.key==='register')?.state==='completed',false);
   assert.equal(runtimeObservation({status:'AWAITING_FOUNDATION_DIRECTORY_SELECTION',url:'https://attacker.invalid/'}).confirmationUrl,undefined);
   assert.equal(runtimeObservation({status:'FOUNDATION_SELECTION_BOUND',sessionId:'same',url:'http://127.0.0.1:1234/'}).confirmationUrl,'http://127.0.0.1:1234/');
 });

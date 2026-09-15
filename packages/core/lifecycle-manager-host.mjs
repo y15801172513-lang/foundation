@@ -154,12 +154,12 @@ function serverForRecord({plan, stateRoot, record, planRef = null}) {
       if (body.managerNonce !== managerNonce || !allowedActions.has(body.action)) return send(response, 403, {code: 'MANAGER_CONFIRMATION_ACTION_INVALID'});
       if (claimed || activeRecord.session.state !== 'pending') return send(response, 409, {code: activeRecord.session.state === 'expired' ? 'MANAGER_CONFIRMATION_EXPIRED' : 'MANAGER_CONFIRMATION_REPLAYED', state: activeRecord.session.state});
       try { assertRecordUnchanged(activeRecord, activePlan); }
-      catch (error) { claimed = true; writeLocalManagerSession(activeRecord, {state: 'failed', failedAt: Date.now(), failure: {code: error.code, message: error.message}}); finalizeBootstrapRecord(activeRecord, stateRoot); server.emit('foundation-operation-result', activeRecord.session); if (activePlan.bootstrap) response.on('finish', () => server.close()); return send(response, 409, {ok: false, code: error.code, message: error.message}); }
+      catch (error) { claimed = true; writeLocalManagerSession(activeRecord, {state: 'failed', failedAt: Date.now(), failure: {code: error.code, message: error.message}}); finalizeBootstrapRecord(activeRecord, stateRoot); response.once('finish', () => server.emit('foundation-operation-result', activeRecord.session)); if (activePlan.bootstrap) response.on('finish', () => server.close()); return send(response, 409, {ok: false, code: error.code, message: error.message}); }
       claimed = true;
       if (body.action === 'cancel-no-change') {
         writeLocalManagerSession(activeRecord, {state: 'cancelled', cancelledAt: Date.now(), confirmationAction: body.action, result: {ok: true, status: 'CANCELLED_NO_CHANGE', mutationPerformed: false}});
         finalizeBootstrapRecord(activeRecord, stateRoot);
-        server.emit('foundation-operation-result', activeRecord.session);
+        response.once('finish', () => server.emit('foundation-operation-result', activeRecord.session));
         if (activePlan.bootstrap) response.on('finish', () => server.close());
         return send(response, 200, {ok: true, sessionId: activeRecord.session.sessionId, state: 'cancelled', result: activeRecord.session.result});
       }
@@ -180,7 +180,7 @@ function serverForRecord({plan, stateRoot, record, planRef = null}) {
         }, () => dispatch(activePlan, body.action, stateRoot));
         writeLocalManagerSession(activeRecord, {state: 'completed', completedAt: Date.now(), result});
         finalizeBootstrapRecord(activeRecord, stateRoot);
-        server.emit('foundation-operation-result', activeRecord.session);
+        response.once('finish', () => server.emit('foundation-operation-result', activeRecord.session));
         if (activePlan.bootstrap) response.on('finish', () => server.close());
         return send(response, 200, {ok: true, sessionId: activeRecord.session.sessionId, state: 'completed', result});
       } catch (error) {
@@ -201,7 +201,7 @@ function serverForRecord({plan, stateRoot, record, planRef = null}) {
           } catch {}
         }
         finalizeBootstrapRecord(failedRecord, stateRoot);
-        server.emit('foundation-operation-result', failedRecord.session);
+        response.once('finish', () => server.emit('foundation-operation-result', failedRecord.session));
         if (activePlan.bootstrap) response.on('finish', () => server.close());
         return send(response, error.code === 'MANAGER_PLAN_STATE_DRIFT' || error.code === 'MANAGER_CONFIRMATION_EXPIRED' ? 409 : 500, {ok: false, code: error.code || 'MANAGER_EXECUTION_FAILED', message: error.message, details: error.details || {}, invalidatedPlanRef: failedPlanRef, replacementPlanRef, next: replacementPlanRef ? 'preview-reloaded-with-new-plan-ref' : 'request-plan'});
       }

@@ -3,6 +3,15 @@ import assert from 'node:assert/strict';
 import {JSDOM} from 'jsdom';
 import {renderLifecyclePage} from '../../packages/core/lifecycle-feedback.mjs';
 const session={operation:'install',state:'pending',sessionId:'032r2',installationRoot:'/隔离/Foundation',targetVersion:'0.2.4',expiresAt:Date.now()+60000};
+test('039R1 update shows only bound preservation facts and correct operation scope',()=>{
+  for(const impact of [null,{modifiesUserProjects:false,rollback:'journal-and-previous-current'},{modifiesUserProjects:true,rollback:'unknown'}]){
+    const d=new JSDOM(renderLifecyclePage({...session,operation:'update',currentVersion:'0.2.11',targetVersion:'0.2.12',plannedImpact:impact},'nonce')).window.document;
+    assert.match(d.body.textContent,/范围：本次更新/);assert.doesNotMatch(d.body.textContent,/范围：本次安装/);
+    const visible=d.querySelector('.important').textContent;
+    if(impact?.modifiesUserProjects===false){assert.match(visible,/项目文件与制作资料（本次计划不修改）/);assert.match(visible,/计划保留旧版与操作记录用于回退；实际结果完成后核验/);}
+    else assert.doesNotMatch(visible,/本次计划不修改|计划保留旧版/);
+  }
+});
 test('032R2 capacity uses binary MiB, raw bytes remain, unknown is not zero',()=>{
   for(const bytes of [1048576,0,undefined]){
     const d=new JSDOM(renderLifecyclePage({...session,byteCount:bytes},'nonce')).window.document;
