@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import {spawnSync} from 'node:child_process';
 import crypto from 'node:crypto';
 import {plainPath} from './acquire.mjs';
 
@@ -43,14 +42,6 @@ export function inspectEntryDestination(input){
 // Intent preflight only. The installed engine repeats identity checks and seals
 // the actual scope in the independently confirmed lifecycle plan.
 export function inspectScopeIntent(kind, input, destination){
-  if(kind==='user')return {kind,projectRoot:null};
-  if(kind!=='project'||typeof input!=='string')throw Error('请选择有效的使用范围');
-  let projectRoot=input.trim();
-  if((projectRoot.startsWith('"')&&projectRoot.endsWith('"'))||(projectRoot.startsWith("'")&&projectRoot.endsWith("'")))projectRoot=projectRoot.slice(1,-1);
-  plainPath(projectRoot);
-  if(!fs.lstatSync(projectRoot).isDirectory())throw Error('项目根不是已有目录');
-  const git=spawnSync('/usr/bin/git',['-C',projectRoot,'rev-parse','--show-toplevel'],{encoding:'utf8',env:{PATH:'/usr/bin:/bin',GIT_OPTIONAL_LOCKS:'0'},timeout:10000});
-  if(git.status!==0||git.stdout.trim()!==projectRoot)throw Error('仅当前项目模式需要明确的 Git 仓库根；不会自动创建仓库');
-  if(destination===projectRoot||destination.startsWith(projectRoot+path.sep)||projectRoot.startsWith(destination+path.sep))throw Error('程序目录不能与业务项目互相包含；请选择独立目录');
-  return {kind,projectRoot};
+  if(kind==='user'&&input==null)return {kind,projectRoot:null};
+  throw Error('新安装供当前用户的不同项目共用，不接受项目范围；已有项目安装不会自动迁移');
 }

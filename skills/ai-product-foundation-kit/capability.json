@@ -2,8 +2,8 @@
   "schemaVersion": "1.0.0",
   "capabilityId": "ai-product-foundation-kit",
   "type": "codex-skill",
-  "version": "0.2.4",
-  "requiredFoundationVersion": ">=0.2.13",
+  "version": "0.2.5",
+  "requiredFoundationVersion": ">=0.2.14",
   "projectScoped": false,
   "dependencyCapabilityIds": [],
   "readOnlyOperationClasses": [
@@ -26,9 +26,9 @@
   "files": [
     {
       "path": "SKILL.md",
-      "size": 10112,
-      "sha256": "ea9398f48fb5fba253bd60103ba9b58e3c95389858c22a087eb5761321627823"
+      "size": 10720,
+      "sha256": "36482d4cc7409de53082787e4f508cbdfe62f777d35f4a8cda264e469f11d4be"
     }
   ],
-  "contentHash": "ce464e01cff14764be435a26804b2bfddfff0c783c7fe00b863229261a6875cf"
+  "contentHash": "b0cf4cafffd247d90f6b737fba65be9c61fb2fc89a23b61dcd9f04343f2b1c6a"
 }

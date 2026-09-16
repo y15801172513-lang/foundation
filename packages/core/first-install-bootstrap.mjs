@@ -15,6 +15,7 @@ import {openFoundationManagerUrl} from './browser-launch.mjs';
 import {renderInstallDestinationPage} from './lifecycle-feedback.mjs';
 import {inspectInstallDestination, normalizeInstallDestinationInput} from './install-destination.mjs';
 import {prepareInstallationScope} from './installation-scope.mjs';
+import {readCodexInstallationHint} from './conversational-install.mjs';
 import {sanitizeNodeStartupEnvironment} from './node-startup-environment.mjs';
 import {activateFirstInstallBootstrapAuthority, deriveTrustedLifecycleAuthority, loadTrustedAuthorityKey, transferBootstrapAuthorityToInstalledState, verifyTrustedPayload} from './trusted-authority.mjs';
 import {classifyProcessOwner, observeProcessFingerprint} from './process-owner.mjs';
@@ -168,6 +169,11 @@ export function classifyFirstInstallCandidateTrust(manifest) {
 }
 
 export function createFirstInstallBootstrapPlan({now = Date.now(), ttlMs = 10 * 60 * 1000, destination = null, scopeKind = 'user', projectRoot = null} = {}) {
+  if(scopeKind!=='user'||projectRoot!==null)throw bootstrapError('NEW_INSTALL_USER_SCOPE_REQUIRED','新安装供当前用户的不同项目共用；已有项目安装不会自动迁移');
+  const knownPaths=resolveFoundationPlatformPaths({destination});
+  const known=readCodexInstallationHint(knownPaths.homeRealPath);
+  if(known.status==='invalid')throw bootstrapError('EXISTING_INSTALLATION_HINT_INVALID','已有对话功能的位置记录无法核实；请先检查原安装，不创建第二份程序');
+  if(known.installationRoot&&known.installationRoot!==knownPaths.installRoot)throw bootstrapError('EXISTING_INSTALLATION_REVIEW_REQUIRED',`发现已有 Foundation 位置线索：${known.installationRoot}。请在当前对话先核验并打开或更新该安装；本次不另装一份、不迁移`,{installationRoot:known.installationRoot,verifiedInstallation:false});
   const candidateRoot = discoverLaunchedCandidateRoot();
   activateFirstInstallBootstrapAuthority(candidateRoot, {destination});
   let untrustedManifest;

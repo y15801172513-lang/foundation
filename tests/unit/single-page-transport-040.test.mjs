@@ -73,7 +73,7 @@ test('040 unconfirmed directory cancellation and expiry terminate without an exe
   }
 });
 
-test('C6 user selection and cancellation retain legacy fields; project scope never silently downgrades',async()=>{
+test('C7 fresh selection rejects project intent instead of silently downgrading; cancellation stays independent',async()=>{
   const bodies=[];
   const server=http.createServer(async(req,res)=>{
     res.setHeader('content-type','application/json');
@@ -87,8 +87,9 @@ test('C6 user selection and cancellation retain legacy fields; project scope nev
     const control=createJourneyControl(()=>({operationId:'one'}),()=>{});
     control.setOrigin('http://127.0.0.1:43123');control.attach(child);
     await control.observe(child,{status:'AWAITING_FOUNDATION_DIRECTORY_SELECTION',url:`http://127.0.0.1:${server.address().port}/`});
-    for(const scopeKind of ['user','project'])await control.submit({operationId:'one',action:'select',destination:'/fixture',skillChoice:'skipped',scopeKind,projectRoot:'/project'});
+    await control.submit({operationId:'one',action:'select',destination:'/fixture',skillChoice:'skipped'});
+    for(const invalid of [{scopeKind:'project',projectRoot:'/project'},{scopeKind:'user',projectRoot:'/project'},{scopeKind:'other'}])await assert.rejects(control.submit({operationId:'one',action:'select',destination:'/fixture',skillChoice:'skipped',...invalid}),/不接受项目范围/);
     await control.submit({operationId:'one',action:'cancel',scopeKind:'project',projectRoot:'/project'});
-    assert.deepEqual(bodies,[{nonce:'nonce',action:'select',destination:'/fixture',skillChoice:'skipped'},{nonce:'nonce',action:'select',destination:'/fixture',skillChoice:'skipped',scopeKind:'project',projectRoot:'/project'},{nonce:'nonce',action:'cancel'}]);
+    assert.deepEqual(bodies,[{nonce:'nonce',action:'select',destination:'/fixture',skillChoice:'skipped'},{nonce:'nonce',action:'cancel'}]);
   }finally{await new Promise(resolve=>server.close(resolve));}
 });

@@ -24,6 +24,7 @@ test('C6 destination preflight preserves unknown contents and scope errors witho
   fs.mkdirSync(target);fs.writeFileSync(target+'/keep','unchanged');
   assert.throws(()=>inspectEntryDestination(target),/已有内容/);assert.equal(fs.readFileSync(target+'/keep','utf8'),'unchanged');
   fs.symlinkSync(target,root+'/linked');assert.throws(()=>inspectEntryDestination(root+'/linked'));
-  assert.throws(()=>inspectScopeIntent('project',root,target),/仓库根/);
+  assert.throws(()=>inspectScopeIntent('project',root,target),/不接受项目范围/);
+  assert.throws(()=>inspectScopeIntent('user',root,target),/不接受项目范围/);
   assert.deepEqual(inspectScopeIntent('user',null,target),{kind:'user',projectRoot:null});
 });

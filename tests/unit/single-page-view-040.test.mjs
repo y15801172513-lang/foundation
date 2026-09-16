@@ -48,6 +48,43 @@ async function render(record,view=null){
   await new Promise(resolve=>setTimeout(resolve,20));
   return dom;
 }
+test('C7 fresh installation asks only a software location and an optional Skill, without project inputs',async()=>{
+ const dom=await render({operationId:'shared-user',kind:'install',state:'running',phase:'choosing-intent',installationWrites:'none',journeyContext:{skillChoice:'undecided'}});
+ try{
+  const form=dom.window.document.querySelector('#current-form');
+  assert.deepEqual([...form.querySelectorAll('input')].map(x=>x.name),['destination','includeSkill']);
+  assert.match(form.textContent,/不同项目都可以使用/);
+  assert.doesNotMatch(form.textContent,/项目根|在哪里使用|当前用户\/|仅当前项目/);
+ }finally{dom.window.close()}
+});
+test('C8 terminal summaries distinguish no-write cancellation, expiry, environment block and partial Skill outcome',async()=>{
+ const base={operationId:'states',kind:'install',terminal:true,installationWrites:'none',journeyContext:{skillChoice:'selected'}};
+ for(const [patch,title,body] of [
+  [{state:'cancelled-no-install',phase:'choosing-intent'},'已取消安装','尚未安装 Foundation'],
+  [{state:'expired-no-install',phase:'choosing-intent'},'安装确认已到期','尚未安装 Foundation'],
+  [{state:'failed',phase:'checking-environment',environment:{state:'blocked',missing:['/usr/bin/tar']}},'运行环境需要处理','/usr/bin/tar'],
+  [{state:'partial',phase:'finished',programState:'completed',runtimeHealth:'passed',skillSteps:{register:{state:'failed'}}},'Foundation 已安装；对话功能未处理成功','不必重装程序'],
+  [{state:'partial',phase:'finished',programState:'completed',runtimeHealth:'passed',skillSteps:{register:{state:'cancelled'}}},'Foundation 已安装；对话功能未启用','本次未启用 Codex 对话功能']
+ ]){
+  const dom=await render({...base,...patch});try{
+   assert.equal(dom.window.document.querySelector('#flow-title').textContent,title);
+   assert.match(dom.window.document.querySelector('.product').textContent,new RegExp(body));
+   assert.equal(dom.window.document.querySelector('#current-form'),null);
+   if(patch.environment)assert.match(dom.window.document.querySelector('[data-step="environment"]').textContent,/运行环境检查未通过/);
+  }finally{dom.window.close()}
+ }
+});
+test('C8 completed steps summarize facts without showing machine evidence as ordinary content',async()=>{
+ const dom=await render({operationId:'plain',kind:'install',terminal:true,state:'completed',phase:'finished',programState:'completed',runtimeHealth:'passed',skillRegistered:true,journeyContext:{skillChoice:'selected'},skillSteps:{material:{state:'completed',evidence:{planRef:'internal-plan'}},register:{state:'completed',evidence:{planRef:'internal-plan'}}}});
+ try{
+  const details=[...dom.window.document.querySelectorAll('.completed-detail')].map(x=>x.textContent).join(' ');
+  assert.doesNotMatch(details,/internal-plan|planRef|evidence/);
+  assert.match(details,/新 Codex 对话/);
+  assert.match(dom.window.document.querySelector('#raw').textContent,/internal-plan/);
+  assert.match(dom.window.document.querySelector('#flow-description').textContent,/程序安装已完成/);
+  assert.doesNotMatch(dom.window.document.querySelector('#flow-description').textContent,/需另外确认/);
+ }finally{dom.window.close()}
+});
 test('040 final verification is not shown as finished before chosen Skill confirmations',async()=>{
   const record={operationId:'same',kind:'install',state:'running',terminal:false,phase:'skill-confirmation',programState:'completed',runtimeHealth:'passed',journeyContext:{skillChoice:'selected'},skillSteps:{material:{state:'pending'}}};
   const dom=await render(record);

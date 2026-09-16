@@ -1,8 +1,10 @@
 # summon foundation
 
-本轮修订包含真实下载状态、专用入口环境和项目范围；以 registry 中本版本实际存在为执行前提。基础环境不能安全启动页面时，由 Codex 对话先披露并取得独立批准，再准备专用环境；页面启动后全程同页。具体方法见仓库 `docs/install-with-codex.md`，不能先运行 npx 来准备缺失的 Node。不修改共享 PATH；获取器专用环境及其回执按缓存保留，程序另用随包运行时。发行发现仅需 curl，获取还需 tar；已验证载荷的确认、恢复和卸载不依赖下载工具。
+当前用户共用一份程序与一份可选对话功能。安装仅选择软件位置，不选择业务项目。各项目随后单独接入，资料各自保管；旧安装不自动迁移或覆盖。
 
-0.1.7 单页试用入口与 Foundation 0.2.12 起的运行引擎共同支持同一页面内的目录选择、程序和 Skill 独立确认；旧发行版本不具备本次单页修订。真实安装、新任务发现和主动告知仍需独立验收。
+保留真实下载状态与独立确认。基础环境不能安全启动页面时，由 Codex 对话先披露并取得独立批准，再准备专用环境；页面启动后全程同页。具体方法见仓库 `docs/install-with-codex.md`，不能先运行 npx 来准备缺失的 Node。不修改共享 PATH；获取器专用环境及其回执按缓存保留，程序另用随包运行时。发行发现仅需 curl，获取还需 tar；已验证载荷的确认、恢复和卸载不依赖下载工具。
+
+0.1.8 单页试用入口与 Foundation 0.2.14 的运行引擎共同支持当前用户共用安装及清晰的完成、取消和部分完成反馈。同一页面内保留目录选择、程序和 Skill 独立确认。真实安装、新任务发现和主动告知仍需独立验收。
 
 首次 URL 持续显示本次流程；确认仅转交本次受控子进程的当前计划，不新开manager页。--acquire仍只读获取；--resume仅在用户明确要求后恢复未完成Skill，不重放程序安装。
 
@@ -14,7 +16,7 @@ Foundation 的薄获取入口，不包含完整运行包，没有 npm 安装生�
 确认 registry 中存在本版本及对应不可变 Release 后，在具备安装权限的新 Codex 对话粘贴：
 
 ```text
-npx --yes --package @josephyulei/summon-foundation@0.1.7 summon foundation
+npx --yes --package @josephyulei/summon-foundation@0.1.8 summon foundation
 ```
 
 旧版退出推荐入口；支持边界见[现行支持策略](https://github.com/y15801172513-lang/foundation/blob/main/docs/install-platform-024.md#现行支持策略)。旧不可变版本不修改，不自动迁移或清除旧安装。

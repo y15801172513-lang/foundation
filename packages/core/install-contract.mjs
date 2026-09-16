@@ -83,6 +83,7 @@ export function createLifecyclePlan({operation, profile = 'core', mode = null, t
   const target = trustedTarget.target;
   const existingScope=readInstallationScope(target);
   const effectiveScope=existingScope||usageScope||{schemaVersion:'1.0.0',kind:'user',project:null};
+  if(operation==='install'&&!existingScope&&effectiveScope.kind!=='user')throw new LifecycleError('NEW_INSTALL_USER_SCOPE_REQUIRED','新安装供当前用户的不同项目共用；不新建项目专属安装');
   if(existingScope&&usageScope&&canonicalStringify(existingScope)!==canonicalStringify(usageScope))throw new LifecycleError('INSTALL_SCOPE_MIGRATION_UNSUPPORTED','更新或修复不改变使用范围；本轮不提供范围迁移');
   verifyInstallationScope(effectiveScope,target);
   const sandbox = sandboxRoot ? path.resolve(sandboxRoot) : authority.trustedRootRealPath;

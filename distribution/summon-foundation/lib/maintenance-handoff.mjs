@@ -30,6 +30,7 @@ export async function followMaintenance({operation,kind,candidate,env,onChange,j
   // validates its receipt and files. It does not authorize removal.
   const registration=plainPath(path.join(root,'state/codex-skill-registration.json'));
   const hadSkill=fs.existsSync(registration);
+  onChange({hadSkill});
   let previousPlanRef=null;
   const steps={};
   onChange({kind,currentVersion:current.version,installId:current.identity.installId,previousCandidateHash:current.candidateHash,journeyContext:{id:operation.operationId,skillChoice:kind==='update'&&hadSkill?'selected':'skipped'},next:hadSkill?(kind==='update'?'先确认程序更新，再确认刷新完整归属的 Codex 文件；未知或修改文件保留。':'先核对并确认解除已关联的 Codex 副本，再继续程序卸载；未知或修改文件保留。'):'核对程序操作；本次不会新增 Codex Skill。'});

@@ -31,7 +31,7 @@ test('038R1 planned steps terminate only from receipts; registration differs fro
   assert.equal(material.steps.filter(s=>s.key==='program').length,1);assert.equal(material.ended,false);assert.deepEqual(material.remaining,['注册到 Codex']);
   const done=lifecycleJourney({...cap('register'),previousSteps:[base,cap('install')]});
   assert.equal(done.title,'安装完成');assert.equal(done.ended,true);assert.equal(done.steps.find(s=>s.key==='health').state,'completed');assert.match(done.skill,/发现另验/);
-  assert.doesNotMatch(lifecycleFeedback(cap('install')).next,/新对话|新任务/);assert.match(lifecycleFeedback(cap('install')).detail,/尚未注册/);
+  assert.doesNotMatch(lifecycleFeedback(cap('install')).next,/新对话|新任务/);assert.match(lifecycleFeedback(cap('install')).detail,/还需你确认启用到 Codex/);
 });
 test('038R1 skip and independent maintenance do not fabricate a full installation',()=>{
   const skipped=lifecycleJourney({...base,journeyContext:{...base.journeyContext,skillChoice:'skipped'}});
@@ -51,8 +51,8 @@ test('038R1 a new update never borrows old registration or first-install selecti
 });
 test('038R1 registered targets are typed, internal materials never claim host readiness',()=>{
   for(const operation of ['register','uninstall']){
-    const f=lifecycleFeedback(cap(operation));assert.deepEqual(f.namedTargets[0],{role:'skill',label:'Codex 用户级 Skill 位置',path:skill});
-    const dom=new JSDOM(renderLifecyclePage(cap(operation),'nonce'),{runScripts:'dangerously'});assert.match(dom.window.document.querySelector('#operation-targets').textContent,/Codex 用户级 Skill 位置/);assert.match(dom.window.document.querySelector('#operation-targets code').textContent,/\.codex\/skills/);dom.window.close();
+    const f=lifecycleFeedback(cap(operation));assert.deepEqual(f.namedTargets[0],{role:'skill',label:'Codex 对话功能位置',path:skill});
+    const dom=new JSDOM(renderLifecyclePage(cap(operation),'nonce'),{runScripts:'dangerously'});assert.match(dom.window.document.querySelector('#operation-targets').textContent,/Codex 对话功能位置/);assert.match(dom.window.document.querySelector('#operation-targets code').textContent,/\.codex\/skills/);dom.window.close();
   }
   const unknown=lifecycleFeedback({...cap('register'),operationTargets:{program:root}});assert.equal(unknown.namedTargets[0].path,null);
 });

@@ -114,6 +114,7 @@ try{
     const environment=inspectEntryEnvironment({purpose:'acquire'});updateOperation({phase:'checking-environment',environment});
     if(environment.state!=='ready')fail('获取环境检查未通过：'+environment.state+'；缺少 '+environment.missing.join('、')+'；不会以安装 Node 替代缺失的系统工具');
     if(!args.acquire){
+      updateOperation({phase:'discovering'});
       const metadata=inspectRelease(args.version);args.version=metadata.version;
       updateOperation({phase:'choosing-intent',environment,version:metadata.version,sourceCommit:metadata.sourceCommit,acquisitionRoot:stage,destinationIntent:args.destination||'',journeyContext:{id:operation.operationId,skillChoice:'undecided'}});
       const choice=await journeyControl.waitChoice();

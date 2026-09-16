@@ -6,6 +6,7 @@ import {spawnSync} from 'node:child_process';
 import {buildCandidate,createLifecyclePlan,inspectInstallation} from '../helpers/internal-core.mjs';
 import {applyLifecycleForTest} from '../helpers/test-authorization.mjs';
 import {prepareInstallationScope,readInstallationScope} from '../../packages/core/installation-scope.mjs';
+import {canonicalStringify,sha256} from '../../packages/core/install-contract.mjs';
 
 test('C6 signed scope survives install/update/reopen/uninstall while other installations and project files remain intact',()=>{
   const root=fs.mkdtempSync(path.resolve('.tmp/C6-lifecycle-'));
@@ -16,7 +17,16 @@ test('C6 signed scope survives install/update/reopen/uninstall while other insta
   const plan=(target,operation,built,usageScope=null,mode=null)=>createLifecyclePlan({operation,profile:'core',mode,targetRoot:target,sandboxRoot:root,usageScope,currentVersion:inspectInstallation(target).current?.version||null,targetVersion:built?.manifest.productVersion||null,candidate:built?{path:built.root,manifestHash:built.manifest.candidateHash,runtimeHash:built.manifest.files.find(f=>f.path===built.manifest.runtime.path).sha256,bytes:built.manifest.totalBytes,version:built.manifest.productVersion,acquisition:'local-ingestion'}:null});
   const targets=['user','project-A','project-B'].map(name=>root+'/install-'+name);
   const scopes=targets.map((target,i)=>prepareInstallationScope({kind:i?'project':'user',projectRoot:i?projects[i-1]:null,installationRoot:target}));
-  for(let i=0;i<targets.length;i++){applyLifecycleForTest(plan(targets[i],'install',old,scopes[i]));assert.deepEqual(readInstallationScope(targets[i]),scopes[i]);}
+  for(let i=0;i<targets.length;i++){
+    if(i)assert.throws(()=>plan(targets[i],'install',old,scopes[i]),{code:'NEW_INSTALL_USER_SCOPE_REQUIRED'});
+    // Historical project-scope input, only in the existing isolated authorization
+    // fixture. Production creation now rejects it; maintenance must still read it.
+    const {planId:_id,integrity:_hash,...seed}=plan(targets[i],'install',old,scopes[0]);
+    seed.usageScope=scopes[i];
+    const unsigned={...seed,planId:`plan-${sha256(canonicalStringify(seed)).slice(0,24)}`};
+    const historical={...unsigned,integrity:{algorithm:'sha256',hash:sha256(canonicalStringify(unsigned))}};
+    applyLifecycleForTest(historical);assert.deepEqual(readInstallationScope(targets[i]),scopes[i]);
+  }
   const otherRecords=[targets[0],targets[2]].map(target=>fs.readFileSync(target+'/state/current.json'));
   assert.throws(()=>plan(targets[1],'update',next,scopes[0]),{code:'INSTALL_SCOPE_MIGRATION_UNSUPPORTED'});
   assert.throws(()=>readInstallationScope(targets[1],{cwd:projects[1]}),{code:'INSTALL_SCOPE_OUTSIDE_PROJECT'});

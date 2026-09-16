@@ -1,6 +1,6 @@
 import http from 'node:http';
 import crypto from 'node:crypto';
-import {journeyView} from './journey-view.mjs';
+import {journeyView,lifecycleContent} from './journey-view.mjs';
 import {singlePageDocument} from './single-page-view.mjs';
 
 export function downloadText(download, compact = false) {
@@ -15,7 +15,7 @@ export function downloadText(download, compact = false) {
 
 export function downloadStatus(record) {
   if(record.kind==='uninstall')return '';
-  if(record.terminal)return record.state==='failed'?'下载检查失败':'本次获取已结束';
+  if(record.terminal)return record.state==='failed'&&['discovering','verifying-trust','fetching-and-verifying-catalog','fetching-and-verifying-runtime','verifying-runtime','extracting-and-validating'].includes(record.phase)?'下载检查失败':'本次获取已结束';
   if(record.phase==='fetching-and-verifying-runtime'){
     const d=record.download,prefix=Number.isSafeInteger(d?.attempt)&&d.attempt>1?'重试 '+d.attempt+' · ':'';
     if(d?.downloadedBytes===0)return prefix+'等待下载';
@@ -29,7 +29,9 @@ export function acquisitionProgress(record) {
   const phases={discovering:'查询正式发行','verifying-trust':'核验发行来源','fetching-and-verifying-catalog':'获取并核验发行清单','fetching-and-verifying-runtime':'正在下载运行文件','verifying-runtime':'正在检查文件摘要与发行证明','extracting-and-validating':'展开并检查文件','acquired':'获取验证完成','starting-confirmation-service':'准备目录选择与确认页','selecting-directory':'等待你选择目录','awaiting-confirmation':'等待你确认安装',executing:'正在安装','runtime-ended':'读取安装结果',finished:'安装结果已返回'};
   const terminal=record.terminal;
   const acquired=['acquired','starting-confirmation-service','selecting-directory','directory-selection-ended','awaiting-confirmation','executing','runtime-ended','finished'].includes(record.phase);
-  const observations={acquire:{state:acquired?'completed':terminal?'failed':'running',evidence:record.resultFile}};
+  const beforeAcquisition=['checking-environment','choosing-intent'].includes(record.phase);
+  const observations={acquire:{state:acquired?'completed':beforeAcquisition?'planned':terminal?'failed':'running',evidence:record.resultFile}};
+  if(record.phase==='choosing-intent')observations.select={state:record.state==='cancelled-no-install'?'cancelled':record.state==='expired-no-install'?'expired':'pending'};
   if(record.phase==='selecting-directory')observations.select={state:'pending'};
   if(record.phase==='directory-selection-ended')observations.select={state:record.state==='cancelled-no-install'?'cancelled':record.state==='expired-no-install'?'expired':'verification-required',evidence:record.selectionId};
   if(['awaiting-confirmation','executing','runtime-ended','finished'].includes(record.phase))observations.select={state:'completed',evidence:record.selectionId};
@@ -48,9 +50,10 @@ export function acquisitionProgress(record) {
   const journey=journeyView({id:record.operationId,kind,includeAcquisition:kind!=='uninstall',includeSelection:kind==='install',includeHealth:kind!=='uninstall',includeSkillRemoval:Boolean(observations.remove),observations,skillChoice:record.journeyContext?.skillChoice||'undecided'});
   if(record.terminal&&record.state==='partial'){journey.ended=false;journey.title=record.programState==='completed'?'程序已完成，Codex 接入未完成':'本次操作尚未全部完成';journey.summary=record.next;}
   const verb=kind==='uninstall'?'卸载':kind==='update'?'更新':'安装';
+  const content=lifecycleContent(record,observations);
   Object.assign(phases,{'awaiting-confirmation':'等待你确认'+verb,executing:'正在'+verb,'runtime-ended':'读取'+verb+'结果',finished:verb+'结果已返回'});
   if(record.terminal&&record.state==='partial'&&record.programState==='completed'&&kind==='update')journey.title='程序已更新，Skill 尚未更新';
-  return {journey,operationId:record.operationId,title:journey.title,phase:({'skill-confirmation':'等待你确认 Codex 操作','skill-executing':'正在处理 Codex 对话能力'})[record.phase]||phases[record.phase]||'正在核实本次操作',state:record.state,version:record.currentVersion&&kind==='update'?record.currentVersion+' → '+record.version:record.version||record.currentVersion||null,download:record.download||null,downloadStatus:downloadStatus(record),program:record.programState==='completed'?'程序'+verb+'已完成；'+(kind==='uninstall'?'结果由独立回执保留':record.runtimeHealth==='passed'?'稳定入口健康已核验':'健康待核实'):record.installationWrites==='none'?'尚未执行程序操作':'程序结果以同次记录为准',skill:kind==='uninstall'?(observations.remove?.state==='completed'?'已解除已归属 Codex 注册；修改和未知文件按计划保留':'本次没有已核实的注册移除结果'):record.skillRegistered===true?'Skill 文件与归属已核验；新对话识别另验':record.journeyContext?.skillChoice==='skipped'?'本次不接入 Codex':record.journeyContext?.skillChoice==='selected'?'已选择接入 Codex；仅在分别确认后执行':'Codex 接入可选，尚未选择',project:'未自动接入项目',installationRoot:record.installationRoot||null,skillDestination:record.skillDestination||null,next:record.next||(record.terminal&&record.state==='completed'&&record.journeyContext?.skillChoice==='skipped'?'本次已跳过 Codex 接入；程序操作已完成，项目另行确认。':journey.summary),nextUrl:record.terminal?(kind!=='uninstall'&&record.workbench?.state==='ready'?record.workbench.url:null):record.confirmationUrl||null,nextLabel:record.terminal?'打开已安装工作台':record.phase?.startsWith('skill-')?'查看 Codex 精确确认':kind==='install'?'继续到目录选择 / 本人确认页':'查看'+verb+'确认',resultFile:record.resultFile||null,terminal,diagnostic:record.diagnostic||null};
+  return {content,journey,operationId:record.operationId,title:journey.title,phase:({'skill-confirmation':'等待你确认 Codex 操作','skill-executing':'正在处理 Codex 对话能力'})[record.phase]||phases[record.phase]||'正在核实本次操作',state:record.state,version:record.currentVersion&&kind==='update'?record.currentVersion+' → '+record.version:record.version||record.currentVersion||null,download:record.download||null,downloadStatus:downloadStatus(record),program:record.programState==='completed'?'程序'+verb+'已完成；'+(kind==='uninstall'?'结果由独立回执保留':record.runtimeHealth==='passed'?'稳定入口健康已核验':'健康待核实'):record.installationWrites==='none'?'尚未执行程序操作':'程序结果以同次记录为准',skill:kind==='uninstall'?(observations.remove?.state==='completed'?'已解除已归属 Codex 注册；修改和未知文件按计划保留':'本次没有已核实的注册移除结果'):record.skillRegistered===true?'Skill 文件与归属已核验；新对话识别另验':record.journeyContext?.skillChoice==='skipped'?'本次不接入 Codex':record.journeyContext?.skillChoice==='selected'?'已选择接入 Codex；仅在分别确认后执行':'Codex 接入可选，尚未选择',project:'未自动接入项目',installationRoot:record.installationRoot||null,skillDestination:record.skillDestination||null,next:record.next||(record.terminal&&record.state==='completed'&&record.journeyContext?.skillChoice==='skipped'?'本次已跳过 Codex 接入；程序操作已完成，项目另行确认。':journey.summary),nextUrl:record.terminal?(kind!=='uninstall'&&record.workbench?.state==='ready'?record.workbench.url:null):record.confirmationUrl||null,nextLabel:record.terminal?'打开已安装工作台':record.phase?.startsWith('skill-')?'查看 Codex 精确确认':kind==='install'?'继续到目录选择 / 本人确认页':'查看'+verb+'确认',resultFile:record.resultFile||null,terminal,diagnostic:record.diagnostic||null};
 }
 
 // A bounded, read-only loopback view over the existing in-memory operation.

@@ -24,7 +24,7 @@ export function lifecycleFeedback(session) {
   const roots = [...new Set([session.installationRoot, ...(session.targetRoots || [])].filter(Boolean))];
   const target = session.operationTargets || {};
   const primaryRole = category === 'project' ? 'project' : category === 'capability' && ['capability-register','capability-uninstall'].includes(operation) && session.capabilityType === 'codex-skill' ? 'skill' : 'program';
-  const roleNames = {program:primaryRole === 'program' ? '程序位置' : '关联程序位置',skill:scope==='project'?'Codex 项目级 Skill 位置':'Codex 用户级 Skill 位置',project:'项目位置',records:'准备记录 / 结果回执位置',acquisition:'获取缓存位置'};
+  const roleNames = {program:primaryRole === 'program' ? '程序位置' : '关联程序位置',skill:scope==='project'?'Codex 项目级 Skill 位置':'Codex 对话功能位置',project:'项目位置',records:'操作记录位置',acquisition:'获取缓存位置'};
   const namedTargets = [primaryRole,...Object.keys(roleNames).filter(key=>key!==primaryRole)].map(role=>({role,label:roleNames[role],path:target[role] || (role==='program'?session.installationRoot:null) || null})).filter((item,index)=>index===0 || item.path);
   const knownPaths = new Set(namedTargets.map(item=>item.path));
   for (const root of roots) if (!knownPaths.has(root)) namedTargets.push({role:'other',label:'其他受影响位置（用途待核实）',path:root});
@@ -33,25 +33,25 @@ export function lifecycleFeedback(session) {
   const plannedPreserves = [...(session.preserves || [])];
   if (operation === 'update' && session.plannedImpact?.modifiesUserProjects === false) plannedPreserves.push('项目文件与制作资料（本次计划不修改）');
   if (operation === 'update' && session.plannedImpact?.rollback === 'journal-and-previous-current') plannedPreserves.push('计划保留旧版与操作记录用于回退；实际结果完成后核验');
-  const changed = result.mutationPerformed === false ? '记录明确表示未更改目标。' : result.stableLauncherHealth==='passed' ? '已核验本次安装的稳定入口。' : '仅以本次操作结果为准；当前安装健康需另行只读核验。';
+  const changed = result.mutationPerformed === false ? '记录明确表示未更改目标。' : result.stableLauncherHealth==='passed' ? '已检查程序，可以正常打开。' : '仅以本次操作结果为准；当前安装健康需另行只读核验。';
   const labels = {pending:'等待你确认', preview:'等待你确认', executing:`正在${verb}`, consumed:`正在${verb}`, completed:`${verb}完成`, cancelled:'已取消，未执行本次操作', expired:'确认已过期，未执行本次操作', 'shutdown-no-install':'已关闭，未执行本次操作', failed:`${verb}失败`, 'verification-required':'状态待核实', 'not-found':'记录不可用，状态待核实'};
   let detail = '请核对版本、完整路径及重要影响。确认前不会执行目标操作。';
-  if(session.usageScope)detail+=session.usageScope.kind==='project'?' 仅绑定项目使用，不变更其他安装或用户级 Skill。':' 当前用户使用，不是所有系统账户共用。';
+  if(session.usageScope)detail+=session.usageScope.kind==='project'?' 这是原有的项目专属安装；本次不迁移或改动其他安装。':uninstall?' 只处理这份安装，不清空整个文件夹。':' 这台电脑上，你的不同项目都可以使用；项目仍需各自接入。';
   let next = '核对后确认，或取消。';
   if (['executing','consumed'].includes(state)) { detail='已记录开始执行；尚未收到最终结果，不代表成功。'; next='等待结果；不要重复提交。'; }
   if (state === 'completed') { detail = uninstall ? `已处理 ${Array.isArray(result.removed) ? result.removed.length+' 个由 Foundation 管理的文件或安装记录' : '计划中的卸载操作'}。普通卸载不是清空目录；保留审计记录和用户文件，逐项结果可展开核验。` : `已完成本次${verb}${session.targetVersion ? '，目标版本 '+session.targetVersion : ''}。${changed}`; next=uninstall?'保留结果回执；重新安装须从已验证发行入口重新确认。':'在原对话说“打开 Foundation”；先核验当前安装，再打开工作台。'; }
   if (state === 'failed') { detail = `${session.failure?.message || '操作返回失败。'} ${session.consumption || session.consumptions?.length ? '已有开始执行的记录；是否变更或回滚需核实。' : '无法仅凭失败判定变更或回滚情况。'}`; next='只读查看本次记录和安装恢复状态；不要重放旧确认。恢复操作需要新计划。'; }
-  if(state==='completed'&&result.stableLauncherHealth==='passed')detail+=' 稳定入口健康检查通过。';
+  if(state==='completed'&&result.stableLauncherHealth==='passed')detail+=' 程序运行检查通过。';
   if(state==='completed'&&result.cleanup)detail+=result.cleanup.state==='completed'?' 本次升级暂存已清理，小回执保留。':' 更新成功，部分临时文件保留；清理未完成不影响更新结果。';
   if (['cancelled','expired','shutdown-no-install'].includes(state)) {detail='本次未执行目标操作；此前操作与准备缓存不因此撤销或删除。';next='需要继续时重新检查状态并请求新计划。';}
   if (['verification-required','not-found'].includes(state)) {detail='连接中断、进程结束或记录缺失不等于安装失败或成功。可能已有变更，不自动重试。';next='按下方操作标识和记录位置只读核实；需要恢复时另行确认新计划。';}
   if (!type) { detail='无法识别本次操作，请核实原计划与记录；不能据此宣称成功。'; next='只读核实操作类型，不从未知页面继续确认。'; }
   if (type && category !== 'installation' && state === 'completed') { detail=`已完成本次${heading}；位置以本次计划为准。${result.mutationPerformed === false ? '记录明确未改变目标。' : '逐项变更见结果记录。'}`; next=category==='capability'?'在新对话实际检查识别与调用；文件注册不证明宿主已发现。':'重新读取同项目状态与当前规则，再继续相关制作。'; }
-  if (operation === 'capability-install') { detail = state === 'completed' ? '对话能力材料已准备；尚未注册到 Codex，不能据此认为新任务可用。' : detail; next = state === 'completed' ? '下一步：单独确认注册到 Codex；项目接入另行选择。' : next; }
+  if (operation === 'capability-install') { detail = state === 'completed' ? 'Skill 已准备，还需你确认启用到 Codex。' : detail; next = state === 'completed' ? '下一步：在本页确认“启用对话功能”；项目以后单独接入。' : next; }
   if (operation === 'capability-register' && state === 'completed') { detail='本次 Codex '+(scope==='project'?'项目级':'用户级')+' Skill 文件已就位；对应范围内的新任务能否识别和调用仍需实际检验。'; next='在对应范围中新开对话检验发现；文件写入不是宿主发现通过。'; }
   if (operation === 'capability-uninstall' && state === 'completed') next='本次能力移除完成；未知文件和用户修改保留。程序卸载是独立操作。';
-  if(operation==='install'&&state==='completed'&&session.journeyContext?.skillChoice==='selected')next='程序已安装；你选择的 Codex 接入仍待处理。继续同次启动器返回的确认页，不把程序完成当作全部完成。';
-  return {verb, heading, category, scope, versionText, namedTargets, title:!type?'状态待核实':labels[state] || '状态待核实', detail, next, roots, terminal:!['pending','preview','executing','consumed'].includes(state), canConfirm:Boolean(type)&&['pending','preview'].includes(state), preserves:preserveLabels(plannedPreserves).map(x=>x==='unknown-skill-files'?'未知或用户自行添加的 Skill 文件':x), resultPreserves:preserveLabels(result.preserved || session.preserves).map(x=>x==='unknown-skill-files'?'未知或用户自行添加的 Skill 文件':x), notDone:operation==='install'?'未自动注册用户级 Skill，未扫描或启用项目。':uninstall?'未删除项目源码、项目资料或无法确认属于 Foundation 的文件；残留以实际结果为准。':'本次不表示其他步骤已完成；项目与 Skill 仍按独立批准和真实状态判断。', result};
+  if(operation==='install'&&state==='completed'&&session.journeyContext?.skillChoice==='selected')next='Foundation 已安装；本页将继续询问是否启用你选择的对话功能。';
+  return {verb, heading, category, scope, versionText, namedTargets, title:!type?'状态待核实':labels[state] || '状态待核实', detail, next, roots, terminal:!['pending','preview','executing','consumed'].includes(state), canConfirm:Boolean(type)&&['pending','preview'].includes(state), preserves:preserveLabels(plannedPreserves).map(x=>x==='unknown-skill-files'?'未知或用户自行添加的 Skill 文件':x), resultPreserves:preserveLabels(result.preserved || session.preserves).map(x=>x==='unknown-skill-files'?'未知或用户自行添加的 Skill 文件':x), notDone:operation==='install'?'本步只安装程序；对话功能需另外确认，项目不会自动接入。':uninstall?'未删除项目源码、项目资料或无法确认属于 Foundation 的文件；残留以实际结果为准。':'本次不表示其他步骤已完成；项目与 Skill 仍按独立批准和真实状态判断。', result};
 }
 
 export function renderInstallDestinationPage({version, suggestion, acquisitionRoot, bootstrapStateRoot, nonce, expiresAt, journeyContext = {}}) {
