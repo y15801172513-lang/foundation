@@ -140,10 +140,19 @@ test('024R2 strict health schema 拒绝缺失/非法 version、损坏/空/歧义
     ['no-output', '// deliberately no output\n'],
     ['multiple-results', 'console.log(JSON.stringify({ok:true,version:"0.2.1"})); console.log(JSON.stringify({ok:true,version:"0.2.1"}))\n'],
     ['final-non-result', 'console.log(JSON.stringify({ok:true,version:"0.2.1"})); console.log("done")\n'],
+    ['stderr-exit', 'console.error("token=fixture_secret https://example.invalid/?signed=private"); console.error("x".repeat(5000)); process.exit(17);\n'],
+    ['signal', 'process.kill(process.pid,"SIGTERM");\n'],
+    ['timeout', 'setInterval(()=>{},1000);\n'],
   ];
   for (const [label, healthSource] of cases) {
     const bad = candidate(root, '0.2.1', healthSource);
-    assert.throws(() => apply(planFor({operation: 'update', root, target, built: bad, version: '0.2.1', currentVersion: '0.2.0'})), (error) => error.code === 'EXECUTABLE_HEALTH_FAILED', label);
+    assert.throws(() => apply(planFor({operation: 'update', root, target, built: bad, version: '0.2.1', currentVersion: '0.2.0'})), (error) => {
+      assert.equal(error.code,'EXECUTABLE_HEALTH_FAILED');assert.equal(error.details.rollback,'completed');
+      const d=error.details.healthCheck;assert.equal(d.phase,'staged-payload');assert.equal(d.timeoutMs,15000);assert(d.stdout.text.length<=4096&&d.stderr.text.length<=4096);
+      if(label==='stderr-exit'){assert.equal(d.exitCode,17);assert.equal(d.stderr.truncated,true);assert(!JSON.stringify(d).includes('fixture_secret'));assert(!JSON.stringify(d).includes('signed=private'));}
+      if(label==='signal')assert.equal(d.signal,'SIGTERM');if(label==='timeout')assert.equal(d.timedOut,true);
+      return true;
+    }, label);
     assert.equal(inspectInstallation(target).current.version, '0.2.0', label);
     assert.equal(fs.readFileSync(shim, 'utf8'), beforeShim, label);
     assert.equal(fs.readFileSync(path.join(target, 'state', 'current.json'), 'utf8'), beforeCurrent, label);

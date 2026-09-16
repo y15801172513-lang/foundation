@@ -294,6 +294,7 @@ export function runFirstInstallDestinationSelection(output = console, {browser =
   const finish = state => {
     if (phase !== 'waiting') return;
     phase = state;
+    process.exitCode = state === 'cancelled-no-install' ? 2 : state === 'expired-no-install' ? 3 : 1;
     output.log(JSON.stringify({status:'FOUNDATION_SELECTION_ENDED',selectionId,state,installationPerformed:false,skillRegistered:false}));
     server.close();
   };
@@ -385,6 +386,9 @@ export function runFirstInstallBootstrap(output = console, {destination = null, 
     process.off('SIGTERM', onSigterm);
     releaseLock();
     const session = server.managerSession;
+    // Service shutdown is not product success; recovery completion is not install completion.
+    const exitCode = session.state === 'completed' && session.result?.ok === true ? 0 : session.state === 'cancelled' ? 2 : session.state === 'expired' ? 3 : 1;
+    process.exitCode = exitCode;
     output.log(JSON.stringify({ok: session.state === 'completed', status: 'BOOTSTRAP_OPERATION_ENDED', journeyContext:session.journeyContext, sessionId: session.sessionId, state: session.state, result: session.result || null, failure: session.failure || null, installationRoot: prepared.paths.installRoot, next: session.state === 'completed' ? 'verify-installed-launcher-and-current-state' : 'inspect-operation-state-before-retry'}, null, 2));
   });
   server.listen(0, '127.0.0.1', () => {

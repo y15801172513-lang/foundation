@@ -193,7 +193,7 @@ function serverForRecord({plan, stateRoot, record, planRef = null}) {
       } catch (error) {
         const failedRecord = activeRecord;
         const failedPlanRef = activePlanRef;
-        if (failedRecord.session.state !== 'completed') writeLocalManagerSession(failedRecord, {state: 'failed', failedAt: Date.now(), failure: {code: error.code || 'MANAGER_EXECUTION_FAILED', message: error.message, recovery: '旧确认已失效；只读检查实际变更和恢复状态，再选择新计划'}});
+        if (failedRecord.session.state !== 'completed') writeLocalManagerSession(failedRecord, {state: 'failed', failedAt: Date.now(), failure: {code: error.code || 'MANAGER_EXECUTION_FAILED', message: error.message, stage: error.stage || null, details: error.details || {}, recovery: '旧确认已失效；只读检查实际变更和恢复状态，再选择新计划'}});
         let replacementPlanRef = null;
         if (error.code === 'MANAGER_PLAN_STATE_DRIFT' && failedPlanRef) {
           try {

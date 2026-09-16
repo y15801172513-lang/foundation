@@ -5,6 +5,14 @@ import crypto from 'node:crypto';
 export function createOperation() {
   return {schemaVersion:'1.0.0',operationId:crypto.randomUUID(),pid:process.pid,startedAt:new Date().toISOString(),phase:'discovering',state:'running',terminal:false,installationWrites:'none',skillRegistered:false};
 }
+// Product outcome, never the confirmation server's exit status, controls the CLI.
+export function operationExitCode(record) {
+  if (!record?.terminal) return 1;
+  if (record.state === 'completed') return 0;
+  if (['cancelled','cancelled-no-install'].includes(record.state)) return 2;
+  if (['expired','expired-no-install'].includes(record.state)) return 3;
+  return 1;
+}
 // Observations from the verified runtime, never confirmation or execution authority.
 export function runtimeObservation(event) {
   let confirmationUrl;
@@ -13,9 +21,11 @@ export function runtimeObservation(event) {
   if(['FOUNDATION_SELECTION_BOUND','AWAITING_FOUNDATION_UI_CONFIRMATION'].includes(event.status))return {phase:'awaiting-confirmation',...(event.journeyContext?{journeyContext:event.journeyContext}:{}),sessionId:event.sessionId,planHash:event.planHash,installationWrites:'none',...(confirmationUrl?{confirmationUrl}:{})};
   if(event.status==='FOUNDATION_OPERATION_STATE'&&['executing','consumed'].includes(event.state))return {phase:'executing',sessionId:event.sessionId,installationWrites:'possible'};
   if(event.status==='BOOTSTRAP_OPERATION_ENDED'){
-    const state=['completed','failed','cancelled','expired'].includes(event.state)?event.state:'verification-required';
+    const state=event.state==='completed'&&event.result?.ok!==true?'verification-required':['completed','failed','cancelled','expired'].includes(event.state)?event.state:'verification-required';
     const selectedPending=state==='completed'&&event.journeyContext?.skillChoice==='selected';
-    return {phase:'runtime-ended',programState:state,state:selectedPending?'awaiting-skill':state,terminal:state!=='verification-required'&&!selectedPending,sessionId:event.sessionId,installationRoot:event.installationRoot,installationWrites:state==='completed'?'runtime-reported-installed':'unknown',runtimeHealth:event.result?.stableLauncherHealth||event.result?.lifecycleResult?.stableLauncherHealth||event.result?.executableHealth||'unknown',journeyContext:event.journeyContext,next:selectedPending?'程序已完成，正在准备所选 Codex 接入的独立确认':'只读核验稳定 installed launcher 或同次 session 结果，不重放确认'};
+    const rollback=event.failure?.details?.rollback||'unknown';
+    const failureNext=rollback==='completed'?'本次程序变更已回退；Skill 未安装。保留本次记录，在原对话查看健康检查错误，修复后再申请新计划；不要重放旧确认。':'回退情况待核实；Skill 未安装。保留本次记录，在原对话核实健康检查与恢复状态；不要自动重试。';
+    return {phase:'runtime-ended',programState:state,state:selectedPending?'awaiting-skill':state,terminal:state!=='verification-required'&&!selectedPending,sessionId:event.sessionId,installationRoot:event.installationRoot,installationWrites:state==='completed'?'runtime-reported-installed':rollback==='completed'?'rolled-back':'unknown',runtimeHealth:event.result?.stableLauncherHealth||event.result?.lifecycleResult?.stableLauncherHealth||event.result?.executableHealth||'unknown',failure:event.failure||null,rollback,journeyContext:event.journeyContext,next:selectedPending?'程序已完成，正在准备所选 Codex 接入的独立确认':state==='failed'?failureNext:'只读核验稳定 installed launcher 或同次 session 结果，不重放确认'};
   }
   if(['cancelled-no-install','expired-no-install','shutdown-no-install'].includes(event.state))return {phase:'directory-selection-ended',state:event.state,terminal:true,installationWrites:'none'};
   return null;

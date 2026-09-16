@@ -76,7 +76,7 @@ function runManagerCli(args, output) {
     // this temporary manager. A stopped pending page does not become approval.
     const stopManager=()=>{server.close();if(['pending','preview'].includes(server.managerSession.state))server.closeAllConnections();};
     process.once('SIGTERM',stopManager);process.once('SIGINT',stopManager);
-    server.once('close',()=>{process.off('SIGTERM',stopManager);process.off('SIGINT',stopManager);});
+    server.once('close',()=>{process.off('SIGTERM',stopManager);process.off('SIGINT',stopManager);const session=server.managerSession;process.exitCode=session.state==='completed'&&session.result?.ok!==false?0:session.state==='cancelled'?2:session.state==='expired'?3:1;});
     server.on('foundation-operation-state', session => output.log(JSON.stringify({status:'FOUNDATION_OPERATION_STATE', planRef:option(args,'--plan-ref'), sessionId:session.sessionId, operationId:session.operationId, operation:session.operation, state:session.state})));
     server.on('foundation-operation-result', session => output.log(JSON.stringify({status:'FOUNDATION_OPERATION_RESULT',responseFinished:true, planRef:option(args,'--plan-ref'), sessionId:session.sessionId, operationId:session.operationId, state:session.state, result:session.result || null, failure:session.failure || null, recordLocation:session.recordLocation}, null, 2)));
     server.listen(0, '127.0.0.1', () => output.log(JSON.stringify({ok: true, status:'AWAITING_FOUNDATION_UI_CONFIRMATION', url: `http://127.0.0.1:${server.address().port}/`, planRef:option(args,'--plan-ref'), sessionId: server.managerSession.sessionId, recordLocation:server.managerSession.recordLocation, resultRecovery:'manager status --plan-ref；卸载后只读核验安装根 uninstall-result.json，launcher 消失不是成功证明', mutationPerformed: false, managerStateMutationPerformed: true}, null, 2)));
@@ -196,6 +196,9 @@ export function runCli(args = process.argv.slice(2), output = console) {
   const invocation = parseCliInvocation(args);
   args = invocation.argv;
   const command = args[0];
+  // A payload probe reports only its own version/runtime. It neither derives
+  // installed authority nor enables any lifecycle operation before current exists.
+  if (command === '--foundation-health') return output.log(JSON.stringify({ok: true, version: JSON.parse(fs.readFileSync(path.join(ROOT, 'foundation-kit.json'), 'utf8')).product.version, runtime: process.execPath}));
   const authority = deriveTrustedLifecycleAuthority();
   if (authority.mode === 'platform-installed-runtime' && command !== '--help' && command !== '--foundation-health') {
     readInstallationScope(authority.installRoot, {cwd: process.cwd(), project: option(args, '--project')});
@@ -210,7 +213,6 @@ export function runCli(args = process.argv.slice(2), output = console) {
     return;
   }
   if (command === '--help') output.log('Foundation 对话入口（真实获取与使用尚待验收）\ninspect 不查远端：发布 unknown，获取 not-checked；unsigned 不表示未发布。版本来自可信 GitHub 入口清单。\n只读检查：onboarding inspect [--destination <绝对目录>]\n候选安装：install [--destination <绝对目录>] --browser codex\n页面选择目录：install --choose-destination --browser codex [--journey-id <仅关联展示的标识>]（选择后仍须本人确认精确计划）\n安装结果：onboarding status --session-id <返回值>\n唯一工作台：workbench open --root <实际安装目录> [--project <明确选定的已接入项目>]\n诊断概览（不是工作台）：onboarding open --root <实际安装目录>\n项目/维护：manager inspect → request-plan → open-manager → status\n规则只读：rules inspect --root <安装根> [--project <项目>]\n版本、目录和 Skill 是意向；必须由用户在绑定计划的管理器页面确认。没有 confirm/apply/yes 直写入口。源码 CLI 需要开发 Node；已安装 launcher 使用私有 Runtime。');
-  else if (command === '--foundation-health') output.log(JSON.stringify({ok: true, version: JSON.parse(fs.readFileSync(path.join(ROOT, 'foundation-kit.json'), 'utf8')).product.version, runtime: process.execPath}));
   else if (!command) output.log(lifecycleMenu());
   else if (command === 'onboarding') {
     if (args[1] === 'open') {

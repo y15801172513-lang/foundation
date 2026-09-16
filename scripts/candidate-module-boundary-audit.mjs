@@ -51,6 +51,26 @@ function matchingDelimiter(source, open, opening, closing) {
     }
     if (character === '/' && next === '/') { lineComment = true; index += 1; continue; }
     if (character === '/' && next === '*') { blockComment = true; index += 1; continue; }
+    // Regex literals can contain quotes and braces. They are not JavaScript
+    // delimiters: counting them can falsely absorb hundreds of later functions
+    // into a read-only helper and invent writer call paths.
+    if (character === '/' && /(?:[=(,:!&|?;{}\[]|=>|\breturn|\bthrow)\s*$/u.test(source.slice(open, index))) {
+      let inClass = false;
+      let regexEscaped = false;
+      let end = index + 1;
+      for (; end < source.length; end += 1) {
+        const token = source[end];
+        if (regexEscaped) { regexEscaped = false; continue; }
+        if (token === '\\') { regexEscaped = true; continue; }
+        if (token === '[') inClass = true;
+        else if (token === ']') inClass = false;
+        else if (token === '/' && !inClass) break;
+        else if (token === '\n' || token === '\r') throw new Error('module audit: unterminated regular expression');
+      }
+      if (end >= source.length) throw new Error('module audit: unterminated regular expression');
+      index = end;
+      continue;
+    }
     if (character === '"' || character === "'" || character === '`') { quote = character; continue; }
     if (character === opening) depth += 1;
     else if (character === closing && --depth === 0) return index;

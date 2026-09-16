@@ -15,19 +15,20 @@ export function lifecycleContent(record, observations) {
     else if(cancelled)title='已取消'+verb;
     else if(expired)title=verb+'确认已到期';
     else if(environmentBlocked)title='运行环境需要处理';
-    else if(record.state==='failed'||stepStates.includes('failed'))title=verb+'未成功';
+    else if(record.state==='failed'||stepStates.includes('failed'))title=verb+'未完成';
     else title=anyCompleted?'部分步骤已完成':'操作结果待确认';
     if(programDone&&kind!=='uninstall'&&!skipped&&!record.skillRegistered)title+='；对话功能'+(['cancelled','skipped'].includes(registration)?'未启用':registration==='failed'?'未处理成功':'尚未完成');
   }
   let program=programDone?'程序'+verb+'已完成。'+(kind==='uninstall'?'卸载结果已保存。':record.runtimeHealth==='passed'?'已检查，可以正常打开。':'能否正常打开仍需检查。')
     :record.installationWrites==='none'||['not-started','cancelled','expired'].includes(record.programState)||['cancelled','expired'].includes(observations.program?.state)?'尚未'+(kind==='install'?'安装 Foundation':'执行程序'+verb)+'。':'程序是否发生变化仍需查看本次结果，请勿重复执行。';
   if(programDone&&kind==='update'&&record.programResult?.cleanup)program+=record.programResult.cleanup.state==='completed'?'本次下载暂存已按计划清理。':'部分下载文件已保留，不影响已完成的更新。';
+  if(!programDone&&record.programState==='failed')program=verb+'未完成。'+(record.rollback==='completed'?'本次程序变更已回退；不表示安装成功。':'是否已回退仍待核实；不要重复执行。');
   const skill=kind==='uninstall'?(removal==='completed'?'已处理本安装的对话功能文件；修改或未知文件按计划保留。':removal?'对话功能尚未移除成功，原文件保留。':record.hadSkill===false?'本安装没有已登记的对话功能，此次未删除其他 Skill。':'尚未确认是否需要移除对话功能。')
     :record.skillRegistered===true?'对话功能文件已就位，请在新 Codex 对话中尝试“打开 Foundation”。'
     :skipped?(kind==='update'?'本次未新增对话功能。':'本次不启用 Codex 对话功能。')
     :['cancelled','skipped'].includes(registration)?'本次未启用 Codex 对话功能。'
     :registration==='failed'?'对话功能未处理成功；只需检查这一项，不必重装程序。'
-    :record.terminal&&!programDone&&(cancelled||expired)?'本次未启用 Codex 对话功能。'
+    :record.terminal&&!programDone&&(cancelled||expired||record.programState==='failed')?'本次未安装或启用 Skill；程序失败不会继续安装 Skill。'
     :observations.material?.state==='completed'?'Skill 已准备，还需要你确认启用到 Codex。'
     :record.journeyContext?.skillChoice==='selected'?'已选择对话功能，仍需单独确认后才能启用。':'可选择是否启用 Codex 对话功能。';
   const description=record.terminal?program+' '+skill:kind==='install'?'给当前用户安装一份 Foundation，不同项目按需使用，项目资料各自保管。'+(skipped?'本次不启用对话功能。':'对话功能可选，需另外确认。')

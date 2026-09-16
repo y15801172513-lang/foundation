@@ -3,6 +3,17 @@ import assert from 'node:assert/strict';
 import {JSDOM} from 'jsdom';
 import {singlePageDocument} from '../../distribution/summon-foundation/lib/single-page-view.mjs';
 import {acquisitionProgress} from '../../distribution/summon-foundation/lib/progress-page.mjs';
+import {runtimeObservation} from '../../distribution/summon-foundation/lib/operation-result.mjs';
+
+test('health failure shows unfinished install, verified rollback, no Skill and folded diagnostics after disconnect',async()=>{
+ const record={operationId:'health-failure',kind:'install',skillRegistered:false,...runtimeObservation({status:'BOOTSTRAP_OPERATION_ENDED',state:'failed',journeyContext:{skillChoice:'selected'},failure:{code:'EXECUTABLE_HEALTH_FAILED',stage:'health-check',details:{rollback:'completed',healthCheck:{phase:'staged-payload',exitCode:17,signal:null,timedOut:false,stderr:{text:'intentional health failure'}}}}})};
+ const page=await livePage(record);try{
+  const document=page.dom.window.document;assert.equal(document.querySelector('#flow-title').textContent,'安装未完成');
+  assert.match(document.querySelector('#flow-result').textContent,/已回退/);assert.match(document.querySelector('#flow-result').textContent,/未安装或启用 Skill/);assert.match(document.querySelector('#flow-result').textContent,/不要重放旧确认/);
+  assert.equal(document.querySelector('#current-form'),null);assert.equal(document.querySelector('#raw').closest('details').open,false);assert.match(document.querySelector('#raw').textContent,/staged-payload/);
+  const before=document.querySelector('#flow-result').textContent;await page.refresh({},true);assert.equal(document.querySelector('#flow-result').textContent,before);
+ }finally{page.dom.window.close();}
+});
 
 async function livePage(record){
  let tick,fail=false;

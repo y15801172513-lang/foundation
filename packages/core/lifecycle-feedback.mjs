@@ -40,7 +40,7 @@ export function lifecycleFeedback(session) {
   let next = '核对后确认，或取消。';
   if (['executing','consumed'].includes(state)) { detail='已记录开始执行；尚未收到最终结果，不代表成功。'; next='等待结果；不要重复提交。'; }
   if (state === 'completed') { detail = uninstall ? `已处理 ${Array.isArray(result.removed) ? result.removed.length+' 个由 Foundation 管理的文件或安装记录' : '计划中的卸载操作'}。普通卸载不是清空目录；保留审计记录和用户文件，逐项结果可展开核验。` : `已完成本次${verb}${session.targetVersion ? '，目标版本 '+session.targetVersion : ''}。${changed}`; next=uninstall?'保留结果回执；重新安装须从已验证发行入口重新确认。':'在原对话说“打开 Foundation”；先核验当前安装，再打开工作台。'; }
-  if (state === 'failed') { detail = `${session.failure?.message || '操作返回失败。'} ${session.consumption || session.consumptions?.length ? '已有开始执行的记录；是否变更或回滚需核实。' : '无法仅凭失败判定变更或回滚情况。'}`; next='只读查看本次记录和安装恢复状态；不要重放旧确认。恢复操作需要新计划。'; }
+  if (state === 'failed') { detail = `${session.failure?.stage === 'health-check' ? '程序健康检查未通过。' : session.failure?.message || '操作返回失败。'} ${session.failure?.details?.rollback === 'completed' ? '本次程序变更已回退，原安装状态已恢复。' : '是否已变更或回退仍待核实。'}${session.operation === 'install' ? '安装未完成；本次未安装 Skill，不会继续接入。' : ''}`; next='保留本次记录，在原对话查看折叠详情中的健康检查错误和恢复状态；修复后使用新计划，不重放旧确认。'; }
   if(state==='completed'&&result.stableLauncherHealth==='passed')detail+=' 程序运行检查通过。';
   if(state==='completed'&&result.cleanup)detail+=result.cleanup.state==='completed'?' 本次升级暂存已清理，小回执保留。':' 更新成功，部分临时文件保留；清理未完成不影响更新结果。';
   if (['cancelled','expired','shutdown-no-install'].includes(state)) {detail='本次未执行目标操作；此前操作与准备缓存不因此撤销或删除。';next='需要继续时重新检查状态并请求新计划。';}

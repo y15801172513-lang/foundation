@@ -317,21 +317,35 @@ function currentRecord(plan, manifest) {
   return {schemaVersion: '1.0.0', version: identity.productVersion, platform: identity.platform, arch: identity.architecture, candidateHash: identity.candidateManifestHash, appPath, runtimeRoot, runtimePath: `${runtimeRoot}/${manifest.runtime.path.slice('runtime/'.length)}`, entrypoint: `${appPath}/${manifest.entrypoint.slice('app/'.length)}`, installIdentity: plan.installIdentity, usageScope:plan.usageScope, identity};
 }
 
-function healthProbe(root, record, {code = 'EXECUTABLE_HEALTH_FAILED'} = {}) {
+function healthOutput(value) {
+  const raw = String(value || '');
+  const clean = raw.replace(new RegExp(String.raw`https?:\/\/[^\s"'<>]+`, 'giu'), '[已脱敏网址]')
+    .replace(/(?:github_pat_|gh[pousr]_|npm_)[A-Za-z0-9_]+/gu, '[已脱敏凭据]')
+    .replace(new RegExp(String.raw`((?:authorization|token|password|secret|api[_-]?key)\s*["']?\s*[:=]\s*)[^\r\n,}]+`, 'giu'), '$1[已脱敏]')
+    .replace(/-----BEGIN [^-]*PRIVATE KEY-----[\s\S]*?(?:-----END [^-]*PRIVATE KEY-----|$)/gu, '[已脱敏私钥]');
+  return {text: clean.slice(0, 4096), truncated: clean.length > 4096, bytes: Buffer.byteLength(raw)};
+}
+
+function checkedHealthResult(run, record, code, phase) {
+  const diagnostic = {phase, exitCode: run.status ?? null, signal: run.signal || null, timeoutMs: 15000, timedOut: run.error?.code === 'ETIMEDOUT', errorCode: run.error?.code || null, stdout: healthOutput(run.stdout), stderr: healthOutput(run.stderr)};
+  const fail = message => { throw new LifecycleError(code, message, {stage: 'health-check', details: {healthCheck: diagnostic}}); };
+  if (run.error || run.signal || run.status !== 0) fail('私有 runtime 健康命令失败；详情保留退出状态和脱敏输出');
+  const lines = String(run.stdout || '').split(/\r?\n/u).filter(line => line.trim().length > 0);
+  if (lines.length !== 1) fail('私有 runtime 健康命令必须只返回一个结构化结果');
+  let output; try { output = JSON.parse(lines[0]); } catch { output = null; }
+  const allowedKeys = new Set(['ok', 'runtime', 'version']);
+  const schemaValid = output && typeof output === 'object' && !Array.isArray(output) && Object.keys(output).every(key => allowedKeys.has(key)) && output.ok === true && typeof output.version === 'string' && output.version === record.identity.productVersion && (output.runtime === undefined || (typeof output.runtime === 'string' && output.runtime.length > 0));
+  if (!schemaValid) fail('私有 runtime 健康命令未返回单一、严格且匹配 productVersion 的结果');
+  return {ok: true, exitCode: run.status, output};
+}
+
+function healthProbe(root, record, {code = 'EXECUTABLE_HEALTH_FAILED', phase = 'installed-payload'} = {}) {
   const runtime = path.join(root, ...record.runtimePath.split('/'));
   const entrypoint = path.join(root, ...record.entrypoint.split('/'));
   if (!fs.existsSync(runtime) || !fs.existsSync(entrypoint) || fs.lstatSync(runtime).isSymbolicLink() || fs.lstatSync(entrypoint).isSymbolicLink()) throw new LifecycleError(code, 'runtime 或 entrypoint 缺失/为符号链接', {stage: 'health-check'});
   if (process.platform !== 'win32') { try { fs.accessSync(runtime, fs.constants.X_OK); } catch { throw new LifecycleError(code, '私有 runtime 存在但不可执行', {stage: 'health-check'}); } }
-  const run = spawnSync(runtime, [entrypoint, '--foundation-health'], {cwd: root, encoding: 'utf8', timeout: 15_000, env: {PATH: '', FOUNDATION_HEALTH_PROBE: '1'}});
-  if (run.error || run.signal || run.status !== 0) throw new LifecycleError(code, `私有 runtime 健康命令失败：${run.error?.message || run.signal || run.status}`, {stage: 'health-check'});
-  const lines = run.stdout.split(/\r?\n/u).filter((line) => line.trim().length > 0);
-  if (lines.length !== 1) throw new LifecycleError(code, '私有 runtime 健康命令必须只返回一个结构化结果', {stage: 'health-check'});
-  let output; try { output = JSON.parse(lines[0]); } catch { output = null; }
-  const keys = output && typeof output === 'object' && !Array.isArray(output) ? Object.keys(output).sort() : [];
-  const allowedKeys = new Set(['ok', 'runtime', 'version']);
-  const schemaValid = output && typeof output === 'object' && !Array.isArray(output) && keys.every((key) => allowedKeys.has(key)) && output.ok === true && typeof output.version === 'string' && output.version.length > 0 && output.version === record.identity.productVersion && (output.runtime === undefined || (typeof output.runtime === 'string' && output.runtime.length > 0));
-  if (!schemaValid) throw new LifecycleError(code, '私有 runtime 健康命令未返回单一、严格且匹配 productVersion 的结果', {stage: 'health-check'});
-  return {ok: true, exitCode: run.status, output};
+  const run = spawnSync(runtime, [entrypoint, '--foundation-health'], {cwd: root, encoding: 'utf8', timeout: 15_000, maxBuffer: 64 * 1024, env: {PATH: '', FOUNDATION_HEALTH_PROBE: '1'}});
+  return checkedHealthResult(run, record, code, phase);
 }
 
 function stageRecord(record) {
@@ -443,7 +457,7 @@ function installOrUpdate({plan, root, current, installations, journal, journalFi
   const payload = path.join(checked.root, 'payload');
   copyTree(path.join(payload, 'app'), path.join(staging, 'app'));
   copyTree(path.join(payload, 'runtime'), path.join(staging, 'runtime'));
-  healthProbe(staging, stageRecord(record));
+  healthProbe(staging, stageRecord(record), {phase: 'staged-payload'});
   writeJournal(journalFile, journal, 'staged', 'staged-and-health-verified');
   operationCheckpoint('after-staging');
 
@@ -489,9 +503,8 @@ function installOrUpdate({plan, root, current, installations, journal, journalFi
   journal.created.receipt = !fs.existsSync(receiptFile);
   writeJournal(journalFile, journal, 'switching', 'receipt-commit-intent');
   writeSignedJson(receiptFile, receiptPayload(root, plan, record, checked.manifest, integrationRoot));
-  const stable=spawnSync(shim,['--foundation-health'],{cwd:root,encoding:'utf8',timeout:15000,env:{PATH:'',FOUNDATION_HEALTH_PROBE:'1'}});
-  let stableHealth;try{stableHealth=JSON.parse(stable.stdout);}catch{}
-  if(stable.error||stable.signal||stable.status!==0||stableHealth?.ok!==true||stableHealth.version!==record.version)throw new LifecycleError('STABLE_LAUNCHER_HEALTH_FAILED','稳定入口健康核验失败；恢复旧可用版本',{stage:'health-check'});
+  const stable=spawnSync(shim,['--foundation-health'],{cwd:root,encoding:'utf8',timeout:15000,maxBuffer:64*1024,env:{PATH:'',FOUNDATION_HEALTH_PROBE:'1'}});
+  checkedHealthResult(stable, record, 'STABLE_LAUNCHER_HEALTH_FAILED', 'stable-launcher');
   const result = {schemaVersion: '1.0.0', ok: true, operationId: plan.planId, state: current ? 'updated' : 'installed', current: record, previous: current?.version || null, executableHealth: 'passed',stableLauncherHealth:'passed'};
   journal.result = result;
   writeJournal(journalFile, journal, 'committed', 'receipt-committed');
@@ -977,15 +990,17 @@ export function applyLifecyclePlan({plan, now = Date.now()}) {
       try { updateTrustedPreIntent(preIntent, 'manual-action-required', {failedAt: Date.now(), errorCode: error.code || 'MUTATION_FAILED'}, {signing: trustedSigning}); } catch {}
     }
     if (!journal || error.code === 'FINALIZER_INTERRUPTED') throw error;
+    journal.failure = {code: error.code || 'MUTATION_FAILED', message: error.message, stage: error.stage || null, details: error.details || {}};
     try {
       rollbackJournal(root, journal, journalFile);
+      error.details = {...error.details, rollback: 'completed', previousVersion: current?.version || null};
       // The operation failed, but rollbackJournal durably completed recovery.
       // Close the pre-intent before releasing its guard; leaving it nonterminal
       // makes the next read misclassify a safely rolled-back operation as a lost
       // consumed guard. Preserve failure identity and the original thrown error.
       if (preIntent) updateTrustedPreIntent(preIntent, 'completed', {failedAt: Date.now(), completedAt: Date.now(), outcome: 'failed-rolled-back', errorCode: error.code || 'MUTATION_FAILED'}, {signing: trustedSigning});
     }
-    catch (recoveryError) { journal.status = 'unknown'; journal.outcome = 'manual-action-required'; journal.recoveryError = {code: recoveryError.code || 'RECOVERY_FAILED', message: recoveryError.message}; writeSignedJson(journalFile, journal); }
+    catch (recoveryError) { error.details = {...error.details, rollback: 'verification-required'}; journal.status = 'unknown'; journal.outcome = 'manual-action-required'; journal.recoveryError = {code: recoveryError.code || 'RECOVERY_FAILED', message: recoveryError.message}; writeSignedJson(journalFile, journal); }
     throw error;
   } finally {
     releaseGuard(guard);

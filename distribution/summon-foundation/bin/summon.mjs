@@ -11,7 +11,7 @@ import {followMaintenance} from '../lib/maintenance-handoff.mjs';
 import {installedClient} from '../lib/manager-step.mjs';
 import {resumeSkillHandoff} from '../lib/resume-handoff.mjs';
 import {parseSummonArgs} from '../lib/cli-options.mjs';
-import {createOperation,saveOperation,readOperation,runtimeObservation} from '../lib/operation-result.mjs';
+import {createOperation,saveOperation,readOperation,runtimeObservation,operationExitCode} from '../lib/operation-result.mjs';
 import {createJourneyControl} from '../lib/journey-control.mjs';
 import {inspectEntryEnvironment} from '../lib/environment-check.mjs';
 
@@ -52,7 +52,7 @@ function stageDirectory(){
 }
 let operation=null,stage=null,progressPage=null;
 const journeyControl=createJourneyControl(()=>operation,patch=>patch?updateOperation(patch):progressPage?.publish());
-function updateOperation(patch){if(!operation)return;Object.assign(operation,patch,{updatedAt:new Date().toISOString()});const file=saveOperation(operation,stage);if(file)operation.resultFile=file;progressPage?.publish();console.log(JSON.stringify({status:'FOUNDATION_INSTALL_OPERATION',...operation,resultFile:file,recordSaved:!!file}));}
+function updateOperation(patch){if(!operation)return;Object.assign(operation,patch,{updatedAt:new Date().toISOString()});if(operation.terminal)operation.exitCode=operationExitCode(operation);const file=saveOperation(operation,stage);if(file)operation.resultFile=file;progressPage?.publish();console.log(JSON.stringify({status:'FOUNDATION_INSTALL_OPERATION',...operation,resultFile:file,recordSaved:!!file}));}
 try{
   const args=parseSummonArgs(process.argv.slice(2));
   if(args.help){console.log(help);process.exit(0);}
@@ -74,7 +74,7 @@ try{
     console.log(JSON.stringify({status:'FOUNDATION_SINGLE_PAGE',url:progressPage.url,operationId:operation.operationId}));
     const env={...process.env};for(const key of ['NODE_OPTIONS','NODE_PATH','NODE_V8_COVERAGE','NODE_REDIRECT_WARNINGS','NODE_COMPILE_CACHE','NODE_COMPILE_CACHE_PORTABLE','NODE_PRESERVE_SYMLINKS'])delete env[key];
     const result=await resumeSkillHandoff({file:args.resume,env,journeyControl,onChange:updateOperation});
-    updateOperation(result);process.exitCode=result.state==='completed'?0:1;
+    updateOperation(result);process.exitCode=operationExitCode(result);
   }else if(maintenance){
     plainPath(args.root);
     const env={...process.env};for(const key of ['NODE_OPTIONS','NODE_PATH','NODE_V8_COVERAGE','NODE_REDIRECT_WARNINGS','NODE_COMPILE_CACHE','NODE_COMPILE_CACHE_PORTABLE','NODE_PRESERVE_SYMLINKS'])delete env[key];
@@ -96,7 +96,7 @@ try{
       updateOperation({phase:'acquired'});
     }
     updateOperation(await followMaintenance({operation,kind:operation.kind,candidate,env,onChange:updateOperation,journeyControl}));
-    process.exitCode=operation.state==='completed'?0:1;
+    process.exitCode=operationExitCode(operation);
     await progressPage.close();progressPage=null;
   }else if(!args.prepare&&!args.acquire){
     if(initialEnvironment.state!=='ready'){operation=createOperation();updateOperation({phase:'checking-environment',environment:initialEnvironment});fail('发行查询所需环境无法核实；尚未联网');}
@@ -145,6 +145,6 @@ try{
       catch(error){updateOperation({state:'partial',phase:'finished',terminal:true,skillRegistered:false,handoffFailure:{code:error.code||'SKILL_HANDOFF_REQUIRES_VERIFICATION',command:error.command||null,exitCode:error.exitCode??null},next:'程序已安装，Skill 接续未完成；保留当前计划与结果，仅核实未完成步骤，不重装程序或重放确认。'});}
     }
     if(!operation.terminal)updateOperation({state:'verification-required',terminal:true,childExitCode:ended.code,next:'服务退出不等于成功或取消；只读核验原 session 与 installed 状态，不自动重试'});
-    process.exitCode=operation.state==='partial'?1:ended.code;
+    process.exitCode=operationExitCode(operation);
   }
-}catch(e){const message=String(e.message).replace(/https?:\/\/\S+/g,'[已脱敏网址]').replace(/(?:github_pat_|ghp_|npm_)[A-Za-z0-9_]+/g,'[已脱敏凭据]');updateOperation({state:e.code==='ENTRY_CHOICE_CANCELLED'?'cancelled-no-install':e.code==='ENTRY_CHOICE_EXPIRED'?'expired-no-install':operation?.programState==='completed'?'partial':operation&&operation.installationWrites!=='none'?'verification-required':'failed',terminal:true,...(operation?.programState==='completed'?{failedPhase:operation.phase,phase:'finished'}:{}),errorCode:['ACQUISITION_TRANSPORT_FAILED','ACQUISITION_VALIDATION_FAILED','ENTRY_CHOICE_CANCELLED','ENTRY_CHOICE_EXPIRED'].includes(e.code)?e.code:'INSTALL_ENTRY_FAILED',diagnostic:e.diagnostic||null,next:message+'。先核验旧工具进程已结束及同次结果；保留材料，不自动重试或重放安装确认'});console.error(`错误：${message}`);process.exitCode=1;}finally{if(progressPage)await progressPage.close();}
+}catch(e){const message=String(e.message).replace(/https?:\/\/\S+/g,'[已脱敏网址]').replace(/(?:github_pat_|ghp_|npm_)[A-Za-z0-9_]+/g,'[已脱敏凭据]');updateOperation({state:e.code==='ENTRY_CHOICE_CANCELLED'?'cancelled-no-install':e.code==='ENTRY_CHOICE_EXPIRED'?'expired-no-install':operation?.programState==='completed'?'partial':operation&&operation.installationWrites!=='none'?'verification-required':'failed',terminal:true,...(operation?.programState==='completed'?{failedPhase:operation.phase,phase:'finished'}:{}),errorCode:['ACQUISITION_TRANSPORT_FAILED','ACQUISITION_VALIDATION_FAILED','ENTRY_CHOICE_CANCELLED','ENTRY_CHOICE_EXPIRED'].includes(e.code)?e.code:'INSTALL_ENTRY_FAILED',diagnostic:e.diagnostic||null,next:message+'。先核验旧工具进程已结束及同次结果；保留材料，不自动重试或重放安装确认'});console.error(`错误：${message}`);process.exitCode=operationExitCode(operation);}finally{if(progressPage)await progressPage.close();}

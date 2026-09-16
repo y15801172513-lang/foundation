@@ -1,19 +1,27 @@
 import test from'node:test';import assert from'node:assert/strict';import fs from'node:fs';import path from'node:path';
 import {spawnSync} from 'node:child_process';
 import{downloadFailure}from'../../distribution/summon-foundation/lib/acquire.mjs';
-import{createOperation,saveOperation,readOperation,runtimeObservation}from'../../distribution/summon-foundation/lib/operation-result.mjs';
+import{createOperation,saveOperation,readOperation,runtimeObservation,operationExitCode}from'../../distribution/summon-foundation/lib/operation-result.mjs';
 import{parseSummonArgs}from'../../distribution/summon-foundation/lib/cli-options.mjs';
 const root=path.resolve(import.meta.dirname,'../..');
 test('035R1 runtime observations distinguish confirmation, execution and terminal uncertainty',()=>{
  assert.equal(runtimeObservation({status:'AWAITING_FOUNDATION_UI_CONFIRMATION'}).installationWrites,'none');
  assert.equal(runtimeObservation({status:'FOUNDATION_OPERATION_STATE',state:'executing'}).installationWrites,'possible');
- for(const state of ['completed','failed','cancelled','expired']){const r=runtimeObservation({status:'BOOTSTRAP_OPERATION_ENDED',state});assert.equal(r.state,state);assert.equal(r.terminal,true);assert.equal(r.runtimeHealth,'unknown');assert.equal(r.installationWrites,state==='completed'?'runtime-reported-installed':'unknown');}
+ for(const state of ['completed','failed','cancelled','expired']){const r=runtimeObservation({status:'BOOTSTRAP_OPERATION_ENDED',state,result:state==='completed'?{ok:true}:null});assert.equal(r.state,state);assert.equal(r.terminal,true);assert.equal(r.runtimeHealth,'unknown');assert.equal(r.installationWrites,state==='completed'?'runtime-reported-installed':'unknown');}
  assert.equal(runtimeObservation({status:'BOOTSTRAP_OPERATION_ENDED',state:'unexpected'}).terminal,false);
  assert.equal(runtimeObservation({state:'cancelled-no-install'}).installationWrites,'none');
  assert.equal(runtimeObservation({state:'expired-no-install'}).terminal,true);
  assert.equal(runtimeObservation({state:'shutdown-no-install'}).installationWrites,'none');
  assert.equal(runtimeObservation({status:'BOOTSTRAP_OPERATION_ENDED',state:'failed',result:{executableHealth:'failed'}}).runtimeHealth,'failed');
  assert.equal(runtimeObservation({status:'arbitrary',state:'completed'}),null);
+});
+test('first-install failure keeps diagnostics and never starts Skill; process completion is not product success',()=>{
+ const failure={code:'EXECUTABLE_HEALTH_FAILED',stage:'health-check',details:{rollback:'completed',healthCheck:{phase:'staged-payload',exitCode:17,signal:null,timeoutMs:15000,timedOut:false,stdout:{text:''},stderr:{text:'health failed'}}}};
+ const r=runtimeObservation({status:'BOOTSTRAP_OPERATION_ENDED',state:'failed',failure,journeyContext:{skillChoice:'selected'}});
+ assert.equal(r.state,'failed');assert.equal(r.programState,'failed');assert.equal(r.terminal,true);assert.deepEqual(r.failure,failure);assert.equal(r.installationWrites,'rolled-back');assert.match(r.next,/Skill 未安装/);
+ for(const [state,code] of [['completed',0],['failed',1],['partial',1],['verification-required',1],['cancelled',2],['cancelled-no-install',2],['expired',3],['expired-no-install',3],['recovery-complete',1]])assert.equal(operationExitCode({state,terminal:true,childExitCode:0}),code);
+ assert.equal(operationExitCode({state:'completed',terminal:false}),1);
+ for(const result of [null,{ok:false},{status:'recovery-complete'}])assert.equal(runtimeObservation({status:'BOOTSTRAP_OPERATION_ENDED',state:'completed',result}).state,'verification-required');
 });
 test('035R1 curl diagnostic retains real code but never signed URL or credentials',()=>{
  for(const[status,category]of[[5,'proxy-dns'],[6,'dns'],[7,'connection'],[22,'http'],[28,'timeout-or-low-speed'],[35,'tls'],[60,'tls-certificate'],[56,'transport']]){const e=downloadFailure({status,stderr:'https://example.invalid/file?sig=secret password=fixture-only'},'github.com');assert.equal(e.diagnostic.curlExitCode,status);assert.equal(e.diagnostic.category,category);assert(!JSON.stringify(e).includes('secret'));assert(!e.message.includes('password'));}
