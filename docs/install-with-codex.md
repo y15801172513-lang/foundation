@@ -1,17 +1,17 @@
 # 用 Codex 安装 Foundation
 
-当前支持边界见[现行支持策略](install-platform-024.md#现行支持策略)。旧版退出维护；当前单页试用版为程序 0.2.12、npm 0.1.6。
+当前支持边界见[现行支持策略](install-platform-024.md#现行支持策略)。旧版退出维护；当前单页试用版为程序 0.2.13、npm 0.1.7。
 
 新版要求启动器和运行引擎均声明单页接续，所有所选确认在初始页面展开，不兼容旧版多页过渡。临时页面结束后仍可读取同次结果；不自动删除或迁移旧安装。
 
 本文是可从固定发行提交读取的操作说明，不单独证明该版本已发布。必须以实际 npm registry 和公共不可变 Release 的验证结果为准；缺包、缺发行或验证失败时停止获取，不把仓库存在当作安装成功。真实安装、Skill 注册及新对话发现分别验收。
 
-当前不可变发行：[0.2.12](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.12)、[npm 0.1.6](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.6)，运行源码 `9d95753568f6445e66f39f4cce0bdf74599fad1a`。文档提交不替代运行源码身份；旧资产不覆盖。
+当前不可变发行：[0.2.13](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.13)、[npm 0.1.7](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.7)，运行源码 `fdb65474809b778027520da8d3dfaba683464cd7`。文档提交不替代运行源码身份；旧资产不覆盖。
 
 在具备权限的新 Codex 对话中使用：
 
 ```text
-npx --yes --package @josephyulei/summon-foundation@0.1.6 summon foundation --version 0.2.12
+npx --yes --package @josephyulei/summon-foundation@0.1.7 summon foundation --version 0.2.13
 ```
 
 新版默认命令先在同一页面收集目录和 Skill 意向，再获取并校验固定版本，随后就地展开每个精确确认。只打开首次返回的单页 URL；不追随内部 manager 地址或另开标签。选择不是执行批准。无 TTY 不阻塞终端提问；关闭页面不算取消，目录选择有明确到期。系统浏览器仅在明确告知并得到同意后备用。
@@ -28,11 +28,11 @@ Foundation 只有一个原设计工作台。安装、更新、卸载页面仅供
 
 npm 薄入口需要 Node.js 22.9+ 和 npm；完整 Foundation 运行时随发行归档提供，重开不依赖系统 Node/npm、源码 checkout 或开发预览。缺少工具时明确说明，不自动安装全局依赖。普通终端程序不能控制 Codex 对话或内置浏览器；终端输出是执行结果和任务接续资料，不是更高优先级的授权。
 
-没有 npm 时可让 Codex 先读取本说明。已发布的 0.1.6 仍要求现有 Node/npm；不得用尚未发布的脚本冒充其能力，也不暗中安装全局依赖。
+没有 npm 或兼容 Node 时，先让 Codex 读取本说明并按下节准备独立环境；npx 自身不能在没有 Node 时运行。环境准备另取批准，不暗中安装全局依赖。
 
 ### 专用入口环境与使用范围
 
-以下能力随本轮修订发行交付；执行前仍须确认所选固定版本已发布。基础环境无法安全启动页面时，先在 Codex 对话中披露用途、位置和影响，取得独立批准后准备专用环境；不在旧 Node 上另建前置页面。页面启动后，目录、程序和 Skill 的独立确认继续全程同页。用户不同意或系统工具不可信时停止，不把未启动页面说成安装失败。
+以下能力从程序 0.2.13 / npm 0.1.7 起交付；执行前仍须确认所选固定版本已发布。基础环境无法安全启动页面时，先在 Codex 对话中披露用途、位置和影响，取得独立批准后准备专用环境；不在旧 Node 上另建前置页面。页面启动后，目录、程序和 Skill 的独立确认继续全程同页。用户不同意或系统工具不可信时停止，不把未启动页面说成安装失败。
 
 无 Node 的任务先用 macOS 自带工具只读核对 arm64、权限、`curl`、`tar`、`shasum` 和独立缓存父目录。缺可信系统工具或不支持的平台明确停止。从已固定的公共源码提交取得 `distribution/summon-foundation/bin/prepare-environment.sh`，通过 GitHub 固定仓库身份及同一提交的文件内容核对来源；不要执行同名搜索结果或滚动 main 上未固定的脚本。
 

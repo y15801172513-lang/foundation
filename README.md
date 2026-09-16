@@ -28,14 +28,14 @@ Foundation 是一个本地工作台：把项目已记录的页面、组件、关
 在有安装权限、且不属于 Foundation 源码目录的新 Codex 对话中粘贴：
 
 ```text
-npx --yes --package @josephyulei/summon-foundation@0.1.6 summon foundation --version 0.2.12
+npx --yes --package @josephyulei/summon-foundation@0.1.7 summon foundation --version 0.2.13
 ```
 
 这是固定版本的单页试用入口，不是静默安装。目录选择、程序与所选 Skill 的独立确认都在首次打开的页面继续；不需要先安装旧版再迁移。
 
 当前支持 **macOS Apple Silicon（arm64）**，获取入口需要 **Node.js 22.9+ 与 npm**，以及可用网络、本地命令和浏览器工具。不需要 clone 项目，也不需要自己下载、解包或填写校验参数。缺少依赖或写入权限时先解决前置条件，不会自动全局安装工具。
 
-当前试用版是 [v0.2.12](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.12)，配套 [npm 0.1.6](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.6)。默认使用 Codex 内置浏览器，系统浏览器仅在告知并同意后备用；新对话持续等待与主动告知仍须真人验收。完整流程见[安装说明](docs/install-with-codex.md)。
+当前试用版是 [v0.2.13](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.13)，配套 [npm 0.1.7](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.7)。默认使用 Codex 内置浏览器，系统浏览器仅在告知并同意后备用；新对话持续等待与主动告知仍须真人验收。完整流程见[安装说明](docs/install-with-codex.md)。
 
 ### 接下来会发生什么
 

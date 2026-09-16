@@ -2,9 +2,15 @@
 
 ## 当前支持状态
 
-单页试用版 [0.2.12](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.12) 与 [npm 0.1.6](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.6) 已发布。旧正式产品线已退出维护；唯一支持政策见[安装与生命周期合同](install-platform-024.md#现行支持策略)，当前命令见[安装说明](install-with-codex.md)。
+单页试用版 [0.2.13](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.13) 与 [npm 0.1.7](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.7) 已发布。旧正式产品线已退出维护；唯一支持政策见[安装与生命周期合同](install-platform-024.md#现行支持策略)，当前命令见[安装说明](install-with-codex.md)。
 
-## 当前发行：0.2.12（2026-09-16）
+## 当前发行：0.2.13（2026-09-16）
+
+运行载荷绑定公共源码 `fdb65474809b778027520da8d3dfaba683464cd7`，对应私有源码 `09870468fa9062df4aa61caa6f8bd2f9f6df11a6`。npm 0.1.7、随包 Skill 0.2.4。新增实际字节下载反馈、独立入口环境准备和明确的当前用户/项目使用范围。基础环境无法安全启动页面时，由 Codex 对话先披露并另取批准；页面启动后全程同页。缺下载工具不阻断已验证计划确认、恢复或卸载。
+
+双次干净构建、正式导出、归档、入口及资产证明通过；最终 packed 载荷的用户/项目范围安装、项目准备、更新 Skill、卸载保留通过隔离工程验证。未恢复此前叫停的公网完整运行包下载；真人环境准备、安装、新任务 Skill 发现与主动告知仍未验。线上元数据/证明检查不替代这些门。
+
+## 历史发行：0.2.12（2026-09-16）
 
 运行载荷绑定公共源码 `9d95753568f6445e66f39f4cce0bdf74599fad1a`，对应私有源码 `29d5dab5a6c02736adbaeb8a15741d4e523ad03d`。干净重建零差异；候选与归档、GitHub 发行证明和资产摘要已核验。npm 0.1.6 提供单页入口，每项精确确认独立，刷新不重放已完成步骤。
 
