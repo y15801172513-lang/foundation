@@ -13,6 +13,7 @@ import {resumeSkillHandoff} from '../lib/resume-handoff.mjs';
 import {parseSummonArgs} from '../lib/cli-options.mjs';
 import {createOperation,saveOperation,readOperation,runtimeObservation} from '../lib/operation-result.mjs';
 import {createJourneyControl} from '../lib/journey-control.mjs';
+import {inspectEntryEnvironment} from '../lib/environment-check.mjs';
 
 const help=`summon foundation [--version x.y.z] [--destination /absolute/folder]
 summon foundation --inspect [--version x.y.z]
@@ -50,21 +51,25 @@ function stageDirectory(){
   return fs.mkdtempSync(path.join(cache,'acquisition.'));
 }
 let operation=null,stage=null,progressPage=null;
-const journeyControl=createJourneyControl(()=>operation,()=>progressPage?.publish());
+const journeyControl=createJourneyControl(()=>operation,patch=>patch?updateOperation(patch):progressPage?.publish());
 function updateOperation(patch){if(!operation)return;Object.assign(operation,patch,{updatedAt:new Date().toISOString()});const file=saveOperation(operation,stage);if(file)operation.resultFile=file;progressPage?.publish();console.log(JSON.stringify({status:'FOUNDATION_INSTALL_OPERATION',...operation,resultFile:file,recordSaved:!!file}));}
 try{
   const args=parseSummonArgs(process.argv.slice(2));
   if(args.help){console.log(help);process.exit(0);}
   if(args.status){console.log(JSON.stringify(readOperation(args.status),null,2));process.exit(0);}
-  const [major,minor]=process.versions.node.split('.').map(Number);
-  if(major<22||(major===22&&minor<9))fail('获取入口需要 Node.js 22.9 或以上；尚未安装，不自动安装依赖');
-  if(process.platform!=='darwin'||process.arch!=='arm64')fail('当前仅支持 macOS arm64；尚未安装');
+  const initialEnvironment=inspectEntryEnvironment({purpose:args.uninstall?'uninstall':args.resume?'resume':args.inspect?'discover':'acquire'});
+  if(!initialEnvironment.supported||!initialEnvironment.compatible){
+    operation=createOperation();updateOperation({phase:'checking-environment',environment:initialEnvironment});
+    fail(!initialEnvironment.supported?'当前仅支持 macOS arm64；尚未安装':'获取入口需要 Node.js 22.9 或以上；当前入口不能安全承诺同页准备，请按安装说明在对话中先确认独立基础环境，不自动安装依赖');
+  }
   const maintenance=args.update||args.uninstall;
   if(args.prepare||args.acquire||maintenance||args.resume)sourceGuard();
-  if(args.prepare||args.acquire||maintenance){operation=createOperation();stage=stageDirectory();updateOperation({});if(!saveOperation(operation,stage))fail('无法在已披露的获取目录保存操作记录；尚未联网或安装');}
+  if(args.prepare||args.acquire||maintenance){operation=createOperation();Object.assign(operation,{phase:'checking-environment',environment:initialEnvironment});stage=stageDirectory();updateOperation({});if(!saveOperation(operation,stage))fail('无法在已披露的获取目录保存操作记录；尚未联网或安装');}
   if(args.prepare)console.log('正在准备 Foundation 安装：将查询并固定本次正式版本，说明缓存位置后下载核验。未选目录会在安装页选择；之后仍需本人确认精确计划。请保持当前 Codex 任务等待并打开返回的内置浏览器网址；不会自动改用系统浏览器。');
   if(args.resume){
     operation=readOperation(args.resume);stage=path.dirname(plainPath(args.resume));
+    updateOperation({environment:initialEnvironment});
+    if(initialEnvironment.state!=='ready')fail('恢复所需环境无法核实；保留已有安装和操作记录');
     progressPage=await startProgressPage(()=>operation,{control:journeyControl});
     console.log(JSON.stringify({status:'FOUNDATION_SINGLE_PAGE',url:progressPage.url,operationId:operation.operationId}));
     const env={...process.env};for(const key of ['NODE_OPTIONS','NODE_PATH','NODE_V8_COVERAGE','NODE_REDIRECT_WARNINGS','NODE_COMPILE_CACHE','NODE_COMPILE_CACHE_PORTABLE','NODE_PRESERVE_SYMLINKS'])delete env[key];
@@ -77,12 +82,14 @@ try{
     if(!current?.identity?.installId)fail('当前安装身份无法核实；尚未获取或执行维护');
     const capability=spawnSync(installed.launcher,['--help'],{encoding:'utf8',env,timeout:15000});
     if(capability.status!==0||!capability.stdout.includes('--journey-channel'))fail('当前安装不受新版单页流程支持。请另行确认卸载旧版并重新安装新版；本次不删除、不迁移、不回退旧页面');
-    updateOperation({kind:args.update?'update':'uninstall',installationRoot:args.root,currentVersion:current.version,installId:current.identity.installId});
+    const environment=inspectEntryEnvironment({purpose:args.update?'acquire':'uninstall'});
+    updateOperation({kind:args.update?'update':'uninstall',installationRoot:args.root,currentVersion:current.version,installId:current.identity.installId,environment,usageScope:current.usageScope||{kind:'user',project:null}});
     progressPage=await startProgressPage(()=>operation,{control:journeyControl});updateOperation({progressUrl:progressPage.url});
     console.log(JSON.stringify({status:'FOUNDATION_SINGLE_PAGE',url:progressPage.url,operationId:operation.operationId}));
+    if(environment.state!=='ready')fail('环境复检未通过：'+environment.state+'；缺少 '+environment.missing.join('、')+'；保留当前安装，不修改系统工具');
     let candidate;
     if(args.update){
-      const {context,receipt}=await acquireInWorker({version:args.version,stage,operationId:operation.operationId,onContext:context=>updateOperation({version:context.version,sourceCommit:context.sourceCommit}),onProgress:download=>updateOperation({download}),onPhase:phase=>updateOperation({phase})});
+      const {context,receipt}=await acquireInWorker({version:args.version,stage,operationId:operation.operationId,onContext:context=>updateOperation({version:context.version,sourceCommit:context.sourceCommit}),onProgress:download=>updateOperation({download}),onPhase:phase=>updateOperation({phase,...(phase==='fetching-and-verifying-runtime'?{download:null}:{})})});
       const directory=plainPath(path.dirname(receipt.launcher)),manifest=JSON.parse(fs.readFileSync(plainPath(path.join(directory,'manifest.json'))));
       if(manifest.productVersion!==context.version)fail('获取版本与候选不一致');
       candidate={path:directory,manifestHash:manifest.candidateHash,version:manifest.productVersion,bytes:manifest.totalBytes,runtimeHash:manifest.files.find(f=>f.path===manifest.runtime.path)?.sha256};
@@ -92,6 +99,7 @@ try{
     process.exitCode=operation.state==='completed'?0:1;
     await progressPage.close();progressPage=null;
   }else if(!args.prepare&&!args.acquire){
+    if(initialEnvironment.state!=='ready'){operation=createOperation();updateOperation({phase:'checking-environment',environment:initialEnvironment});fail('发行查询所需环境无法核实；尚未联网');}
     const context=inspectRelease(args.version);
     const guide=`https://github.com/${context.repository.full_name}/blob/${context.documentationCommit}/docs/install-with-codex.md`;
     console.log(JSON.stringify({schemaVersion:'1.0.0',status:'RELEASE_DISCOVERED_NOT_ACQUIRED',product:'Foundation',version:context.version,sourceCommit:context.sourceCommit,documentationCommit:context.documentationCommit,repository:context.repository.full_name,guide,installationPerformed:false,skillRegistered:false,
@@ -103,13 +111,15 @@ try{
     progressPage=await startProgressPage(()=>operation,args.acquire?{}:{control:journeyControl});
     updateOperation({progressUrl:progressPage.url});
     console.log(JSON.stringify({status:'FOUNDATION_ACQUISITION_PROGRESS_PAGE',url:progressPage.url,operationId:operation.operationId,next:'在 Codex 内置浏览器打开本次页面，所有所需确认在原页展开；保持任务等待，不自动打开系统浏览器。'}));
+    const environment=inspectEntryEnvironment({purpose:'acquire'});updateOperation({phase:'checking-environment',environment});
+    if(environment.state!=='ready')fail('获取环境检查未通过：'+environment.state+'；缺少 '+environment.missing.join('、')+'；不会以安装 Node 替代缺失的系统工具');
     if(!args.acquire){
       const metadata=inspectRelease(args.version);args.version=metadata.version;
-      updateOperation({phase:'choosing-intent',version:metadata.version,sourceCommit:metadata.sourceCommit,acquisitionRoot:stage,destinationIntent:args.destination||'',journeyContext:{id:operation.operationId,skillChoice:'undecided'}});
+      updateOperation({phase:'choosing-intent',environment,version:metadata.version,sourceCommit:metadata.sourceCommit,acquisitionRoot:stage,destinationIntent:args.destination||'',journeyContext:{id:operation.operationId,skillChoice:'undecided'}});
       const choice=await journeyControl.waitChoice();
-      updateOperation({phase:'discovering',intentSelected:true,destinationIntent:choice.destination,journeyContext:{id:operation.operationId,skillChoice:choice.skillChoice}});
+      updateOperation({phase:'discovering',intentSelected:true,destinationIntent:choice.destination,scopeIntent:{kind:choice.scopeKind,projectRoot:choice.projectRoot},destinationCheck:choice.destinationCheck,journeyContext:{id:operation.operationId,skillChoice:choice.skillChoice}});
     }
-    const {context,receipt}=await acquireInWorker({version:args.version,stage,operationId:operation.operationId,onContext:context=>updateOperation({version:context.version,sourceCommit:context.sourceCommit}),onProgress:download=>updateOperation({download}),onPhase:phase=>updateOperation({phase})});console.log(JSON.stringify({status:'GITHUB_ACQUISITION_VERIFIED',...receipt,destinationIntent:args.destination}));
+    const {context,receipt}=await acquireInWorker({version:args.version,stage,operationId:operation.operationId,onContext:context=>updateOperation({version:context.version,sourceCommit:context.sourceCommit}),onProgress:download=>updateOperation({download}),onPhase:phase=>updateOperation({phase,...(phase==='fetching-and-verifying-runtime'?{download:null}:{})})});console.log(JSON.stringify({status:'GITHUB_ACQUISITION_VERIFIED',...receipt,destinationIntent:args.destination}));
     updateOperation({phase:'acquired',version:context.version,sourceCommit:context.sourceCommit});
     if(args.acquire){updateOperation({state:'update-input-ready',terminal:true});console.log(JSON.stringify({status:'UPDATE_INPUT_READY_NOT_APPLIED',candidate:path.dirname(receipt.launcher),receipt:path.join(stage,'acquisition.json'),next:'使用当前健康安装的稳定入口生成独立更新计划；本人确认后才更新。获取回执不是删除授权。'}));await progressPage.close();progressPage=null;process.exit(0);}
     const env={...process.env};for(const key of ['NODE_OPTIONS','NODE_PATH','NODE_V8_COVERAGE','NODE_REDIRECT_WARNINGS','NODE_COMPILE_CACHE','NODE_COMPILE_CACHE_PORTABLE','NODE_PRESERVE_SYMLINKS'])delete env[key];

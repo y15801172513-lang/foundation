@@ -52,7 +52,7 @@ test('034R1 anonymous acquisition path reaches confirmation without installation
   const run=spawnSync(process.execPath,['--import',path.join(work,'register.mjs'),path.join(work,'acquire.mjs')],{env,encoding:'utf8',maxBuffer:4e6});
   fs.writeFileSync(path.join(work,'acquire.stdout.log'),run.stdout);fs.writeFileSync(path.join(work,'acquire.stderr.log'),run.stderr);
   assert.equal(run.status,0,run.stderr);assert.equal(fs.statSync(stage).mode&0o777,0o700);
-  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(work,'phases.json'))),['verifying-trust','fetching-and-verifying-catalog','fetching-and-verifying-runtime','extracting-and-validating']);
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(work,'phases.json'))),['verifying-trust','fetching-and-verifying-catalog','fetching-and-verifying-runtime','verifying-runtime','extracting-and-validating']);
   assert.equal(fs.statSync(path.join(stage,'operation-result.json')).mode&0o777,0o600);
   const receipt=JSON.parse(run.stdout);assert.equal(receipt.installationConfirmed,false);
   assert.equal(fs.readFileSync(path.join(work,'proof-calls.jsonl'),'utf8').trim().split('\n').length,2);

@@ -1,4 +1,9 @@
 import crypto from 'node:crypto';
+import {inspectEntryDestination,inspectScopeIntent,inspectEntryEnvironment} from './environment-check.mjs';
+
+// Legacy engines already mean user scope. Do not send new keys to their strict
+// selection parser; project scope must remain explicit and may never downgrade.
+const scopeFields=value=>value.scopeKind==='project'?{scopeKind:'project',projectRoot:value.projectRoot}:{};
 
 // Only the exact child created by this invocation may supply an active view.
 // Browser input cannot name a URL, route, transport token or future plan.
@@ -31,7 +36,7 @@ export function createJourneyControl(readRecord, changed) {
       if(!selection&&result.body.session.sessionId!==event.sessionId)throw Error('确认会话不匹配');
       active={owner,type:selection?'selection':'manager',view:result.body};changed();
       if(selection&&choice){
-        const selected=await request(owner,'__foundation/install/selection',{nonce:result.body.nonce,action:'select',destination:choice.destination,skillChoice:choice.skillChoice});
+        const selected=await request(owner,'__foundation/install/selection',{nonce:result.body.nonce,action:'select',destination:choice.destination,skillChoice:choice.skillChoice,...scopeFields(choice)});
         if(selected.status!==200){active.error=selected.body.message;choice=null;changed();}
       }
     },
@@ -50,17 +55,27 @@ export function createJourneyControl(readRecord, changed) {
       }
       if(body.action==='choose'&&resolveChoice){
         if(typeof body.destination!=='string'||!body.destination.trim()||!['selected','skipped'].includes(body.skillChoice))throw Error('请选择完整目录和 Skill 意向');
-        choice={destination:body.destination,skillChoice:body.skillChoice};const resolve=resolveChoice;clearTimeout(choiceTimer);resolveChoice=null;rejectChoice=null;resolve(choice);changed();return {status:200,body:{state:'intent-selected'}};
+        const destinationCheck=inspectEntryDestination(body.destination);
+        const scopeKind=body.scopeKind||'user';if(!['user','project'].includes(scopeKind)||scopeKind==='project'&&(!body.projectRoot||typeof body.projectRoot!=='string'))throw Error('请选择使用范围和完整项目根路径');
+        const scope=inspectScopeIntent(scopeKind,body.projectRoot,destinationCheck.destination);
+        choice={destination:destinationCheck.destination,skillChoice:body.skillChoice,scopeKind,projectRoot:scope.projectRoot,destinationCheck};const resolve=resolveChoice;clearTimeout(choiceTimer);resolveChoice=null;rejectChoice=null;resolve(choice);changed();return {status:200,body:{state:'intent-selected'}};
       }
       if(!active)throw Error('当前没有可确认的计划；请等待或查询结果');
       const a=active;
       if(a.type==='selection'){
         if(!['select','cancel'].includes(body.action))throw Error('目录操作无效');
-        const result=await request(a.owner,'__foundation/install/selection',{nonce:a.view.nonce,action:body.action,destination:body.destination,skillChoice:body.skillChoice});
+        const result=await request(a.owner,'__foundation/install/selection',body.action==='cancel'?{nonce:a.view.nonce,action:'cancel'}:{nonce:a.view.nonce,action:body.action,destination:body.destination,skillChoice:body.skillChoice,...scopeFields(body)});
         if(result.status!==200)a.error=result.body.message;changed();return result;
       }
       const s=a.view.session;
       if(body.sessionId!==s.sessionId||body.planHash!==s.planHash||body.managerNonce!==a.view.managerNonce||!['cancel-no-change',a.view.action].includes(body.action))throw Error('当前计划已变化或请求无效');
+      if(body.action!=='cancel-no-change'){
+        const environment=inspectEntryEnvironment({purpose:'confirm'});
+        // Keep the failed snapshot with this operation even if no mutation is
+        // forwarded; acquisition-only tools must not gate a verified plan.
+        Object.assign(readRecord(),{environment});changed({environment});
+        if(environment.state!=='ready')throw Error('执行前环境复检未通过；没有提交确认，请核实当前工具环境');
+      }
       const result=await request(a.owner,'__foundation/manager/confirm',{operationId:body.operationId,sessionId:s.sessionId,planHash:s.planHash,managerNonce:body.managerNonce,action:body.action});
       if(active===a&&result.body.state)a.view.session={...s,...result.body};changed();return result;
     }

@@ -10,6 +10,7 @@ import {platformShim, probeDiskAvailableBytes} from './platform-bootstrap.mjs';
 import {sanitizeNodeStartupEnvironment} from './node-startup-environment.mjs';
 import {classifyProcessOwner, observeProcessFingerprint} from './process-owner.mjs';
 import {finishConfirmedUpdateInputs} from './update-input-inventory.mjs';
+import {verifyInstallationScope} from './installation-scope.mjs';
 import {
   acquisitionNetworkDisconnected,
   currentRuntimeIdentity,
@@ -106,7 +107,9 @@ function statePaths(root) {
 
 function readCurrent(root) {
   const file = statePaths(root).current;
-  return fs.existsSync(file) ? signedPayload(readJson(file), 'CURRENT_IDENTITY_INVALID', 'current pointer') : null;
+  const record=fs.existsSync(file) ? signedPayload(readJson(file), 'CURRENT_IDENTITY_INVALID', 'current pointer') : null;
+  if(record?.usageScope)verifyInstallationScope(record.usageScope,root);
+  return record;
 }
 
 const emptyInstallations = () => ({schemaVersion: '1.0.0', versions: {}, history: []});
@@ -311,7 +314,7 @@ function currentRecord(plan, manifest) {
   const runtimeId = `node-${identity.runtimeHash.slice(0, 16)}`;
   const appPath = `versions/${identity.productVersion}/app`;
   const runtimeRoot = `runtimes/${runtimeId}`;
-  return {schemaVersion: '1.0.0', version: identity.productVersion, platform: identity.platform, arch: identity.architecture, candidateHash: identity.candidateManifestHash, appPath, runtimeRoot, runtimePath: `${runtimeRoot}/${manifest.runtime.path.slice('runtime/'.length)}`, entrypoint: `${appPath}/${manifest.entrypoint.slice('app/'.length)}`, installIdentity: plan.installIdentity, identity};
+  return {schemaVersion: '1.0.0', version: identity.productVersion, platform: identity.platform, arch: identity.architecture, candidateHash: identity.candidateManifestHash, appPath, runtimeRoot, runtimePath: `${runtimeRoot}/${manifest.runtime.path.slice('runtime/'.length)}`, entrypoint: `${appPath}/${manifest.entrypoint.slice('app/'.length)}`, installIdentity: plan.installIdentity, usageScope:plan.usageScope, identity};
 }
 
 function healthProbe(root, record, {code = 'EXECUTABLE_HEALTH_FAILED'} = {}) {
@@ -616,7 +619,7 @@ function buildUninstallInput({plan, root, current, authorization}) {
     byPath.set(file.path, {...file, ownerIdentity: receipt.payload.identity, receiptProof: receiptProof(root, receipt)});
   }
   const authority = deriveTrustedLifecycleAuthority();
-  const payload = {schemaVersion: '1.0.0', operationId: plan.planId, mode: plan.mode, installId: current.identity.installId, authorization, authority: {mode: authority.mode, repositoryRealPath: authority.repositoryRealPath, trustedRootRealPath: authority.trustedRootRealPath}, targetRelative: plan.authority.targetRelative, deletions: [...byPath.values()], coreStateProofs: buildCoreStateProofs(root, current.identity.installId), preservedSharedRuntime: [...new Set(preservedSharedRuntime)].sort(), matrix: UNINSTALL_MODE_MATRIX[plan.mode]};
+  const payload = {schemaVersion: '1.0.0', operationId: plan.planId, mode: plan.mode, installId: current.identity.installId, usageScope: plan.usageScope, authorization, authority: {mode: authority.mode, repositoryRealPath: authority.repositoryRealPath, trustedRootRealPath: authority.trustedRootRealPath}, targetRelative: plan.authority.targetRelative, deletions: [...byPath.values()], coreStateProofs: buildCoreStateProofs(root, current.identity.installId), preservedSharedRuntime: [...new Set(preservedSharedRuntime)].sort(), matrix: UNINSTALL_MODE_MATRIX[plan.mode]};
   return {payload, integrity: signTrustedPayload(payload)};
 }
 
@@ -850,6 +853,7 @@ export function verifyCurrentInstallationAppAuthority(context) {
 export function applyLifecyclePlan({plan, now = Date.now()}) {
   const validation = validateLifecyclePlan(plan, {now});
   if (!validation.ok) throw new LifecycleError(validation.error.code, validation.error.message, {stage: validation.error.stage, retryable: validation.error.retryable, recovery: validation.error.recovery});
+  verifyInstallationScope(plan.usageScope||{schemaVersion:'1.0.0',kind:'user',project:null},plan.targetRoot);
   const runtimeIdentity = currentRuntimeIdentity();
   if (plan.platform !== runtimeIdentity.platform || plan.arch !== runtimeIdentity.arch) throw new LifecycleError('MACHINE_IDENTITY_CHANGED', `计划绑定 ${plan.platform}/${plan.arch}，当前为 ${runtimeIdentity.platform}/${runtimeIdentity.arch}`, {stage: 'preflight'});
   const lookupAuthority = deriveTrustedLifecycleAuthority();

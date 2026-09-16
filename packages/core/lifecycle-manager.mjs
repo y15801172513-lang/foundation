@@ -190,6 +190,7 @@ export function createPendingLocalManagerSession({plan, stateRoot, now = Date.no
     sessionId,
     operationId: plan.operationId || plan.planId,
     installId: plan.installId || null,
+    usageScope: plan.usageScope || plan.lifecyclePlan?.usageScope || null,
     operation: plan.operation,
     scope: plan.codexIntegration?.scope || plan.codexRemoval?.scope || plan.scope || (plan.projectScoped ? 'project' : plan.capabilityId ? 'installation' : null),
     projectId: plan.projectId || null,
@@ -199,7 +200,7 @@ export function createPendingLocalManagerSession({plan, stateRoot, now = Date.no
     operationTargets: {
       program: plan.targetRoot || plan.installationRoot || plan.lifecyclePlan?.targetRoot || null,
       skill: plan.codexIntegration?.destination || plan.codexRemoval?.destination || null,
-      project: plan.project || null,
+      project: plan.project || plan.usageScope?.project?.path || plan.lifecyclePlan?.usageScope?.project?.path || null,
       records: root,
       acquisition: plan.bootstrap?.candidate?.root || null,
     },

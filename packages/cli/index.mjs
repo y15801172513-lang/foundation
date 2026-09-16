@@ -38,6 +38,8 @@ import {conversationHelp} from '../core/conversation-commands.mjs';
 import {readCurrentFoundationRules} from '../core/rules-delivery.mjs';
 import {inspectProjectDelivery} from '../core/project-delivery.mjs';
 import {createInstalledWorkbenchServer} from '@foundation/management-center';
+import {deriveTrustedLifecycleAuthority} from '../core/trusted-authority.mjs';
+import {readInstallationScope} from '../core/installation-scope.mjs';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 
@@ -194,6 +196,10 @@ export function runCli(args = process.argv.slice(2), output = console) {
   const invocation = parseCliInvocation(args);
   args = invocation.argv;
   const command = args[0];
+  const authority = deriveTrustedLifecycleAuthority();
+  if (authority.mode === 'platform-installed-runtime' && command !== '--help' && command !== '--foundation-health') {
+    readInstallationScope(authority.installRoot, {cwd: process.cwd(), project: option(args, '--project')});
+  }
   if (command === 'rules') return output.log(JSON.stringify(readCurrentFoundationRules({installationRoot: option(args, '--root'), project: option(args, '--project')}), null, 2));
   if (command === '--help') output.log(conversationHelp());
   if (command === '--help') output.log('单页内部通道：--journey-channel（仅 install 或 manager open-manager；需要私有 IPC 绑定，不提供确认命令）');

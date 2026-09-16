@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {EventEmitter} from 'node:events';
 import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
 import {createJourneyControl} from '../../distribution/summon-foundation/lib/journey-control.mjs';
 import {isJourneyRequest} from '../../packages/core/journey-transport.mjs';
 
@@ -14,12 +16,14 @@ test('040 transport identity is not a confirmation and requires all three bindin
 });
 
 test('040 directory intent is once-only and cannot stand in for a plan confirmation',async()=>{
+  const parent=fs.mkdtempSync(path.resolve('.tmp/C6-choice-')),destination=path.join(parent,'Foundation');
   const control=createJourneyControl(()=>({operationId:'one'}),()=>{});
   control.setOrigin('http://127.0.0.1:43123');
   const selected=control.waitChoice();
   await assert.rejects(control.submit({operationId:'two',action:'choose',destination:'/example',skillChoice:'skipped'}),/身份/);
-  assert.equal((await control.submit({operationId:'one',action:'choose',destination:'/example',skillChoice:'skipped'})).status,200);
-  assert.deepEqual(await selected,{destination:'/example',skillChoice:'skipped'});
+  assert.equal((await control.submit({operationId:'one',action:'choose',destination,skillChoice:'skipped'})).status,200);
+  const choice=await selected;
+  assert.equal(choice.destination,destination);assert.equal(choice.skillChoice,'skipped');assert.equal(choice.scopeKind,'user');assert.equal(choice.projectRoot,null);assert(choice.destinationCheck.availableBytes>0);assert(!fs.existsSync(destination));
   await assert.rejects(control.submit({operationId:'one',action:'choose',destination:'/other',skillChoice:'selected'}),/没有可确认/);
   await assert.rejects(control.submit({operationId:'one',action:'confirm'}),/没有可确认/);
 });
@@ -49,7 +53,9 @@ test('040 fixed child route retains real browser Origin and rejects wrong or ret
     const body={operationId:'one',sessionId:'session-a',planHash:'hash-a',managerNonce:'nonce',action:'apply'};
     for(const key of ['operationId','sessionId','planHash','managerNonce','action'])await assert.rejects(control.submit({...body,[key]:'wrong'}));
     assert.equal(posts,0);
-    assert.equal((await control.submit(body)).body.state,'completed');assert.equal(posts,1);
+    const access=fs.accessSync;
+    fs.accessSync=(file,...rest)=>{if(['/usr/bin/curl','/usr/bin/tar','/usr/bin/shasum'].includes(file))throw Error('isolated unavailable download tool');return access(file,...rest);};
+    try{assert.equal((await control.submit(body)).body.state,'completed');assert.equal(posts,1);}finally{fs.accessSync=access;}
     child.exitCode=0;child.emit('close');assert.equal(control.view(),null);
     await assert.rejects(control.submit(body),/没有可确认/);assert.equal(posts,1);
   }finally{await new Promise(resolve=>server.close(resolve));}
@@ -65,4 +71,24 @@ test('040 unconfirmed directory cancellation and expiry terminate without an exe
     await rejected;assert.equal(control.view(),null);
     await assert.rejects(control.submit({operationId:'one',action:'choose',destination:'/unused',skillChoice:'skipped'}),/没有可确认/);
   }
+});
+
+test('C6 user selection and cancellation retain legacy fields; project scope never silently downgrades',async()=>{
+  const bodies=[];
+  const server=http.createServer(async(req,res)=>{
+    res.setHeader('content-type','application/json');
+    if(req.method==='GET')return res.end(JSON.stringify({operationId:'one',nonce:'nonce'}));
+    let raw='';for await(const chunk of req)raw+=chunk;
+    bodies.push(JSON.parse(raw));res.end('{}');
+  });
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  try{
+    const child=new EventEmitter();child.exitCode=null;child.send=()=>{};
+    const control=createJourneyControl(()=>({operationId:'one'}),()=>{});
+    control.setOrigin('http://127.0.0.1:43123');control.attach(child);
+    await control.observe(child,{status:'AWAITING_FOUNDATION_DIRECTORY_SELECTION',url:`http://127.0.0.1:${server.address().port}/`});
+    for(const scopeKind of ['user','project'])await control.submit({operationId:'one',action:'select',destination:'/fixture',skillChoice:'skipped',scopeKind,projectRoot:'/project'});
+    await control.submit({operationId:'one',action:'cancel',scopeKind:'project',projectRoot:'/project'});
+    assert.deepEqual(bodies,[{nonce:'nonce',action:'select',destination:'/fixture',skillChoice:'skipped'},{nonce:'nonce',action:'select',destination:'/fixture',skillChoice:'skipped',scopeKind:'project',projectRoot:'/project'},{nonce:'nonce',action:'cancel'}]);
+  }finally{await new Promise(resolve=>server.close(resolve));}
 });

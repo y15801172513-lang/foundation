@@ -1,11 +1,11 @@
 {
   "schemaVersion": "2.0.0",
   "exportContractSchemaVersion": "2.0.0",
-  "exportContractSha256": "6f6ba11d5caa273a3317431ced805afb236fb1d13cec6ac011128020fba5ea9a",
-  "sourceCommit": "699add7876965d0fd08174c5f23a2a644f634866",
-  "approvedSourceCommit": "699add7876965d0fd08174c5f23a2a644f634866",
+  "exportContractSha256": "054ec267068f02243f0675f7bad8b1ca90934282c18e078e85342dc50ae757d7",
+  "sourceCommit": "09870468fa9062df4aa61caa6f8bd2f9f6df11a6",
+  "approvedSourceCommit": "09870468fa9062df4aa61caa6f8bd2f9f6df11a6",
   "sourceState": "clean-exact-commit-approved",
-  "productVersion": "0.2.12",
+  "productVersion": "0.2.13",
   "licenseStatus": "approved",
   "scopeReviewStatus": "approved",
   "publicRepositoryNameStatus": "approved",
@@ -14,17 +14,17 @@
   "publicationEligible": true,
   "commitBinding": {
     "schemaVersion": "2.0.0",
-    "approvedCommit": "699add7876965d0fd08174c5f23a2a644f634866",
-    "gitTree": "02f462ae496abc00cc6e7ace3bb7e7b43fcb8e21",
-    "contractSha256": "6f6ba11d5caa273a3317431ced805afb236fb1d13cec6ac011128020fba5ea9a",
-    "expectedTreeHash": "a33a98049668a6aabad0b5d98e47d10d44c917ceab1a9784d170cadd1ec53421",
-    "fileCount": 374
+    "approvedCommit": "09870468fa9062df4aa61caa6f8bd2f9f6df11a6",
+    "gitTree": "98aa775e134b5ae8e85edd40c6cd02256abc2382",
+    "contractSha256": "054ec267068f02243f0675f7bad8b1ca90934282c18e078e85342dc50ae757d7",
+    "expectedTreeHash": "69dd4ec5cfe11fb741301e0d09360e56ca2c4ad66766842592b102197e460a10",
+    "fileCount": 381
   },
-  "fileCount": 376,
-  "privateExportedCount": 374,
+  "fileCount": 383,
+  "privateExportedCount": 381,
   "generatedPublicCount": 2,
-  "treeHash": "a33a98049668a6aabad0b5d98e47d10d44c917ceab1a9784d170cadd1ec53421",
-  "inventoryHash": "34f9827951ee890f19f6a0be8d658a8aaaf6748ea77168f5ed84690e7c40f12c",
+  "treeHash": "69dd4ec5cfe11fb741301e0d09360e56ca2c4ad66766842592b102197e460a10",
+  "inventoryHash": "96a4635d79ce5b81488e6c7fbf2db488c391fdd2866f4c24c8129d5d1da2db21",
   "files": [
     {
       "path": ".gitignore",
@@ -47,7 +47,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 1082,
-      "sha256": "151f1fa6f4aa4e2627b2beebee282bbbd6eaf2108ba77251a58e1611f9ce5038",
+      "sha256": "f5b502b4977752ec6e7cbb70e6f4c6f319e438581b1add8da9fdf0af5eaff053",
       "ownership": "generated-public"
     },
     {
@@ -103,7 +103,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 1330,
-      "sha256": "e462cf70db7419c0ba73a7d0e8bf9377f367afa90b40f4997bd2352d50e143a6",
+      "sha256": "f8ff50c1ea3246f17deb952bdc05ce34424d52e364e0a568e5f939a60693a0df",
       "ownership": "private-exported"
     },
     {
@@ -382,8 +382,8 @@
       "path": "apps/management-center/src/server/center-server.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 16998,
-      "sha256": "28273bc4f47c95cbdba67beba12d4d116ac7eeb7321fa6aaae16859f418db63d",
+      "bytes": 17293,
+      "sha256": "4864627124c2d5daa1fa3fbaaef91c516586abd056a8b738e970bbafc1b3d217",
       "ownership": "private-exported"
     },
     {
@@ -542,8 +542,8 @@
       "path": "distribution/summon-foundation/README.md",
       "type": "file",
       "mode": 420,
-      "bytes": 2867,
-      "sha256": "12eddb2f1149b0fbf3f2221f5e155f608ae315464c693e1fc0e6c07c03af9227",
+      "bytes": 3458,
+      "sha256": "ecd70ae71a51fe23cc92ae41e683012c7255c6416dff492877a3fb0b5258095f",
       "ownership": "private-exported"
     },
     {
@@ -555,35 +555,43 @@
       "ownership": "private-exported"
     },
     {
+      "path": "distribution/summon-foundation/bin/prepare-environment.sh",
+      "type": "file",
+      "mode": 420,
+      "bytes": 5183,
+      "sha256": "df31ff3220fadbf9945903de739b570e4b1e7ffeb1cb94e86b235692f3f8c245",
+      "ownership": "private-exported"
+    },
+    {
       "path": "distribution/summon-foundation/bin/summon.mjs",
       "type": "file",
       "mode": 493,
-      "bytes": 15585,
-      "sha256": "e515d15d9df1f2b466819cb3bdd4e42d3a2145081c2e4beecbd4863cb3cb6a97",
+      "bytes": 17356,
+      "sha256": "f8c07aaab4eebca8f2f0cca52527e96a7eb2b9527fc6e2206f4a9898547c0f3b",
       "ownership": "private-exported"
     },
     {
       "path": "distribution/summon-foundation/lib/acquire.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 16076,
-      "sha256": "4b774b70dfbb2166e2e25bf0e464140be3f34c6b2bcbed3188977cb050737b4e",
+      "bytes": 16182,
+      "sha256": "2d61e09fff371f9e23b68b5bae8bd2c82c40099faf86cbbedb4339b8437a298e",
       "ownership": "private-exported"
     },
     {
       "path": "distribution/summon-foundation/lib/acquisition-task.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 1378,
-      "sha256": "418aab57a5e44b167af37db69917fd7c667d8026422fd7b5ffec70897f6bbb30",
+      "bytes": 1424,
+      "sha256": "2c7d6d984212246d3ffa9d779d99eba51f44efd2841bca4ef1c27c4f6f6b50a6",
       "ownership": "private-exported"
     },
     {
       "path": "distribution/summon-foundation/lib/acquisition-worker.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 957,
-      "sha256": "92bf739dd351d3fde1ba3293998c7c37f8ae6aa8d6a8470872b11cbca03475bb",
+      "bytes": 1310,
+      "sha256": "0331fadf98e6b1faf1e980e3975949d6029da233a48ae8f68694163f3e0876de",
       "ownership": "private-exported"
     },
     {
@@ -595,11 +603,19 @@
       "ownership": "private-exported"
     },
     {
+      "path": "distribution/summon-foundation/lib/environment-check.mjs",
+      "type": "file",
+      "mode": 420,
+      "bytes": 5147,
+      "sha256": "14973d5bd17b8075bbd69b5da0d9b119250b2c723b8e788dd8af6a5104aa1bb8",
+      "ownership": "private-exported"
+    },
+    {
       "path": "distribution/summon-foundation/lib/journey-control.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 5658,
-      "sha256": "51654c4f310859edda8f7491533e7dbcb4c7cebd8ec1499b8b848aaced24fcf5",
+      "bytes": 7103,
+      "sha256": "cdbf2a4f82f433974072119d8d1889a88f8edb89566b16494cdec5805f3d19ba",
       "ownership": "private-exported"
     },
     {
@@ -638,8 +654,8 @@
       "path": "distribution/summon-foundation/lib/progress-page.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 12376,
-      "sha256": "bf515fd8941a945c0c0e95807fc244a7c2407a79d622ddabcffe2d94b74033bf",
+      "bytes": 13656,
+      "sha256": "45f61fa955f7a4a17c8f4522f60b0ef864cd807fe435c3476a0e703209ab0d3e",
       "ownership": "private-exported"
     },
     {
@@ -670,24 +686,24 @@
       "path": "distribution/summon-foundation/lib/single-page-style.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 6228,
-      "sha256": "1092e2e7895343657a7e1aa76179018e8964c417607cc7b4b77f520c5fdf7366",
+      "bytes": 6392,
+      "sha256": "b075dbe50bd8e76f2914e9971162bf24308efa36f47c0b2ca7c4af9a29b4d506",
       "ownership": "private-exported"
     },
     {
       "path": "distribution/summon-foundation/lib/single-page-view.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 11499,
-      "sha256": "c14a58d00692b6f74a87979f9a326c1db75a80c212cf383a9d030a59c02bac8e",
+      "bytes": 14392,
+      "sha256": "81447503b05fbe27e0ef1ee440ac73bfcc33f4f280c6acee7a7ac6106b8ca4ba",
       "ownership": "private-exported"
     },
     {
       "path": "distribution/summon-foundation/lib/skill-handoff.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 5915,
-      "sha256": "4b42a7c9b8c65d3e008e82ac93bdd8df8de155d2c7cffc711e52930a40f68f6a",
+      "bytes": 6182,
+      "sha256": "ab2884ce53cf1696f2b58f29f6efa6d7a45d43288322a19317c33bea3b63ce2c",
       "ownership": "private-exported"
     },
     {
@@ -695,7 +711,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 21854,
-      "sha256": "daaa3a5d672fce2f5002e10b34ed805884d6d9a52023187108d257ab25b3a6dc",
+      "sha256": "dc7887491485a43742e6a9a3a9f888b5a476dded2ff49e034b323b2c1fe76e4f",
       "ownership": "private-exported"
     },
     {
@@ -703,7 +719,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 800,
-      "sha256": "c45f64679c1b159116833458e3eed82cfff171fe95c621f0d69e26205bd9025b",
+      "sha256": "ed050e945492b2039280389dc48fcff9733991502345a79e0d0c6b2d1cfe3330",
       "ownership": "private-exported"
     },
     {
@@ -822,8 +838,8 @@
       "path": "docs/install-with-codex.md",
       "type": "file",
       "mode": 420,
-      "bytes": 17971,
-      "sha256": "b153dc61944b4a7caa92cd9b472630208eb10c57ac355d8bd5791da515ba0174",
+      "bytes": 20960,
+      "sha256": "f50d14e8a434604ae5c1ed92baeed4e68e34e583e0a6a3cb3b2982d389a61b5a",
       "ownership": "private-exported"
     },
     {
@@ -1335,7 +1351,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 913,
-      "sha256": "e6727ddfeea1493835e4f2638d82963abf0adf3da5eef96468bc66c5602764be",
+      "sha256": "6891ac0943bd8325602cbc52df4c6ee9b496d730a812a06ebce0bbcc8ce4e385",
       "ownership": "private-exported"
     },
     {
@@ -1351,7 +1367,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 221389,
-      "sha256": "c2cd4a831acac65ca6ceabc7d92f131edaa15c94458c0e7b54902aa6a2373576",
+      "sha256": "5b60d8eaf44c0ee087eab936d06c530d4b7a2dd218641304949de11104305dea",
       "ownership": "private-exported"
     },
     {
@@ -1359,7 +1375,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 900,
-      "sha256": "cbd53bbe30d2fa4f49c114b231a27ba824647690f632e7289e850cbc3a5f485d",
+      "sha256": "cb7a2fae90abe1c29924896fa08383c216f78bc069981d402e2e10dcacd3e8c7",
       "ownership": "private-exported"
     },
     {
@@ -1374,8 +1390,8 @@
       "path": "packages/cli/index.mjs",
       "type": "file",
       "mode": 493,
-      "bytes": 19732,
-      "sha256": "c837061f790c3c66bce757b847dbe16975cc6970933f724e531213bf4992cc6f",
+      "bytes": 20166,
+      "sha256": "4758ae4328efee9984c1a6142af5204dd16b29749949362e8ed7329fbea6096c",
       "ownership": "private-exported"
     },
     {
@@ -1391,7 +1407,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 294,
-      "sha256": "6bc927a2f1c2d2385017d66ffd47a96b74ad42cd9e44f173721a3ef9e5de71c8",
+      "sha256": "427ae37897ab6244fd1dd43af06bd0602239b8e89dc8802de62da90da6f084b3",
       "ownership": "private-exported"
     },
     {
@@ -1446,8 +1462,8 @@
       "path": "packages/core/codex-skill-registration.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 14146,
-      "sha256": "3dd29e99a8906becfd9e7ea43bb85900226dd09671642a2d085d0fdb7a7e263f",
+      "bytes": 15202,
+      "sha256": "bb49b5ceb4f5f8b895e6e63944059277ad096b49b246a68d48e7274ad0cbdf3b",
       "ownership": "private-exported"
     },
     {
@@ -1478,8 +1494,8 @@
       "path": "packages/core/conversational-install.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 5511,
-      "sha256": "3a8605fb596c8b49338cd31996696bcf03fcb9fe8d9b6409f733a491dfcc0a53",
+      "bytes": 5791,
+      "sha256": "784181403f1302031327ae6e07356ee9ec62250bc7119bef5539ea5b47d69971",
       "ownership": "private-exported"
     },
     {
@@ -1502,8 +1518,8 @@
       "path": "packages/core/first-install-bootstrap.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 34121,
-      "sha256": "e4718727de1e7f513caf9e1fbe68fac567784524763a1c8a744604ad40bde2e3",
+      "bytes": 34526,
+      "sha256": "234adcd9dcaa87bb1193bdf011d471b4726e3bc9335a31dbc093a0f33339755a",
       "ownership": "private-exported"
     },
     {
@@ -1558,8 +1574,8 @@
       "path": "packages/core/install-contract.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 11977,
-      "sha256": "45ebfa4ec83c4889c61a308b2825b3dd2a9263d2bd6e662e8463e2a703c59fe3",
+      "bytes": 12553,
+      "sha256": "251788dd0ed5a4b873336182efa45b0a2bc3e0d646e6b46e82ec2a0320a01035",
       "ownership": "private-exported"
     },
     {
@@ -1568,6 +1584,14 @@
       "mode": 420,
       "bytes": 3849,
       "sha256": "af387f6381a93bd9f6be22f1d2f6e39e80a2ee97f8c80fd947f3ab947d4378ce",
+      "ownership": "private-exported"
+    },
+    {
+      "path": "packages/core/installation-scope.mjs",
+      "type": "file",
+      "mode": 420,
+      "bytes": 4348,
+      "sha256": "18ca8d279647cb4427ee0ff86c89532888f12b73ad79782fea4a4b4fa2a8fed4",
       "ownership": "private-exported"
     },
     {
@@ -1582,8 +1606,8 @@
       "path": "packages/core/lifecycle-feedback.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 30318,
-      "sha256": "7c63615bf119567ea6e1302287ec79e281dbd503256982ee617e2b63dee0e230",
+      "bytes": 30638,
+      "sha256": "49842c2ad6900f96d760e7a1b5484ffd66fb400ce94091d61b1da6299716157a",
       "ownership": "private-exported"
     },
     {
@@ -1606,8 +1630,8 @@
       "path": "packages/core/lifecycle-manager.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 36792,
-      "sha256": "b8c19be4abc0a8d4d4f6d34a35933f48b3593fb39770e4dd29f0674835c511a2",
+      "bytes": 36950,
+      "sha256": "18f7044ea5eee66826c18945dcb8d5ee16ae041901aa59a42ac3dec2fd92597f",
       "ownership": "private-exported"
     },
     {
@@ -1647,7 +1671,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 382,
-      "sha256": "da78fc5e2d1b3e995714f37d54ff42aadce116390fa47d568e02c6bab57e6735",
+      "sha256": "eb21c652a83ed7b4d8a7a58eac6f5589b53b9bc88afb16bdb233013c00e45a5c",
       "ownership": "private-exported"
     },
     {
@@ -1710,8 +1734,8 @@
       "path": "packages/core/project-authority.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 73114,
-      "sha256": "025372f7d5ba8d39a9f265011f9954a04b50a841407e6ed0f42a1899f6a058bb",
+      "bytes": 73258,
+      "sha256": "4366797fdf6312ddbd687ab85db56c125c156083cb987dfc29e644d1245d65d6",
       "ownership": "private-exported"
     },
     {
@@ -1822,8 +1846,8 @@
       "path": "packages/core/transaction-engine.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 77135,
-      "sha256": "2e6295b9f95ce1505901b07d21fa3e3a9bec14f690480aff705d7236ef5056a4",
+      "bytes": 77464,
+      "sha256": "04f77bcea9f9e7723253f870bdacc398b710711b8c2e233cbd0c5dd59e59afab",
       "ownership": "private-exported"
     },
     {
@@ -1854,8 +1878,8 @@
       "path": "packages/core/uninstall-finalizer.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 19048,
-      "sha256": "b1112c3011b258abb4c4a31db2d18d9e1155e18efde556a1ac1f4693049e8ad6",
+      "bytes": 19117,
+      "sha256": "525677157a550a5a35b295de2bce8bc9be405054bef44567cb29d1e9eb3cd35a",
       "ownership": "private-exported"
     },
     {
@@ -2014,16 +2038,16 @@
       "path": "skills/ai-product-foundation-kit/SKILL.md",
       "type": "file",
       "mode": 420,
-      "bytes": 9148,
-      "sha256": "1fda8808c5f6ae9fdd8e37ff73b9b31e98426e4fe09e04ab4f336bdb761ea06e",
+      "bytes": 10112,
+      "sha256": "ea9398f48fb5fba253bd60103ba9b58e3c95389858c22a087eb5761321627823",
       "ownership": "private-exported"
     },
     {
       "path": "skills/ai-product-foundation-kit/capability.json",
       "type": "file",
       "mode": 420,
-      "bytes": 943,
-      "sha256": "c8ace082484d73be7dfc161d9ef2932b7fb7b5dd62386e8ff3c191cb7c415b28",
+      "bytes": 944,
+      "sha256": "5d16b2a90044c69cc674ac0bdc1b8d31fb53097e7d2a6ef521db50eeab5f85e4",
       "ownership": "private-exported"
     },
     {
@@ -2491,6 +2515,14 @@
       "ownership": "private-exported"
     },
     {
+      "path": "tests/integration/environment-bootstrap-c6.test.mjs",
+      "type": "file",
+      "mode": 420,
+      "bytes": 3165,
+      "sha256": "89fbd12648e3399ed7f59064215f61cd54b2202d1cf22659af1e6bfc6b9f3350",
+      "ownership": "private-exported"
+    },
+    {
       "path": "tests/integration/first-install-bootstrap-027.test.mjs",
       "type": "file",
       "mode": 420,
@@ -2584,6 +2616,14 @@
       "mode": 420,
       "bytes": 10302,
       "sha256": "98267ce03e5bc7248f39ccd985cc4415d1f19cc6df712a4b4d4bb8bc0b97e718",
+      "ownership": "private-exported"
+    },
+    {
+      "path": "tests/integration/installation-scope-c6.test.mjs",
+      "type": "file",
+      "mode": 420,
+      "bytes": 3747,
+      "sha256": "44def73082260d2ad238867a341492eb963b6a8ed39e37f858350659d50c6693",
       "ownership": "private-exported"
     },
     {
@@ -2694,8 +2734,8 @@
       "path": "tests/integration/public-acquisition-034r1.test.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 15597,
-      "sha256": "f06f3907d2f433fe9e45d1b992c727a5ae3bec6ea05de6c667fffc1fd24944c7",
+      "bytes": 15617,
+      "sha256": "1171553c0816bac6ef19c84b67e364ca4394e59a9b6df8824a4efb0b18fc998a",
       "ownership": "private-exported"
     },
     {
@@ -2811,6 +2851,14 @@
       "ownership": "private-exported"
     },
     {
+      "path": "tests/unit/entry-environment-c6.test.mjs",
+      "type": "file",
+      "mode": 420,
+      "bytes": 2728,
+      "sha256": "88f0401850bdee1852d585f49a0fe64defc65a7f21794f8126f16ca869b3d09e",
+      "ownership": "private-exported"
+    },
+    {
       "path": "tests/unit/events-state.test.mjs",
       "type": "file",
       "mode": 420,
@@ -2880,6 +2928,14 @@
       "mode": 420,
       "bytes": 6325,
       "sha256": "58b43fe05cc54bb462bdab0cb525507df03397d1a1a0ff3d4768d5dff9640a0b",
+      "ownership": "private-exported"
+    },
+    {
+      "path": "tests/unit/installation-scope-c6.test.mjs",
+      "type": "file",
+      "mode": 420,
+      "bytes": 2007,
+      "sha256": "5dcefcd74ac6ec1e9534220ce6e39d81320a7040b46abce74a341e7ac1e4b26c",
       "ownership": "private-exported"
     },
     {
@@ -2982,16 +3038,16 @@
       "path": "tests/unit/single-page-transport-040.test.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 4744,
-      "sha256": "e4cba43244e4e285224becb9eff3d9f5565733110066ad0c7b4f3a9ab490c24f",
+      "bytes": 6836,
+      "sha256": "b88d0e71b98b2d3d3af27031896f5b6320c57a73d44bd4e93fbb2377a905aa39",
       "ownership": "private-exported"
     },
     {
       "path": "tests/unit/single-page-view-040.test.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 3627,
-      "sha256": "23c2ad7a5db822e979842c3d8ade060770f362b02fbd864df314963ec38556b1",
+      "bytes": 7721,
+      "sha256": "6d616c5daf047523489c4d1c21f606e2da937a5e766c960db78e854e2362fbe0",
       "ownership": "private-exported"
     },
     {

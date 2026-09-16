@@ -11,6 +11,8 @@ description: 使用 Foundation 制作或维护已接入项目，读取当前制�
 
 读取本目录产品注册生成的 foundation-installation.json，它只是位置线索，不是批准。没有记录时说明未注册，仅解释；不得扫描、猜目录、回退源码 checkout、全局 Node 或固定旧版本路径。
 
+若定位记录含项目 usageScope，先核对本任务真实项目在绑定项目及其子目录内，再用稳定入口读取签名 current 的同一范围。记录不一致、项目移动或同名用户级 Skill 冲突时停止，不自行选一个安装。项目目录中的 Skill 不会禁用已有用户级 Skill；本项目范围不授权其他项目。用户级安装不等于所有系统账户共享。更新保持原范围，不迁移；卸载只按该安装的明确归属处理。
+
 使用精确 installationRoot 下稳定 bin/foundation-kit 运行 manager inspect --root <该根>，核验当前身份和健康。随后运行 rules inspect --root <该根>，读取返回的 foundation-making.md 与 lifecycle-guide.md 正文；缺命令、缺规则、字节或身份不匹配时停止 Foundation 执行，说明需独立更新/修复，不复制旧规则补齐。
 
 项目任务先读用户规则与现有代码，再给 rules inspect 附加 --project <本任务精确项目>。启用、采用、事实准备是不同状态；按返回的 preparation 与 nextStep 接续，不以绑定或采用文件存在宣称可制作。缺必要文件时说明准确补齐清单，使用现有 manager project-mutation 的 foundation-skeleton-and-facts-create，handlerPayload 为返回的 includePreview:false 加本次 generatedAt，用户单独确认后重新 inspect；不让用户猜内部操作名，不手写或复制模板替代产品准备。预览是可选能力，需要时另行确认，保留原技术栈和预览配置。
@@ -49,6 +51,8 @@ Foundation 本地管理器：AI 不能 durable decline、accept 或 reopen。AI 
 打开 Foundation 用当前稳定入口 workbench open --root <已核验根>，可附加用户选定且已启用项目的 --project；这是唯一原工作台，不是生命周期临时页或开发预览。完整维护、可选 Skill 接入/刷新和安全卸载按当前 lifecycle-guide.md，不根据旧副本猜内部参数。
 
 更新和卸载由已核验的 summon 维护入口组织必要接续；具体版本与参数从当前 lifecycle-guide.md 读取。不要额外发起同一 Skill 的材料/注册命令替产品续接。程序完成但所选 Skill 待确认不是整体完成；跟进同次 npm 结果直到明确终态。恢复必须由用户明确发起，只核实并准备未完成项的新确认，不重放旧批准。
+
+若获取入口的基础环境不能安全启动页面，先按固定发行的安装说明在对话披露专用环境位置、来源与保留方式，另取批准后准备；不安装全局依赖、不改用户 PATH、不尝试旧 Node 前置页面。已安装程序仍用随包运行时，缺下载工具不应阻断卸载或已验证计划的确认。页面启动后所有生命周期确认留在同一页面；环境批准不授权安装、注册或项目启用。
 
 ## 同次操作持续跟进
 

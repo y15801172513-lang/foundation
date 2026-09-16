@@ -91,9 +91,10 @@ async function trustRoot(stage) {
   await updater.refresh();const info=await updater.getTargetInfo('trusted_root.json');if(!info)fail('GitHub 信任目标缺失');
   return json(fs.readFileSync(await updater.downloadTarget(info)));
 }
-async function verifiedAsset(context,asset,stage,trust,onProgress) {
+async function verifiedAsset(context,asset,stage,trust,onProgress=()=>{},onDownloaded=()=>{}) {
   if(!asset||!Number.isSafeInteger(asset.size)||asset.size<=0||asset.size>250_000_000||!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(asset.name)||!/^sha256:[a-f0-9]{64}$/.test(asset.digest)||asset.browser_download_url!==`https://github.com/${policy.repository}/releases/download/${context.release.tag_name}/${asset.name}`)fail('资产元数据无效');
-  const bytes=asset.size>10_000_000?await downloadLarge(asset.browser_download_url,asset.size,onProgress):download(asset.browser_download_url,asset.size+1);
+  const bytes=asset.size>10_000_000?await downloadLarge(asset.browser_download_url,asset.size,p=>onProgress({...p,asset:asset.name})):download(asset.browser_download_url,asset.size+1);
+  onDownloaded();
   if(bytes.length!==asset.size||`sha256:${hash(bytes)}`!==asset.digest)fail('下载长度或摘要不匹配');
   const proofs=api(`attestations/${asset.digest}?predicate_type=release&per_page=100`).attestations;
   if(!Array.isArray(proofs)||proofs.length>=100)fail('证明列表不完整或分页待核实');
@@ -152,7 +153,7 @@ export async function acquireRelease(context,stage,{onPhase=()=>{},onProgress=()
     if(release.repositoryId!==policy.repositoryId||release.sourceCommit!==context.sourceCommit||!/^[a-f0-9]{64}$/.test(release.candidateHash)||release.url!==`https://github.com/${policy.repository}/releases/download/${context.release.tag_name}/${assetName}`||!/^\d+\.\d+\.\d+$/.test(release.runtime?.version)||release.runtime.url!==`https://nodejs.org/dist/v${release.runtime.version}/node-v${release.runtime.version}-darwin-arm64.tar.gz`)fail('清单不能更换仓库、提交或官方运行时来源');
     const assets=context.release.assets.filter(x=>x.name===assetName&&x.size===release.bytes&&x.digest===`sha256:${release.sha256}`);if(assets.length!==1)fail('归档身份不匹配');
     onPhase('fetching-and-verifying-runtime');
-    const archive=await verifiedAsset(context,assets[0],stage,trust,onProgress);
+    const archive=await verifiedAsset(context,assets[0],stage,trust,onProgress,()=>onPhase('verifying-runtime'));
     onPhase('extracting-and-validating');
     const listing=spawnSync('/usr/bin/tar',['-tzf',archive.file],{encoding:'utf8',maxBuffer:10_000_000});
     const types=spawnSync('/usr/bin/tar',['-tvzf',archive.file],{encoding:'utf8',maxBuffer:10_000_000});

@@ -14,6 +14,7 @@ import {resolveFoundationPlatformPaths} from './platform-paths.mjs';
 import {openFoundationManagerUrl} from './browser-launch.mjs';
 import {renderInstallDestinationPage} from './lifecycle-feedback.mjs';
 import {inspectInstallDestination, normalizeInstallDestinationInput} from './install-destination.mjs';
+import {prepareInstallationScope} from './installation-scope.mjs';
 import {sanitizeNodeStartupEnvironment} from './node-startup-environment.mjs';
 import {activateFirstInstallBootstrapAuthority, deriveTrustedLifecycleAuthority, loadTrustedAuthorityKey, transferBootstrapAuthorityToInstalledState, verifyTrustedPayload} from './trusted-authority.mjs';
 import {classifyProcessOwner, observeProcessFingerprint} from './process-owner.mjs';
@@ -166,7 +167,7 @@ export function classifyFirstInstallCandidateTrust(manifest) {
   throw bootstrapError('CANDIDATE_TRUST_POLICY_INVALID', '候选 trust 字段未知、混合或相互矛盾；拒绝首次安装', {signature: signature || null, provenance: provenance || null, source: source || null});
 }
 
-export function createFirstInstallBootstrapPlan({now = Date.now(), ttlMs = 10 * 60 * 1000, destination = null} = {}) {
+export function createFirstInstallBootstrapPlan({now = Date.now(), ttlMs = 10 * 60 * 1000, destination = null, scopeKind = 'user', projectRoot = null} = {}) {
   const candidateRoot = discoverLaunchedCandidateRoot();
   activateFirstInstallBootstrapAuthority(candidateRoot, {destination});
   let untrustedManifest;
@@ -228,7 +229,8 @@ export function createFirstInstallBootstrapPlan({now = Date.now(), ttlMs = 10 * 
   }
   const disk = probeDiskAvailableBytes(paths.installRoot);
   const binding = {path: checked.root, manifestHash: checked.manifest.candidateHash, runtimeHash: runtime.sha256, bytes: checked.manifest.totalBytes, fileCount: checked.manifest.files.length + 1, version: checked.manifest.productVersion, acquisition: 'local-ingestion'};
-  const base = createLifecyclePlan({operation: 'install', profile: 'core', targetRoot: paths.installRoot, sandboxRoot: paths.bootstrapStateRoot, targetVersion: checked.manifest.productVersion, candidate: binding, now, ttlMs});
+  const usageScope=prepareInstallationScope({kind:scopeKind,projectRoot,installationRoot:paths.installRoot});
+  const base = createLifecyclePlan({operation: 'install', profile: 'core', targetRoot: paths.installRoot, sandboxRoot: paths.bootstrapStateRoot, targetVersion: checked.manifest.productVersion, candidate: binding, usageScope, now, ttlMs});
   if (reinstall && reinstall.installId !== base.installId) throw bootstrapError('REINSTALL_IDENTITY_MISMATCH', '卸载回执与所选目录的安装身份不一致；不自动迁移安装');
   const bootstrap = {
     schemaVersion: '1.0.0',
@@ -237,6 +239,7 @@ export function createFirstInstallBootstrapPlan({now = Date.now(), ttlMs = 10 * 
     product: {name: 'AI Product Foundation Kit', version: checked.manifest.productVersion, buildIdentity: checked.manifest.build.identity},
     candidate: {root: checked.root, candidateHash: checked.manifest.candidateHash, trustPolicy: trust.policy, signatureStatus: checked.manifest.signature.status, distribution: trust.policy === 'verified-distribution' ? 'verified-artifact-system-trust-not-asserted' : 'local-only', productionRelease: checked.manifest.signature.productionDistribution === true, runtimeHash: runtime.sha256},
     installationRoot: paths.installRoot,
+    usageScope,
     bundledRuntimePath: path.join(checked.root, 'payload', ...checked.manifest.runtime.path.split('/')),
     aiCodexIntegrationDestination: 'none',
     managerState: {path: paths.bootstrapStateRoot, reason: '未安装 host 在用户确认前仅保存 exact plan 与本地管理器 session；成功后 installed state 成为唯一权威'},
@@ -305,7 +308,7 @@ export function runFirstInstallDestinationSelection(output = console, {browser =
     try {
       for await (const chunk of req) {size+=chunk.length;if(size>8192)throw Error('请求过大');body+=chunk;}
       const choice=JSON.parse(body);
-      if (choice.nonce !== nonce || !['select','cancel'].includes(choice.action) || Object.keys(choice).some(k=>!['nonce','action','destination','skillChoice'].includes(k)) || choice.skillChoice !== undefined && !['undecided','selected','skipped'].includes(choice.skillChoice)) return send(res,403,{message:'选择请求无效'});
+      if (choice.nonce !== nonce || !['select','cancel'].includes(choice.action) || Object.keys(choice).some(k=>!['nonce','action','destination','skillChoice','scopeKind','projectRoot'].includes(k)) || choice.skillChoice !== undefined && !['undecided','selected','skipped'].includes(choice.skillChoice)) return send(res,403,{message:'选择请求无效'});
       // Recheck after the async body read: concurrent submissions must not win twice.
       if (phase !== 'waiting' || Date.now() >= expiresAt) return send(res,409,{message:'选择已处理或过期'});
       if (choice.action === 'cancel') {send(res,200,{message:'已取消，未安装；已下载的缓存保留。'});finish('cancelled-no-install');return;}
@@ -316,7 +319,7 @@ export function runFirstInstallDestinationSelection(output = console, {browser =
       phase='preparing';clearTimeout(timer);
       let manager;
       journeyContext.skillChoice=choice.skillChoice || 'undecided';
-      try {manager=runFirstInstallBootstrap(output,{destination:selected.realPath,browser:'codex',journeyContext});}
+      try {manager=runFirstInstallBootstrap(output,{destination:selected.realPath,browser:'codex',journeyContext,scopeKind:choice.scopeKind||'user',projectRoot:choice.projectRoot||null});}
       catch(error){phase='failed';send(res,409,{message:`计划准备失败，尚未取得安装确认：${error.message}。请在原对话核实，不自动重试。`});output.error(`错误：${error.message}`);process.exitCode=1;server.close();return;}
       if (!manager) {phase='existing-installation';send(res,409,{message:'安装状态已变化；请在原对话核实已有安装。'});server.close();return;}
       manager.once('listening',()=>{nextUrl=`http://127.0.0.1:${manager.address().port}/`;phase='plan-ready';output.log(JSON.stringify({status:'FOUNDATION_SELECTION_BOUND',journeyContext,selectionId,destination:selected.realPath,url:nextUrl,sessionId:manager.managerSession.sessionId,planHash:manager.managerSession.planHash,installationPerformed:false}));send(res,200,{url:nextUrl});});
@@ -338,8 +341,8 @@ export function runFirstInstallDestinationSelection(output = console, {browser =
   return server;
 }
 
-export function runFirstInstallBootstrap(output = console, {destination = null, browser = 'system', journeyContext = null} = {}) {
-  const prepared = createFirstInstallBootstrapPlan({destination});
+export function runFirstInstallBootstrap(output = console, {destination = null, browser = 'system', journeyContext = null, scopeKind = 'user', projectRoot = null} = {}) {
+  const prepared = createFirstInstallBootstrapPlan({destination,scopeKind,projectRoot});
   if (prepared.kind === 'installed') return routeToInstalledAuthority(prepared.paths, output);
   if (prepared.kind === 'transfer-installed-authority') {
     const releaseLock = acquireBootstrapLauncherLock(prepared.paths.bootstrapStateRoot);

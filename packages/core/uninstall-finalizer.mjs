@@ -288,6 +288,7 @@ export function executeUninstallFinalizer(inputFile) {
     state: 'uninstalled',
     mode: payload.mode,
     installId: payload.installId,
+    ...(payload.usageScope ? {usageScope: payload.usageScope} : {}),
     removed,
     preservedModified,
     preservedModifiedDetails,

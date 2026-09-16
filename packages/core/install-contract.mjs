@@ -3,6 +3,7 @@ import path from 'node:path';
 import {assertTrustedCandidatePath, deriveTrustedLifecycleAuthority, snapshotTrustedTarget} from './trusted-authority.mjs';
 import {currentRuntimeIdentity} from './runtime-surface.mjs';
 import {snapshotUpdateInputs} from './update-input-inventory.mjs';
+import {readInstallationScope, verifyInstallationScope} from './installation-scope.mjs';
 
 const compatibility = Object.freeze({major: 'reject', minor: 'forward-compatible'});
 const schema = (name) => Object.freeze({name, schemaVersion: '1.0.0', compatibility, unknownFields: 'ignore-non-security-critical'});
@@ -70,7 +71,7 @@ function actionsFor({operation, mode, extensions, aiBridge}) {
   throw new LifecycleError('OPERATION_UNSUPPORTED', `不支持的生命周期操作：${operation}`);
 }
 
-export function createLifecyclePlan({operation, profile = 'core', mode = null, targetRoot, sandboxRoot, currentVersion = null, targetVersion = null, installIdentity = 'current-user', candidate = null, extensions, aiBridge, recoverySnapshot = null, cleanupAcquisition = false, now = Date.now(), ttlMs = 15 * 60 * 1000}) {
+export function createLifecyclePlan({operation, profile = 'core', mode = null, targetRoot, sandboxRoot, currentVersion = null, targetVersion = null, installIdentity = 'current-user', usageScope = null, candidate = null, extensions, aiBridge, recoverySnapshot = null, cleanupAcquisition = false, now = Date.now(), ttlMs = 15 * 60 * 1000}) {
   if(operation==='update'&&currentVersion&&currentVersion===targetVersion)throw new LifecycleError('UPDATE_VERSION_ALREADY_CURRENT','当前已是该版本，无需重复更新',{stage:'plan'});
   if(typeof cleanupAcquisition!=='boolean'||cleanupAcquisition&&operation!=='update')throw new LifecycleError('CLEANUP_INTENT_INVALID','本次获取清理仅作为更新计划的意向，不是执行批准');
   if (!LIFECYCLE_PROFILES[profile]) throw new LifecycleError('PROFILE_INVALID', `未知安装方式：${profile}`);
@@ -80,6 +81,10 @@ export function createLifecyclePlan({operation, profile = 'core', mode = null, t
   const {platform, arch} = currentRuntimeIdentity();
   const trustedTarget = snapshotTrustedTarget(targetRoot, authority);
   const target = trustedTarget.target;
+  const existingScope=readInstallationScope(target);
+  const effectiveScope=existingScope||usageScope||{schemaVersion:'1.0.0',kind:'user',project:null};
+  if(existingScope&&usageScope&&canonicalStringify(existingScope)!==canonicalStringify(usageScope))throw new LifecycleError('INSTALL_SCOPE_MIGRATION_UNSUPPORTED','更新或修复不改变使用范围；本轮不提供范围迁移');
+  verifyInstallationScope(effectiveScope,target);
   const sandbox = sandboxRoot ? path.resolve(sandboxRoot) : authority.trustedRootRealPath;
   if (candidate?.path) assertTrustedCandidatePath(candidate.path, authority);
   const selectedExtensions = [...(extensions ?? LIFECYCLE_PROFILES[profile].extensions)].sort();
@@ -101,6 +106,7 @@ export function createLifecyclePlan({operation, profile = 'core', mode = null, t
     currentVersion,
     targetVersion,
     installIdentity,
+    usageScope: effectiveScope,
     installId,
     platform,
     arch,

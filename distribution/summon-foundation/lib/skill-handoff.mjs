@@ -13,7 +13,8 @@ export async function followSelectedSkill({operation,env,onChange,journeyControl
   const identity=initial.installation?.current;
   if(!identity?.identity?.installId||initial.bridge?.currentVersion!==identity.version)throw Error('当前安装身份无法核实，停止 Skill 接续');
   if(operation.installId&&operation.installId!==identity.identity.installId)throw Error('恢复记录属于另一安装，停止接续');
-  onChange({installId:identity.identity.installId,installedCandidateHash:identity.candidateHash});
+  onChange({installId:identity.identity.installId,installedCandidateHash:identity.candidateHash,usageScope:identity.usageScope||{kind:'user',project:null}});
+  const discoveryNext=identity.usageScope?.kind==='project'?'请在绑定项目 '+identity.usageScope.project.path+' 内新开 Codex 对话验证识别；不会供其他项目使用。':'新开 Codex 对话验证识别。';
   const manifestFile=plainPath(path.join(root,identity.appPath,'artifacts/skills/ai-product-foundation-kit/capability.json'));
   if(!manifestFile.startsWith(root+path.sep))throw Error('Skill 材料必须属于当前安装');
   if(initial.codexSkill?.state==='files-installed-host-discovery-unverified'){
@@ -49,5 +50,5 @@ const event=await observePlan(client,requested,observation=>onChange({phase:obse
   }
   const verified=checkIdentity().codexSkill;
   if(verified?.state!=='files-installed-host-discovery-unverified')throw Error('Skill 注册文件与归属未通过核验；程序成功保留');
-  return {state:'completed',phase:'finished',terminal:true,skillRegistered:true,skillDestination:verified.destination,skillSteps:steps,hostDiscoveryVerified:false,next:'程序与所选 Skill 文件已就位；新开 Codex 对话验证识别，项目接入另行确认。'};
+  return {state:'completed',phase:'finished',terminal:true,skillRegistered:true,skillDestination:verified.destination,skillSteps:steps,hostDiscoveryVerified:false,next:'程序与所选 Skill 文件已就位；'+discoveryNext+' 项目接入另行确认。'};
 }

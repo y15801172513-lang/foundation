@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import {readInstallationScope} from './installation-scope.mjs';
 import path from 'node:path';
 
 import {canonicalStringify, LifecycleError, sha256} from './install-contract.mjs';
@@ -154,6 +155,7 @@ function sourceRole(project) {
 
 function assertEligibleProject(project, installationRoot, options = {}) {
   const target = projectPath(project, options);
+  if(installationRoot)readInstallationScope(installationRoot,{project:target});
   const role = sourceRole(target);
   if (role.role !== 'user-project-candidate') throw new LifecycleError('PROJECT_ROLE_REJECTED', `Foundation 内部角色不能作为用户项目启用：${role.role}`, {stage: 'project-authority', details: {project: target, role: role.role}});
   if (installationRoot && overlaps(target, installationRoot)) throw new LifecycleError('PROJECT_INSTALLATION_OVERLAP', '用户项目不得与 Foundation 安装根互为祖先或后代', {stage: 'project-authority', details: {project: target, installationRoot}});

@@ -5,7 +5,14 @@ import {inspectRelease, acquireRelease} from './acquire.mjs';
 
 try {
   const context = inspectRelease(workerData.version);
+  // The parent persists context atomically in the stage. Finish that write
+  // before checking that the stage contains only this operation's record.
+  const recorded = new Promise(resolve=>parentPort.once('message',message=>{
+    if(message.type!=='context-recorded')throw Error('获取上下文确认无效');
+    resolve();
+  }));
   parentPort.postMessage({type:'context',context});
+  await recorded;
   const receipt = await acquireRelease(context, workerData.stage, {
     operationId:workerData.operationId,
     onPhase:phase=>parentPort.postMessage({type:'phase',phase}),

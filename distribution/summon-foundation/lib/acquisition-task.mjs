@@ -7,7 +7,7 @@ export function acquireInWorker({version,stage,operationId,onContext=()=>{},onPh
     const interrupt=()=>{failure=Object.assign(Error('获取任务被中断；保留本次材料'),{code:'ACQUISITION_INTERRUPTED'});void worker.terminate();};
     process.once('SIGINT',interrupt);process.once('SIGTERM',interrupt);
     worker.on('message',event=>{
-      if(event.type==='context'){context=event.context;onContext(context);}
+      if(event.type==='context'){context=event.context;onContext(context);worker.postMessage({type:'context-recorded'});}
       else if(event.type==='phase')onPhase(event.phase);
       else if(event.type==='progress')onProgress(event.download);
       else if(event.type==='complete')receipt=event.receipt;

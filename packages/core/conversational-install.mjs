@@ -20,9 +20,11 @@ export function readCodexInstallationHint(home) {
     const stat = fs.lstatSync(file);
     if (!stat.isFile() || stat.size > 4096) throw new Error('位置线索不是有界普通文件');
     const hint = JSON.parse(fs.readFileSync(file, 'utf8'));
-    if (Object.keys(hint).sort().join('|') !== ['authority','installId','installationRoot','resolver','schemaVersion'].sort().join('|') || hint.schemaVersion !== '1.0.0' || hint.authority !== 'discovery-hint-only' || hint.resolver !== 'installed-current' || typeof hint.installId !== 'string' || !/^install-[a-f0-9]+$/u.test(hint.installId)) throw new Error('位置线索格式不符');
+    const keys=['authority','installId','installationRoot','resolver','schemaVersion',...(hint.usageScope?['usageScope']:[])];
+    if (Object.keys(hint).sort().join('|') !== keys.sort().join('|') || hint.schemaVersion !== '1.0.0' || hint.authority !== 'discovery-hint-only' || hint.resolver !== 'installed-current' || typeof hint.installId !== 'string' || !/^install-[a-f0-9]+$/u.test(hint.installId)) throw new Error('位置线索格式不符');
+    if(hint.usageScope&&(hint.usageScope.kind!=='project'||hint.usageScope.project?.path!==home))throw new Error('项目位置线索与明确选择的项目不符');
     if (!inspectInstallDestination(hint.installationRoot).exists) throw new Error('安装位置已移动或不存在');
-    return {status:'hint-found', file, installationRoot:hint.installationRoot, installId:hint.installId, verifiedInstallation:false, executionPerformed:false};
+    return {status:'hint-found', file, installationRoot:hint.installationRoot, installId:hint.installId, ...(hint.usageScope?{usageScope:hint.usageScope}:{}), verifiedInstallation:false, executionPerformed:false};
   } catch (error) {
     return {status:error.code === 'ENOENT' ? 'absent-or-moved' : 'invalid', file, installationRoot:null, verifiedInstallation:false, executionPerformed:false};
   }

@@ -237,6 +237,8 @@ export function createInstalledWorkbenchServer({installationRoot, project = null
   const read = () => {
     if (!installationRoot) throw new Error('缺少安装位置；请先核验安装定位记录，不猜测或扫描');
     const state = inspectLocalLifecycle({installationRoot});
+    const scope=state.installation?.current?.usageScope;
+    if(scope?.kind==='project'&&project&&path.resolve(project)!==scope.project.path&&!path.resolve(project).startsWith(scope.project.path+path.sep))throw new Error('此 Foundation 仅供绑定项目使用，不能打开另一个项目');
     if (!state.installation?.current || state.bridge?.installationHealth?.code !== 'FOUNDATION_HEALTHY') throw new Error('已安装工作台不可用：安装身份或健康核验未通过；请只读检查状态');
     const currentIdentity = JSON.stringify(state.installation.current);
     if (identity !== null && currentIdentity !== identity) throw new Error('安装版本或身份已变化；请从稳定入口重新打开工作台');
