@@ -8,9 +8,11 @@ import {acquireInWorker} from '../lib/acquisition-task.mjs';
 import {startProgressPage} from '../lib/progress-page.mjs';
 import {followSelectedSkill} from '../lib/skill-handoff.mjs';
 import {followMaintenance} from '../lib/maintenance-handoff.mjs';
+import {installedClient} from '../lib/manager-step.mjs';
 import {resumeSkillHandoff} from '../lib/resume-handoff.mjs';
 import {parseSummonArgs} from '../lib/cli-options.mjs';
 import {createOperation,saveOperation,readOperation,runtimeObservation} from '../lib/operation-result.mjs';
+import {createJourneyControl} from '../lib/journey-control.mjs';
 
 const help=`summon foundation [--version x.y.z] [--destination /absolute/folder]
 summon foundation --inspect [--version x.y.z]
@@ -48,24 +50,8 @@ function stageDirectory(){
   return fs.mkdtempSync(path.join(cache,'acquisition.'));
 }
 let operation=null,stage=null,progressPage=null;
+const journeyControl=createJourneyControl(()=>operation,()=>progressPage?.publish());
 function updateOperation(patch){if(!operation)return;Object.assign(operation,patch,{updatedAt:new Date().toISOString()});const file=saveOperation(operation,stage);if(file)operation.resultFile=file;progressPage?.publish();console.log(JSON.stringify({status:'FOUNDATION_INSTALL_OPERATION',...operation,resultFile:file,recordSaved:!!file}));}
-async function openInstalledWorkbench(root,env){
-  let child;
-  try{
-    plainPath(root);const launcher=path.join(root,'bin/foundation-kit');plainPath(launcher);
-    const stdout=path.join(stage,'workbench.stdout.log'),stderr=path.join(stage,'workbench.stderr.log');
-    const out=fs.openSync(stdout,'wx',0o600);let err;
-    try{err=fs.openSync(stderr,'wx',0o600);child=spawn(launcher,['workbench','open','--root',root],{detached:true,stdio:['ignore',out,err],env});}finally{fs.closeSync(out);if(err!==undefined)fs.closeSync(err);}
-    await new Promise((resolve,reject)=>{child.once('spawn',resolve);child.once('error',reject);});child.unref();
-    for(let n=0;n<100;n++){
-      if(child.exitCode!==null)throw Error('工作台进程提前退出');
-      let ready;try{ready=JSON.parse(fs.readFileSync(stdout,'utf8'));}catch{}
-      if(ready?.url){const url=new URL(ready.url);if(url.protocol!=='http:'||url.hostname!=='127.0.0.1'||url.username||url.password)throw Error('工作台网址无效');const response=await fetch(url,{signal:AbortSignal.timeout(5000),redirect:'error'});if(!response.ok)throw Error('工作台未就绪');return{state:'ready',url:url.href,pid:child.pid,requiredHostAction:'open-returned-loopback-url-in-codex-browser'};}
-      await new Promise(r=>setTimeout(r,100));
-    }
-    throw Error('工作台启动超时');
-  }catch{if(child&&child.exitCode===null)child.kill('SIGTERM');return{state:'not-ready',reason:'安装结果保留；工作台未能就绪，可从已安装入口重新打开'};}
-}
 try{
   const args=parseSummonArgs(process.argv.slice(2));
   if(args.help){console.log(help);process.exit(0);}
@@ -78,22 +64,31 @@ try{
   if(args.prepare||args.acquire||maintenance){operation=createOperation();stage=stageDirectory();updateOperation({});if(!saveOperation(operation,stage))fail('无法在已披露的获取目录保存操作记录；尚未联网或安装');}
   if(args.prepare)console.log('正在准备 Foundation 安装：将查询并固定本次正式版本，说明缓存位置后下载核验。未选目录会在安装页选择；之后仍需本人确认精确计划。请保持当前 Codex 任务等待并打开返回的内置浏览器网址；不会自动改用系统浏览器。');
   if(args.resume){
+    operation=readOperation(args.resume);stage=path.dirname(plainPath(args.resume));
+    progressPage=await startProgressPage(()=>operation,{control:journeyControl});
+    console.log(JSON.stringify({status:'FOUNDATION_SINGLE_PAGE',url:progressPage.url,operationId:operation.operationId}));
     const env={...process.env};for(const key of ['NODE_OPTIONS','NODE_PATH','NODE_V8_COVERAGE','NODE_REDIRECT_WARNINGS','NODE_COMPILE_CACHE','NODE_COMPILE_CACHE_PORTABLE','NODE_PRESERVE_SYMLINKS'])delete env[key];
-    const result=await resumeSkillHandoff({file:args.resume,env,onChange:patch=>{if(!operation){operation=patch;stage=path.dirname(plainPath(args.resume));}updateOperation(patch);}});
+    const result=await resumeSkillHandoff({file:args.resume,env,journeyControl,onChange:updateOperation});
     updateOperation(result);process.exitCode=result.state==='completed'?0:1;
   }else if(maintenance){
     plainPath(args.root);
     const env={...process.env};for(const key of ['NODE_OPTIONS','NODE_PATH','NODE_V8_COVERAGE','NODE_REDIRECT_WARNINGS','NODE_COMPILE_CACHE','NODE_COMPILE_CACHE_PORTABLE','NODE_PRESERVE_SYMLINKS'])delete env[key];
-    updateOperation({kind:args.update?'update':'uninstall',installationRoot:args.root});
-    progressPage=await startProgressPage(()=>operation);updateOperation({progressUrl:progressPage.url});
+    const installed=installedClient(args.root,env),current=installed.call(['manager','inspect','--root',args.root]).installation?.current;
+    if(!current?.identity?.installId)fail('当前安装身份无法核实；尚未获取或执行维护');
+    const capability=spawnSync(installed.launcher,['--help'],{encoding:'utf8',env,timeout:15000});
+    if(capability.status!==0||!capability.stdout.includes('--journey-channel'))fail('当前安装不受新版单页流程支持。请另行确认卸载旧版并重新安装新版；本次不删除、不迁移、不回退旧页面');
+    updateOperation({kind:args.update?'update':'uninstall',installationRoot:args.root,currentVersion:current.version,installId:current.identity.installId});
+    progressPage=await startProgressPage(()=>operation,{control:journeyControl});updateOperation({progressUrl:progressPage.url});
+    console.log(JSON.stringify({status:'FOUNDATION_SINGLE_PAGE',url:progressPage.url,operationId:operation.operationId}));
     let candidate;
     if(args.update){
       const {context,receipt}=await acquireInWorker({version:args.version,stage,operationId:operation.operationId,onContext:context=>updateOperation({version:context.version,sourceCommit:context.sourceCommit}),onProgress:download=>updateOperation({download}),onPhase:phase=>updateOperation({phase})});
       const directory=plainPath(path.dirname(receipt.launcher)),manifest=JSON.parse(fs.readFileSync(plainPath(path.join(directory,'manifest.json'))));
       if(manifest.productVersion!==context.version)fail('获取版本与候选不一致');
       candidate={path:directory,manifestHash:manifest.candidateHash,version:manifest.productVersion,bytes:manifest.totalBytes,runtimeHash:manifest.files.find(f=>f.path===manifest.runtime.path)?.sha256};
+      updateOperation({phase:'acquired'});
     }
-    updateOperation(await followMaintenance({operation,kind:operation.kind,candidate,env,onChange:updateOperation}));
+    updateOperation(await followMaintenance({operation,kind:operation.kind,candidate,env,onChange:updateOperation,journeyControl}));
     process.exitCode=operation.state==='completed'?0:1;
     await progressPage.close();progressPage=null;
   }else if(!args.prepare&&!args.acquire){
@@ -104,24 +99,30 @@ try{
       terminalBoundary:'普通终端无法创建或唤醒 Codex 对话；请在有相应权限的 Codex 任务发起安装。',
       acquisition:'尚未下载或验证运行归档。默认入口或 --prepare 执行匿名 GitHub 证明与完整性核验。'},null,2));
   }else{
-    if(args.destination)plainPath(args.destination);console.log(`本次独占获取目录：${stage}`);
-    progressPage=await startProgressPage(()=>operation);
+    console.log(`本次独占获取目录：${stage}`);
+    progressPage=await startProgressPage(()=>operation,args.acquire?{}:{control:journeyControl});
     updateOperation({progressUrl:progressPage.url});
-    console.log(JSON.stringify({status:'FOUNDATION_ACQUISITION_PROGRESS_PAGE',url:progressPage.url,operationId:operation.operationId,next:'在 Codex 内置浏览器打开同次只读进度页，保持任务等待；不会自动打开系统浏览器。'}));
+    console.log(JSON.stringify({status:'FOUNDATION_ACQUISITION_PROGRESS_PAGE',url:progressPage.url,operationId:operation.operationId,next:'在 Codex 内置浏览器打开本次页面，所有所需确认在原页展开；保持任务等待，不自动打开系统浏览器。'}));
+    if(!args.acquire){
+      const metadata=inspectRelease(args.version);args.version=metadata.version;
+      updateOperation({phase:'choosing-intent',version:metadata.version,sourceCommit:metadata.sourceCommit,acquisitionRoot:stage,destinationIntent:args.destination||'',journeyContext:{id:operation.operationId,skillChoice:'undecided'}});
+      const choice=await journeyControl.waitChoice();
+      updateOperation({phase:'discovering',intentSelected:true,destinationIntent:choice.destination,journeyContext:{id:operation.operationId,skillChoice:choice.skillChoice}});
+    }
     const {context,receipt}=await acquireInWorker({version:args.version,stage,operationId:operation.operationId,onContext:context=>updateOperation({version:context.version,sourceCommit:context.sourceCommit}),onProgress:download=>updateOperation({download}),onPhase:phase=>updateOperation({phase})});console.log(JSON.stringify({status:'GITHUB_ACQUISITION_VERIFIED',...receipt,destinationIntent:args.destination}));
     updateOperation({phase:'acquired',version:context.version,sourceCommit:context.sourceCommit});
     if(args.acquire){updateOperation({state:'update-input-ready',terminal:true});console.log(JSON.stringify({status:'UPDATE_INPUT_READY_NOT_APPLIED',candidate:path.dirname(receipt.launcher),receipt:path.join(stage,'acquisition.json'),next:'使用当前健康安装的稳定入口生成独立更新计划；本人确认后才更新。获取回执不是删除授权。'}));await progressPage.close();progressPage=null;process.exit(0);}
     const env={...process.env};for(const key of ['NODE_OPTIONS','NODE_PATH','NODE_V8_COVERAGE','NODE_REDIRECT_WARNINGS','NODE_COMPILE_CACHE','NODE_COMPILE_CACHE_PORTABLE','NODE_PRESERVE_SYMLINKS'])delete env[key];
     const supported=spawnSync(receipt.launcher,['--help'],{encoding:'utf8',env,timeout:15000});
-    if(!args.destination){
-      if(supported.status!==0||!supported.stdout.includes('--choose-destination'))fail('本次发行尚不支持页面选择目录；未启动安装。请由当前对话取得目录后使用明确的 --destination，或等待新版发行，不静默采用默认位置');
-    }
+    if(supported.status!==0||!supported.stdout.includes('--journey-channel'))fail('该发行不支持新版单页流程；未安装，不回退旧页面。请使用支持单页的新版发行');
     updateOperation({phase:'starting-confirmation-service',installationWrites:'unknown'});
-    const child=spawn(receipt.launcher,['install',...(!args.destination&&supported.stdout?.includes('--journey-id')?['--journey-id',operation.operationId]:[]),...(args.destination?['--destination',args.destination]:['--choose-destination']),'--browser','codex'],{stdio:['inherit','pipe','inherit'],env});
+    const child=spawn(receipt.launcher,['install','--journey-id',operation.operationId,'--choose-destination','--journey-channel','--browser','codex'],{stdio:['inherit','pipe','inherit','ipc'],env});
+    journeyControl.attach(child);
     child.stdout.setEncoding('utf8');
     let pending='',json='';
     child.stdout.on('data',bytes=>{process.stdout.write(bytes);pending+=bytes.toString();if(pending.length>1_000_000){pending='';json='';return;}let end;while((end=pending.indexOf('\n'))>=0){const line=pending.slice(0,end);pending=pending.slice(end+1);if(!json&&!line.trim().startsWith('{'))continue;json+=line+'\n';if(json.length>1_000_000){json='';continue;}let e;try{e=JSON.parse(json)}catch{continue}json='';
       const observed=runtimeObservation(e);if(observed)updateOperation(observed);
+      journeyControl.observe(child,e).catch(error=>{updateOperation({state:'verification-required',terminal:true,next:error.message});child.kill('SIGTERM');});
     }});
     const interrupt=signal=>{child.kill(signal);};
     const int=()=>interrupt('SIGINT'),term=()=>interrupt('SIGTERM');
@@ -129,14 +130,10 @@ try{
     const ended=await new Promise((resolve,reject)=>{child.once('error',reject);child.once('close',(code,signal)=>resolve({code,signal}));}).finally(()=>{process.off('SIGINT',int);process.off('SIGTERM',term);});
     if(ended.signal||ended.code===null)fail(`确认服务未正常返回；结果待核实，保留 ${stage}，不要自动重试安装`);
     if(operation.state==='awaiting-skill'){
-      try{updateOperation(await followSelectedSkill({operation,env,onChange:updateOperation}));}
+      try{updateOperation(await followSelectedSkill({operation,env,onChange:updateOperation,journeyControl}));}
       catch(error){updateOperation({state:'partial',phase:'finished',terminal:true,skillRegistered:false,handoffFailure:{code:error.code||'SKILL_HANDOFF_REQUIRES_VERIFICATION',command:error.command||null,exitCode:error.exitCode??null},next:'程序已安装，Skill 接续未完成；保留当前计划与结果，仅核实未完成步骤，不重装程序或重放确认。'});}
     }
     if(!operation.terminal)updateOperation({state:'verification-required',terminal:true,childExitCode:ended.code,next:'服务退出不等于成功或取消；只读核验原 session 与 installed 状态，不自动重试'});
-    if(operation.state==='completed'&&operation.installationRoot){
-      const workbench=await openInstalledWorkbench(operation.installationRoot,env);
-      updateOperation({phase:'finished',workbench,next:workbench.state==='ready'?(operation.skillRegistered?'打开已安装工作台；Skill 文件已注册，新对话识别与项目接入另验':'打开已安装工作台；本次未注册 Skill，项目接入另行确认'):'安装已完成，但工作台未就绪；保留安装结果并只读检查'});
-    }
     process.exitCode=operation.state==='partial'?1:ended.code;
   }
-}catch(e){const message=String(e.message).replace(/https?:\/\/\S+/g,'[已脱敏网址]').replace(/(?:github_pat_|ghp_|npm_)[A-Za-z0-9_]+/g,'[已脱敏凭据]');updateOperation({state:operation?.programState==='completed'?'partial':operation&&operation.installationWrites!=='none'?'verification-required':'failed',terminal:true,...(operation?.programState==='completed'?{failedPhase:operation.phase,phase:'finished'}:{}),errorCode:['ACQUISITION_TRANSPORT_FAILED','ACQUISITION_VALIDATION_FAILED'].includes(e.code)?e.code:'INSTALL_ENTRY_FAILED',diagnostic:e.diagnostic||null,next:message+'。先核验旧工具进程已结束及同次结果；保留材料，不自动重试或重放安装确认'});console.error(`错误：${message}`);process.exitCode=1;}finally{if(progressPage)await progressPage.close();}
+}catch(e){const message=String(e.message).replace(/https?:\/\/\S+/g,'[已脱敏网址]').replace(/(?:github_pat_|ghp_|npm_)[A-Za-z0-9_]+/g,'[已脱敏凭据]');updateOperation({state:e.code==='ENTRY_CHOICE_CANCELLED'?'cancelled-no-install':e.code==='ENTRY_CHOICE_EXPIRED'?'expired-no-install':operation?.programState==='completed'?'partial':operation&&operation.installationWrites!=='none'?'verification-required':'failed',terminal:true,...(operation?.programState==='completed'?{failedPhase:operation.phase,phase:'finished'}:{}),errorCode:['ACQUISITION_TRANSPORT_FAILED','ACQUISITION_VALIDATION_FAILED','ENTRY_CHOICE_CANCELLED','ENTRY_CHOICE_EXPIRED'].includes(e.code)?e.code:'INSTALL_ENTRY_FAILED',diagnostic:e.diagnostic||null,next:message+'。先核验旧工具进程已结束及同次结果；保留材料，不自动重试或重放安装确认'});console.error(`错误：${message}`);process.exitCode=1;}finally{if(progressPage)await progressPage.close();}

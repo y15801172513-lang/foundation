@@ -6,9 +6,9 @@ import {plainPath} from './acquire.mjs';
 // Coordinates existing exact-plan APIs. It never sends a confirmation request.
 // The installed launcher resolves current on every call; downloaded code is not
 // reused as installed authority. onChange is observation, not authorization.
-export async function followSelectedSkill({operation,env,onChange}) {
+export async function followSelectedSkill({operation,env,onChange,journeyControl=null}) {
   if(operation.programState!=='completed'||operation.journeyContext?.skillChoice!=='selected')throw Error('Skill 接续需要已完成程序和明确所选意向');
-  const client=installedClient(operation.installationRoot,env),{root,call}=client;
+  const client=installedClient(operation.installationRoot,env,journeyControl),{root,call}=client;
   const initial=call(['manager','inspect','--root',root]);
   const identity=initial.installation?.current;
   if(!identity?.identity?.installId||initial.bridge?.currentVersion!==identity.version)throw Error('当前安装身份无法核实，停止 Skill 接续');

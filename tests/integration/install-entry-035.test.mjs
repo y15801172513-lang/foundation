@@ -21,72 +21,69 @@ for (const scenario of ['skipped','selected','reject-registration','unknown-skil
   const child=spawn(process.execPath,['--import',work+'/register.mjs',new URL(entry).pathname,'foundation'],{cwd:work,env:{...process.env,PATH:'',NODE_OPTIONS:'',TMPDIR:work}});let out='',err='',workbench;
   child.stdout.on('data',b=>{out+=b;fs.writeFileSync(work+'/stdout.log',out)});child.stderr.on('data',b=>{err+=b;fs.writeFileSync(work+'/stderr.log',err)});const done=new Promise(r=>child.once('close',(code,signal)=>r({code,signal})));
   try{
-    const progressDeadline=Date.now()+15000;while(!out.includes('fetching-and-verifying-runtime')&&child.exitCode===null&&Date.now()<progressDeadline)await new Promise(r=>setTimeout(r,25));
-    const progress=out.split('\n').filter(l=>l.startsWith('{')).map(l=>{try{return JSON.parse(l)}catch{return{}}}).find(e=>e.status==='FOUNDATION_ACQUISITION_PROGRESS_PAGE');assert(progress?.url,err);assert(!out.includes('AWAITING_FOUNDATION_DIRECTORY_SELECTION'));
-    const progressHtml=await(await fetch(progress.url)).text();assert.match(progressHtml,/只读/);fs.writeFileSync(work+'/acquiring.html',progressHtml);fs.writeFileSync(work+'/release-download','engineering transport barrier released');
-    const until=Date.now()+30000;while(!out.includes('AWAITING_FOUNDATION_DIRECTORY_SELECTION')&&child.exitCode===null&&Date.now()<until)await new Promise(r=>setTimeout(r,50));assert.match(out,/AWAITING_FOUNDATION_DIRECTORY_SELECTION/,err);
-    const selection=out.split('\n').filter(l=>l.startsWith('{')).map(l=>{try{return JSON.parse(l)}catch{return{}}}).find(e=>e.status==='AWAITING_FOUNDATION_DIRECTORY_SELECTION');assert(selection?.url);
-    const page=await(await fetch(selection.url)).text(),nonce=page.match(/nonce:"([a-f0-9]{64})"/)[1],destination=home+'/Foundation 用户';assert(!fs.existsSync(destination));
-    assert.equal(selection.journeyContext.id,progress.operationId);
-    const chosen=await(await fetch(selection.url+'__foundation/install/selection',{method:'POST',headers:{origin:new URL(selection.url).origin,'content-type':'application/json'},body:JSON.stringify({nonce,action:'select',destination,skillChoice})})).json();
-    const confirmation=await(await fetch(chosen.url)).text(),managerNonce=confirmation.match(/name="managerNonce" value="([^"]+)"/)[1];assert(!fs.existsSync(destination));
-    const result=await(await fetch(chosen.url+'__foundation/manager/confirm',{method:'POST',headers:{origin:new URL(chosen.url).origin,'content-type':'application/json'},body:JSON.stringify({managerNonce,action:'confirm-exact-operation'})})).json();assert.equal(result.state,'completed');
-    let lastConfirmationUrl=chosen.url;
-    if(skillChoice==='selected')for(const step of ['material','register']){
-      if(scenario==='unknown-skill-files'&&step==='register')break;
-      const deadline=Date.now()+20000;let pending;
-      while(child.exitCode===null&&Date.now()<deadline){pending=out.split('\n').filter(l=>l.startsWith('{"status":"FOUNDATION_INSTALL_OPERATION"')).map(JSON.parse).at(-1);if(pending?.skillSteps?.[step]?.state==='pending'&&pending.confirmationUrl&&pending.confirmationUrl!==lastConfirmationUrl)break;await new Promise(r=>setTimeout(r,50));}
-      assert.equal(pending?.terminal,false,JSON.stringify(pending));assert.equal(pending?.skillSteps?.[step]?.state,'pending',JSON.stringify(pending));
-      lastConfirmationUrl=pending.confirmationUrl;
-      const html=await(await fetch(pending.confirmationUrl)).text();fs.writeFileSync(work+'/'+step+'.html',html);const managerNonce=html.match(/name="managerNonce" value="([^"]+)"/)[1];
-      const reject=scenario==='reject-registration'&&step==='register';
-      const result=await(await fetch(pending.confirmationUrl+'__foundation/manager/confirm',{method:'POST',headers:{origin:new URL(pending.confirmationUrl).origin,'content-type':'application/json'},body:JSON.stringify({managerNonce,action:reject?'cancel-no-change':'confirm-exact-operation'})})).json();assert.equal(result.state,reject?'cancelled':'completed',JSON.stringify(result));
-    }
+    const events=text=>text.split('\n').filter(l=>l.startsWith('{')).map(l=>{try{return JSON.parse(l)}catch{return{}}});
+    const waitPage=async(getText,proc,status)=>{const deadline=Date.now()+15000;while(proc.exitCode===null&&Date.now()<deadline){const e=events(getText()).find(e=>e.status===status);if(e?.url)return e;await new Promise(r=>setTimeout(r,25));}assert.fail(getText()+err);};
+    const progress=await waitPage(()=>out,child,'FOUNDATION_ACQUISITION_PROGRESS_PAGE'),url=progress.url,destination=home+'/Foundation 用户';
+    const post=async(page,body)=>{const response=await fetch(page+'/action',{method:'POST',headers:{origin:new URL(page).origin,'content-type':'application/json'},body:JSON.stringify({csrf:page.split('/').at(-1),...body})});const value=await response.json();assert.equal(response.status,200,JSON.stringify(value));return value;};
+    const initial=await(await fetch(url+'/state')).json();assert.equal(initial.record.phase,'choosing-intent');assert(!fs.existsSync(destination));assert(!out.includes('fetching-and-verifying-runtime'));
+    fs.writeFileSync(work+'/initial.html',await(await fetch(url)).text());
+    await post(url,{operationId:initial.record.operationId,action:'choose',destination,skillChoice});
+    const deadline=Date.now()+15000;while(!out.includes('fetching-and-verifying-runtime')&&child.exitCode===null&&Date.now()<deadline)await new Promise(r=>setTimeout(r,25));
+    assert.match(out,/fetching-and-verifying-runtime/);assert(!fs.existsSync(destination));
+    fs.writeFileSync(work+'/acquiring.html',await(await fetch(url)).text());fs.writeFileSync(work+'/release-download','engineering transport barrier released');
+    const drive=async(page,{rejectRegister=false,requireNoInstall=false}={})=>{
+      const sessions=[],until=Date.now()+30000;let state;
+      while(Date.now()<until){
+        state=await(await fetch(page+'/state')).json();
+        if(state.record.terminal)break;
+        const v=state.view;
+        if(v?.session?.state==='pending'&&!sessions.some(s=>s.sessionId===v.session.sessionId)){
+          if(requireNoInstall&&sessions.length===0){assert(!fs.existsSync(destination));assert.equal(v.session.operation,'install');}
+          const register=v.session.operation==='register';
+          const action=rejectRegister&&register?'cancel-no-change':v.action;
+          sessions.push({sessionId:v.session.sessionId,planHash:v.session.planHash,operation:v.session.operation,capabilityId:v.session.capabilityId||null,action});
+          const currentPage=await fetch(page,{redirect:'manual'});assert.equal(currentPage.status,200);fs.writeFileSync(work+'/page-'+v.session.sessionId+'.html',await currentPage.text());
+          await post(page,{operationId:state.record.operationId,sessionId:v.session.sessionId,planHash:v.session.planHash,managerNonce:v.managerNonce,action});
+        }
+        await new Promise(r=>setTimeout(r,50));
+      }
+      assert.equal(state?.record.terminal,true,JSON.stringify(state));return{record:state.record,sessions,url:page};
+    };
+    const installed=await drive(url,{rejectRegister:scenario==='reject-registration',requireNoInstall:true}),exit=await done,last=installed.record;
+    assert.equal(installed.sessions.filter(s=>!s.capabilityId).length,1);assert.equal(last.installationRoot,destination);
+    assert.equal(last.programState,'completed');assert.equal(last.journeyContext.id,progress.operationId);
+    assert.equal(last.journeyContext.skillChoice,skillChoice);
     if(['reject-registration','unknown-skill-files'].includes(scenario)){
-      const exit=await done,last=out.split('\n').filter(l=>l.startsWith('{"status":"FOUNDATION_INSTALL_OPERATION"')).map(JSON.parse).at(-1);
-      assert.equal(exit.code,1);assert.equal(last.state,'partial');assert.equal(last.terminal,true);assert.equal(last.programState,'completed');assert.equal(last.skillRegistered,false);assert.equal(fs.existsSync(destination+'/state/codex-skill-registration.json'),false);
+      assert.equal(exit.code,1);assert.equal(last.state,'partial');assert.equal(last.skillRegistered,false);assert(!fs.existsSync(destination+'/state/codex-skill-registration.json'));
       if(scenario==='unknown-skill-files')assert.equal(fs.readFileSync(home+'/.agents/skills/ai-product-foundation-kit/SKILL.md','utf8'),'user-owned unknown skill\n');
       if(scenario==='reject-registration'){
+        assert(installed.sessions.some(s=>s.operation==='register'&&s.action==='cancel-no-change'));
         const before=fs.readFileSync(destination+'/state/current.json');
         const resumed=spawn(process.execPath,['--import',work+'/register.mjs',new URL(entry).pathname,'foundation','--resume',last.resultFile],{cwd:work,env:{...process.env,PATH:'',NODE_OPTIONS:'',TMPDIR:work}});
         let text='',errors='';resumed.stdout.on('data',b=>{text+=b;fs.writeFileSync(work+'/resume.stdout.log',text)});resumed.stderr.on('data',b=>{errors+=b;fs.writeFileSync(work+'/resume.stderr.log',errors)});
         const ended=new Promise(r=>resumed.once('close',code=>r(code)));
-        try{
-          let pending;const deadline=Date.now()+20000;
-          while(resumed.exitCode===null&&Date.now()<deadline){pending=text.split('\n').filter(l=>l.startsWith('{"status":"FOUNDATION_INSTALL_OPERATION"')).map(JSON.parse).at(-1);if(pending?.skillSteps?.register?.state==='pending'&&pending.confirmationUrl!==lastConfirmationUrl)break;await new Promise(r=>setTimeout(r,50));}
-          assert.equal(pending?.skillSteps?.register?.state,'pending',text+errors);assert.notEqual(pending.currentPlanRef,last.currentPlanRef);assert.equal(pending.skillSteps.material.state,'completed');
-          const html=await(await fetch(pending.confirmationUrl)).text(),managerNonce=html.match(/name="managerNonce" value="([^"]+)"/)[1];
-          const result=await(await fetch(pending.confirmationUrl+'__foundation/manager/confirm',{method:'POST',headers:{origin:new URL(pending.confirmationUrl).origin,'content-type':'application/json'},body:JSON.stringify({managerNonce,action:'confirm-exact-operation'})})).json();assert.equal(result.state,'completed');
-          assert.equal(await ended,0,text+errors);assert.deepEqual(fs.readFileSync(destination+'/state/current.json'),before);assert(fs.existsSync(home+'/.agents/skills/ai-product-foundation-kit/SKILL.md'));
-        }finally{if(resumed.exitCode===null)resumed.kill('SIGTERM');await ended;}
+        try{const page=await waitPage(()=>text,resumed,'FOUNDATION_SINGLE_PAGE'),recovered=await drive(page.url);assert.equal(await ended,0,text+errors);assert.equal(recovered.record.state,'completed');assert.equal(recovered.sessions.length,1);assert.equal(recovered.sessions[0].operation,'register');assert(!installed.sessions.some(s=>s.sessionId===recovered.sessions[0].sessionId));assert.deepEqual(fs.readFileSync(destination+'/state/current.json'),before);assert(fs.existsSync(home+'/.agents/skills/ai-product-foundation-kit/SKILL.md'));}finally{if(resumed.exitCode===null)resumed.kill('SIGTERM');await ended;}
       }
-      fs.writeFileSync(work+'/result.json',JSON.stringify({scenario,status:'ENGINEERING_PASS',candidateHash:manifest.candidateHash,last,exit,simulated:['account provider','preverified acquisition','engineering exact confirmation'],real:['product continuation','partial terminal','program remains installed','unknown files preserved'],freshConversation:false},null,2));return;
+      fs.writeFileSync(work+'/result.json',JSON.stringify({scenario,status:'ENGINEERING_PASS',candidateHash:manifest.candidateHash,installed,exit,simulated:['account provider','preverified acquisition','engineering exact confirmation'],real:['single-page product continuation','partial terminal','program retained','unknown files preserved','resume without program replay'],freshConversation:false},null,2));return;
     }
-    assert.equal((await done).code,0,err);const last=out.split('\n').filter(l=>l.startsWith('{"status":"FOUNDATION_INSTALL_OPERATION"')).map(JSON.parse).at(-1);workbench=last.workbench;assert.equal(last.state,'completed');assert.equal(last.phase,'finished');assert.equal(workbench?.state,'ready',JSON.stringify(last));assert.equal(last.skillRegistered,skillChoice==='selected');assert.equal(last.installationRoot,destination);assert.equal((await fetch(workbench.url)).status,200);
-    assert.equal(last.journeyContext.id,progress.operationId);assert.equal(last.journeyContext.skillChoice,skillChoice);
+    assert.equal(exit.code,0,err);assert.equal(last.state,'completed');assert.equal(last.phase,skillChoice==='selected'?'finished':'runtime-ended');assert.equal(last.terminal,true);assert.equal(last.skillRegistered,skillChoice==='selected');assert.equal(installed.sessions.length,skillChoice==='selected'?3:1);
     assert.equal(fs.existsSync(home+'/.agents/skills/ai-product-foundation-kit/SKILL.md'),skillChoice==='selected');
-    if(workbench?.pid){process.kill(workbench.pid,'SIGTERM');workbench=null;}
+    // 040 never opens the workbench automatically. Reopen explicitly through the stable launcher.
+    const launcher=destination+'/bin/foundation-kit',health=spawnSync(launcher,['--foundation-health'],{cwd:work,env:{...process.env,PATH:'',NODE_OPTIONS:'',TMPDIR:work},encoding:'utf8'});assert.equal(health.status,0,health.stderr);assert.equal(JSON.parse(health.stdout).version,manifest.productVersion);
+    const opened=spawn(launcher,['workbench','open','--root',destination],{cwd:work,env:{...process.env,PATH:'',NODE_OPTIONS:'',TMPDIR:work}});let openedText='',openedErr='';opened.stdout.on('data',b=>openedText+=b);opened.stderr.on('data',b=>openedErr+=b);const openedDone=new Promise(r=>opened.once('close',r));
+    try{const deadline=Date.now()+15000;while(!openedText.includes('"url"')&&opened.exitCode===null&&Date.now()<deadline)await new Promise(r=>setTimeout(r,50));const ready=JSON.parse(openedText.trim());assert.equal((await fetch(ready.url)).status,200);}finally{if(opened.exitCode===null)opened.kill('SIGTERM');await openedDone;}
     fs.writeFileSync(destination+'/user-keep.txt','keep user data');
     const maintenance=spawn(process.execPath,['--import',work+'/register.mjs',new URL(entry).pathname,'foundation','--uninstall','--root',destination],{cwd:work,env:{...process.env,PATH:'',NODE_OPTIONS:'',TMPDIR:work}});
-    let maintenanceOut='',maintenanceErr='';maintenance.stdout.on('data',b=>{maintenanceOut+=b;fs.writeFileSync(work+'/uninstall.stdout.log',maintenanceOut)});maintenance.stderr.on('data',b=>{maintenanceErr+=b;fs.writeFileSync(work+'/uninstall.stderr.log',maintenanceErr)});
+    let maintenanceOut='',maintenanceErr='';maintenance.stdout.on('data',b=>{maintenanceOut+=b;fs.writeFileSync(work+'/uninstall.stdout.log',maintenanceOut)});maintenance.stderr.on('data',b=>maintenanceErr+=b);
     const maintenanceDone=new Promise(r=>maintenance.once('close',(code,signal)=>r({code,signal})));
     try{
-      let previousUrl='';
-      for(const key of [...(skillChoice==='selected'?['remove']:[]),'program']){
-        let pending;const deadline=Date.now()+20000;
-        while(maintenance.exitCode===null&&Date.now()<deadline){pending=maintenanceOut.split('\n').filter(l=>l.startsWith('{"status":"FOUNDATION_INSTALL_OPERATION"')).map(JSON.parse).at(-1);if(pending?.maintenanceSteps?.[key]?.state==='pending'&&pending.confirmationUrl&&pending.confirmationUrl!==previousUrl)break;await new Promise(r=>setTimeout(r,50));}
-        assert.equal(pending?.maintenanceSteps?.[key]?.state,'pending',maintenanceOut+maintenanceErr);previousUrl=pending.confirmationUrl;
-        const html=await(await fetch(previousUrl)).text();fs.writeFileSync(work+'/uninstall-'+key+'.html',html);
-        const managerNonce=html.match(/name="managerNonce" value="([^"]+)"/)[1];
-        const result=await(await fetch(previousUrl+'__foundation/manager/confirm',{method:'POST',headers:{origin:new URL(previousUrl).origin,'content-type':'application/json'},body:JSON.stringify({managerNonce,action:'confirm-exact-operation'})})).json();assert.equal(result.state,'completed',JSON.stringify(result));
-      }
-      const exit=await maintenanceDone,final=maintenanceOut.split('\n').filter(l=>l.startsWith('{"status":"FOUNDATION_INSTALL_OPERATION"')).map(JSON.parse).at(-1);
-      assert.equal(exit.code,0,maintenanceOut+maintenanceErr);assert.equal(final.state,'completed');assert.equal(final.kind,'uninstall');assert(!fs.existsSync(destination+'/bin/foundation-kit'));assert.equal(JSON.parse(fs.readFileSync(final.uninstallReceipt)).state,'uninstalled');assert.equal(fs.readFileSync(destination+'/user-keep.txt','utf8'),'keep user data');
-      assert(!fs.existsSync(home+'/.agents/skills/ai-product-foundation-kit/SKILL.md'));
-      fs.writeFileSync(work+'/uninstall-result.json',JSON.stringify({exit,final,confirmation:'engineering fixture; product requested every plan'},null,2));
+      const page=await waitPage(()=>maintenanceOut,maintenance,'FOUNDATION_SINGLE_PAGE'),removed=await drive(page.url),ended=await maintenanceDone,final=removed.record;
+      assert.equal(ended.code,0,maintenanceOut+maintenanceErr);assert.equal(final.state,'completed');assert.equal(final.kind,'uninstall');assert.equal(removed.sessions.length,skillChoice==='selected'?2:1);
+      assert(!fs.existsSync(destination+'/bin/foundation-kit'));assert.equal(JSON.parse(fs.readFileSync(final.uninstallReceipt)).state,'uninstalled');assert.equal(fs.readFileSync(destination+'/user-keep.txt','utf8'),'keep user data');assert(!fs.existsSync(home+'/.agents/skills/ai-product-foundation-kit/SKILL.md'));
+      fs.writeFileSync(work+'/uninstall-result.json',JSON.stringify({ended,removed,confirmation:'engineering same-page fixture; product requested every plan'},null,2));
     }finally{if(maintenance.exitCode===null)maintenance.kill('SIGTERM');await maintenanceDone;}
-    fs.writeFileSync(work+'/result.json',JSON.stringify({status:'ENGINEERING_PASS',candidateHash:manifest.candidateHash,last,exit:await done,simulated:['account provider','preverified acquisition','engineering page confirmation'],real:['npm orchestration','payload install','stable health','stable launcher workbench spawn and ready check','finite npm exit'],freshConversation:false},null,2));console.log('036 npm final evidence '+path.relative(repo,work));
-  }finally{if(child.exitCode===null)child.kill('SIGTERM');await done;if(workbench?.pid)process.kill(workbench.pid,'SIGTERM');}
+    fs.writeFileSync(work+'/result.json',JSON.stringify({status:'ENGINEERING_PASS',candidateHash:manifest.candidateHash,installed,exit,simulated:['OS account','preverified acquisition','engineering exact page confirmation'],real:['single-page npm orchestration','payload install','stable health','explicit stable workbench reopen','finite exit'],freshConversation:false},null,2));console.log('040 npm final evidence '+path.relative(repo,work));
+  }finally{if(child.exitCode===null)child.kill('SIGTERM');await done;}
 });
 test('035 real payload: selection, rejection, exact confirmation, install and stable reopen',{skip:!input,timeout:90000},async()=>{
   const candidate=fs.realpathSync(input);assert(candidate.startsWith(repo+'/.tmp/'));

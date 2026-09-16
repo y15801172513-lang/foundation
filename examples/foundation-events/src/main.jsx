@@ -4,7 +4,7 @@ import {createRoot} from 'react-dom/client';
 import {Tabs, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {Archive, ArrowLeft, FolderKanban, RotateCcw, Trash2} from 'lucide-react';
 import {announcePreview, applyPreviewTheme, installInspectorBridge, isAssetPreviewLocation, previewThemeFromSearch} from './bridge.mjs';
-import {addEvent, changeEventStatus, cloneInitialEvents, currentReturnTarget, detailTarget, eventReturnTarget, MANAGE_TABS, STORAGE_KEY} from './event-state.mjs';
+import {addEvent, changeEventStatus, cloneInitialEvents, currentReturnTarget, detailTarget, eventReturnTarget, MANAGE_TABS, persistEvents, STORAGE_KEY} from './event-state.mjs';
 import {EventAction} from './components/event-action';
 import {EventCard} from './components/event-card';
 import {EventFormDialog} from './components/event-form-dialog';
@@ -23,7 +23,7 @@ function App() {
   const [events, setEvents] = useState(readStoredEvents);
   const [route, setRoute] = useState(routeInfo);
   const [pageTransitionKey, setPageTransitionKey] = useState(0);
-  useEffect(() => { localStorage.setItem(STORAGE_KEY, JSON.stringify(events)); }, [events]);
+  useEffect(() => { persistEvents(events); }, [events]);
   useEffect(() => { installInspectorBridge(); }, []);
   const transitionTo = (applyRoute) => {
     const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;

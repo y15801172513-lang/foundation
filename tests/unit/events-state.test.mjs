@@ -1,6 +1,19 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {addEvent, changeEventStatus, cloneInitialEvents, currentReturnTarget, detailTarget, eventReturnTarget, sanitizeReturnTarget} from '../../examples/foundation-events/src/event-state.mjs';
+import {addEvent, changeEventStatus, cloneInitialEvents, currentReturnTarget, detailTarget, eventReturnTarget, sanitizeReturnTarget, persistEvents, STORAGE_KEY} from '../../examples/foundation-events/src/event-state.mjs';
+
+test('opaque preview storage denial retains memory state without weakening the sandbox', () => {
+  const events = cloneInitialEvents();
+  const before = structuredClone(events);
+  const denied = () => { throw new DOMException('sandbox storage denied', 'SecurityError'); };
+  assert.equal(persistEvents(events, denied), false);
+  assert.equal(persistEvents(events, () => ({setItem: denied})), false);
+  assert.deepEqual(events, before);
+  const writes = [];
+  assert.equal(persistEvents(events, () => ({setItem: (...args) => writes.push(args)})), true);
+  assert.deepEqual(writes, [[STORAGE_KEY, JSON.stringify(events)]]);
+  assert.throws(() => persistEvents(events, () => { throw new Error('unexpected failure'); }), /unexpected failure/);
+});
 
 test('事件状态机保持唯一重要当前事件，并支持归档、删除、恢复和新增', () => {
   const initial = cloneInitialEvents();

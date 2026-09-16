@@ -1,4 +1,14 @@
 export const STORAGE_KEY = 'foundation-events-demo-v1';
+// Opaque sandbox previews retain state in memory; they must not gain storage access.
+export function persistEvents(events, getStorage = () => globalThis.localStorage) {
+  try {
+    getStorage().setItem(STORAGE_KEY, JSON.stringify(events));
+    return true;
+  } catch (error) {
+    if (error?.name === 'SecurityError') return false;
+    throw error;
+  }
+}
 export const MANAGE_TABS = ['current', 'archived', 'deleted'];
 export const ALLOWED_RETURN_TARGETS = new Set(['/events', ...MANAGE_TABS.map((tab) => `/events/manage?tab=${tab}`)]);
 

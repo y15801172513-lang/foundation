@@ -3,7 +3,7 @@ import path from 'node:path';
 import {plainPath} from './acquire.mjs';
 
 // A client of the existing installed manager, never a confirmation authority.
-export function installedClient(root,env) {
+export function installedClient(root,env,journeyControl=null) {
   root=plainPath(root);
   const launcher=plainPath(path.join(root,'bin/foundation-kit'));
   const call=args=>{
@@ -11,22 +11,19 @@ export function installedClient(root,env) {
     if(r.status!==0){const e=Error('已安装入口检查失败；保留已核实结果，不自动重放');e.code='INSTALLED_COMMAND_FAILED';e.command=args.slice(0,2);e.exitCode=r.status;throw e;}
     return JSON.parse(r.stdout);
   };
-  return {root,launcher,call,env};
+  return {root,launcher,call,env,journeyControl};
 }
 
 export async function observePlan(client,requested,onChange) {
   if(!/^foundation-plan-[a-f0-9]{64}$/.test(requested.planRef))throw Error('计划标识无效');
-  const child=spawn(client.launcher,['manager','open-manager','--plan-ref',requested.planRef],{env:client.env,stdio:['ignore','pipe','pipe']});
+  const child=spawn(client.launcher,['manager','open-manager','--plan-ref',requested.planRef,...(client.journeyControl?['--journey-channel']:[])],{env:client.env,stdio:['ignore','pipe','pipe',...(client.journeyControl?['ipc']:[])]});
+  client.journeyControl?.attach(child);
   let pending='',json='',finished=false;
   return new Promise((resolve,reject)=>{
     const stop=()=>child.kill('SIGTERM');
     const finish=(error,value)=>{if(finished)return;finished=true;clearTimeout(timer);process.off('SIGINT',stop);process.off('SIGTERM',stop);
-      if(error||value?.responseFinished===true)child.kill('SIGTERM');
-      else { // Older managers report results before HTTP flush. Leave their
-        // existing bounded page lifetime intact rather than aborting the reply.
-        child.stdout.destroy();child.stderr.destroy();child.unref();
-        onChange({state:value.state,temporaryManager:{pid:child.pid,expiresAt:requested.expiresAt,reason:'old-manager-response-flush-unavailable'}});
-      }
+      if(!error&&value?.responseFinished!==true)error=Error('当前引擎未核实确认响应结束；保留结果，不降级到旧页面');
+      child.kill('SIGTERM');
       error?reject(error):resolve(value);
     };
     const timer=setTimeout(()=>finish(Error('确认等待到期；保留同次计划记录')),Math.max(1,Math.min(16*60*1000,requested.expiresAt-Date.now()+1000)));
@@ -44,6 +41,7 @@ export async function observePlan(client,requested,onChange) {
         if(!json&&!line.trim().startsWith('{'))continue;
         json+=line+'\n';let event;try{event=JSON.parse(json);}catch{continue;}json='';
         if(event.planRef!==requested.planRef)continue;
+        client.journeyControl?.observe(child,event).catch(error=>finish(error));
         if(event.status==='AWAITING_FOUNDATION_UI_CONFIRMATION'){
           const url=new URL(event.url);if(url.protocol!=='http:'||url.hostname!=='127.0.0.1'||url.username||url.password)return finish(Error('确认网址无效'));
           onChange({state:'pending',confirmationUrl:url.href,sessionId:event.sessionId});

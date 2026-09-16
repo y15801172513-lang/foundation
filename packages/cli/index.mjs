@@ -28,6 +28,7 @@ import {
   verify,
 } from '@foundation/core';
 import {createLocalLifecycleManagerServerForPlanRef, createInstalledOverviewServer} from '../core/lifecycle-manager-host.mjs';
+import {receiveJourneyTransport} from '../core/journey-transport.mjs';
 import {isLaunchedCandidate, discoverLaunchedCandidateRoot, runFirstInstallBootstrap, runFirstInstallDestinationSelection, readFirstInstallOperationStatus} from '../core/first-install-bootstrap.mjs';
 import {inspectConversationalInstall} from '../core/conversational-install.mjs';
 import {listenManagementCenter} from '@foundation/management-center';
@@ -195,6 +196,7 @@ export function runCli(args = process.argv.slice(2), output = console) {
   const command = args[0];
   if (command === 'rules') return output.log(JSON.stringify(readCurrentFoundationRules({installationRoot: option(args, '--root'), project: option(args, '--project')}), null, 2));
   if (command === '--help') output.log(conversationHelp());
+  if (command === '--help') output.log('单页内部通道：--journey-channel（仅 install 或 manager open-manager；需要私有 IPC 绑定，不提供确认命令）');
   if (command === 'workbench') {
     const server = createInstalledWorkbenchServer({installationRoot: option(args, '--root'), project: option(args, '--project')});
     server.on('error', error => { output.error(`错误：工作台启动失败（${error.code || error.message}）`); process.exitCode = 1; });
@@ -240,5 +242,5 @@ export function runCli(args = process.argv.slice(2), output = console) {
 
 const invokedPath = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : '';
 if (import.meta.url === invokedPath || fileURLToPath(import.meta.url) === path.resolve(process.argv[1] || '')) {
-  try { runCli(); } catch (error) { console.error(error?.toJSON ? JSON.stringify(error.toJSON(), null, 2) : `错误：${error.message}`); process.exitCode = 1; }
+  try { if(process.argv.includes('--journey-channel')) await receiveJourneyTransport(); runCli(); } catch (error) { console.error(error?.toJSON ? JSON.stringify(error.toJSON(), null, 2) : `错误：${error.message}`); process.exitCode = 1; }
 }

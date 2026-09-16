@@ -17,17 +17,17 @@ export function matchesUninstallResult(receipt,payload,installId) {
 }
 
 // Only coordinates the installed exact-plan API. Every mutation waits for its
-// own manager confirmation. Even the first update uses the OLD stable launcher.
-export async function followMaintenance({operation,kind,candidate,env,onChange}) {
+// own manager confirmation, executed by the current owned stable launcher.
+export async function followMaintenance({operation,kind,candidate,env,onChange,journeyControl=null}) {
   if(!['update','uninstall'].includes(kind))throw Error('维护类型无效');
-  const client=installedClient(operation.installationRoot,env),{root,call}=client;
+  const client=installedClient(operation.installationRoot,env,journeyControl),{root,call}=client;
   const before=call(['manager','inspect','--root',root]),current=before.installation?.current;
   if(!current?.identity?.installId||before.bridge?.currentVersion!==current.version)throw Error('当前安装无法核实');
   if(kind==='update'&&(!candidate||candidate.version===current.version))throw Error('目标版本无效或已经安装；不重复更新或解除 Skill');
   const manifest=plainPath(path.join(root,current.appPath,'artifacts/skills/ai-product-foundation-kit/capability.json'));
   if(!manifest.startsWith(root+path.sep))throw Error('当前材料路径越界');
-  // On 0.2.10 inspect has no codexSkill field. File presence only requests an
-  // ownership-checked plan; the old engine validates its signed receipt/files.
+  // File presence only requests an ownership-checked plan; the running engine
+  // validates its receipt and files. It does not authorize removal.
   const registration=plainPath(path.join(root,'state/codex-skill-registration.json'));
   const hadSkill=fs.existsSync(registration);
   let previousPlanRef=null;
@@ -72,6 +72,6 @@ const event=await observePlan(client,requested,observation=>onChange({phase:obse
   }
   const after=call(['manager','inspect','--root',root]).installation?.current;
   if(after?.identity?.installId!==current.identity.installId||after.version!==candidate.version||after.candidateHash!==candidate.manifestHash||payload.stableLauncherHealth!=='passed')throw Error('更新后的稳定入口身份或健康待核实');
-  if(hadSkill)return followSelectedSkill({operation:{...operation,kind:'update',installationRoot:root,programState:'completed',sessionId:null,previousPlanRef,journeyContext:{id:operation.operationId,skillChoice:'selected'}},env,onChange});
+  if(hadSkill)return followSelectedSkill({operation:{...operation,kind:'update',installationRoot:root,programState:'completed',sessionId:null,previousPlanRef,journeyContext:{id:operation.operationId,skillChoice:'selected'}},env,onChange,journeyControl});
   return {state:'completed',terminal:true,phase:'finished',skillRegistered:false,next:'更新及稳定入口健康核验完成；未新增 Skill，项目与用户数据按计划保留。'};
 }

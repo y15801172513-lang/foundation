@@ -11,8 +11,9 @@ import {applyOfferPreferencePlan} from './offer-consent.mjs';
 import {runWithLocalManagerConfirmation} from './manager-confirmation.mjs';
 import {createPendingLocalManagerSession, inspectLocalLifecycle, replaceDriftedLocalManagerPreviewForInternalHost, resolveLocalManagerPlanRefForInternalHost, revalidateLocalManagerPlan, writeLocalManagerSession} from './lifecycle-manager.mjs';
 import {transferBootstrapAuthorityToInstalledState} from './trusted-authority.mjs';
-import {renderLifecyclePage} from './lifecycle-feedback.mjs';
+import {renderLifecyclePage, lifecycleFeedback} from './lifecycle-feedback.mjs';
 import {visibleLocalManagerSession} from './lifecycle-manager.mjs';
+import {currentJourneyTransport, isJourneyRequest} from './journey-transport.mjs';
 
 const MAX_BOOTSTRAP_TERMINAL_RECORDS = 32;
 
@@ -94,6 +95,7 @@ function dispatch(plan, action, stateRoot) {
 }
 
 function serverForRecord({plan, stateRoot, record, planRef = null}) {
+  const journeyTransport = currentJourneyTransport();
   let activePlan = plan;
   let activeRecord = record;
   let activePlanRef = planRef;
@@ -117,6 +119,10 @@ function serverForRecord({plan, stateRoot, record, planRef = null}) {
   };
   const server = http.createServer((request, response) => {
     const expectedOrigin = managerOrigin || `http://127.0.0.1:${server.address()?.port}`;
+    if (request.method === 'GET' && request.url === '/__foundation/manager/view') {
+      if (!isJourneyRequest(request, journeyTransport)) return send(response,403,{code:'JOURNEY_BINDING_REJECTED'});
+      return send(response,200,{session:visibleLocalManagerSession(activeRecord.session),feedback:lifecycleFeedback(visibleLocalManagerSession(activeRecord.session)),managerNonce,planRef:activePlanRef,operationId:journeyTransport.operationId,action:['normal-uninstall-project-detach','normal-uninstall'].includes(activePlan.operation)&&activePlan.residuals?.length?'continue-accessible-with-residuals':'confirm-exact-operation'});
+    }
     if (request.method === 'GET' && request.url === '/') return send(response, 200, page(activeRecord, managerNonce, activePlanRef), 'text/html; charset=utf-8');
     // Read-only events from the same durable session; no worker, queue or new state.
     if (request.method === 'GET' && request.url?.split('?')[0] === '/__foundation/manager/events') {
@@ -142,13 +148,14 @@ function serverForRecord({plan, stateRoot, record, planRef = null}) {
       return send(response, record ? 200 : 404, record ? visibleLocalManagerSession(record.session) : {state:'not-found', sessionId:requestedId, mutationPerformed:false});
     }
     if (request.method !== 'POST' || request.url !== '/__foundation/manager/confirm') return send(response, 404, {code: 'MANAGER_ROUTE_NOT_FOUND'});
-    if (request.headers.origin !== expectedOrigin) return send(response, 403, {code: 'MANAGER_ORIGIN_REJECTED'});
+    if (journeyTransport ? !isJourneyRequest(request,journeyTransport) : request.headers.origin !== expectedOrigin) return send(response, 403, {code: 'MANAGER_ORIGIN_REJECTED'});
     const chunks = [];
     request.on('data', (chunk) => chunks.push(chunk));
     request.on('end', async () => {
       let body;
       try { body = JSON.parse(Buffer.concat(chunks).toString('utf8')); }
       catch { return send(response, 400, {code: 'MANAGER_REQUEST_INVALID'}); }
+      if (journeyTransport && (body.operationId!==journeyTransport.operationId || body.sessionId!==activeRecord.session.sessionId || body.planHash!==activeRecord.session.planHash)) return send(response,409,{code:'JOURNEY_PLAN_BINDING_MISMATCH'});
       const expectedAction = ['normal-uninstall-project-detach', 'normal-uninstall'].includes(activePlan.operation) && activePlan.residuals?.length ? 'continue-accessible-with-residuals' : 'confirm-exact-operation';
       const allowedActions = new Set(['cancel-no-change', expectedAction]);
       if (body.managerNonce !== managerNonce || !allowedActions.has(body.action)) return send(response, 403, {code: 'MANAGER_CONFIRMATION_ACTION_INVALID'});

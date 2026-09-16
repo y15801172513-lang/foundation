@@ -8,6 +8,7 @@ import {validateCandidate} from './candidate-package.mjs';
 import {FOUNDATION_RELEASE_POLICY} from './release-catalog.mjs';
 import {canonicalStringify, createLifecyclePlan, LifecycleError, sha256} from './install-contract.mjs';
 import {createLocalLifecycleManagerServer} from './lifecycle-manager-host.mjs';
+import {currentJourneyTransport, isJourneyRequest} from './journey-transport.mjs';
 import {probeDiskAvailableBytes} from './platform-bootstrap.mjs';
 import {resolveFoundationPlatformPaths} from './platform-paths.mjs';
 import {openFoundationManagerUrl} from './browser-launch.mjs';
@@ -263,6 +264,7 @@ export function routeToInstalledAuthority(paths, output = console) {
 }
 
 export function runFirstInstallDestinationSelection(output = console, {browser = 'codex', journeyId = null} = {}) {
+  const transport = currentJourneyTransport();
   // Selection is only intent. It cannot consume a manager confirmation or apply.
   const candidateRoot = discoverLaunchedCandidateRoot();
   const checked = validateCandidate(candidateRoot, {platform: process.platform, arch: process.arch, requireRuntime: true});
@@ -288,12 +290,16 @@ export function runFirstInstallDestinationSelection(output = console, {browser =
   };
   const server = http.createServer(async (req, res) => {
     if (req.headers.host !== new URL(origin).host || !['127.0.0.1','::ffff:127.0.0.1'].includes(req.socket.remoteAddress)) return send(res,403,{message:'仅接受本机原始地址'});
+    if (req.method==='GET' && req.url==='/__foundation/install/view') {
+      if(!isJourneyRequest(req,transport))return send(res,403,{message:'单页通道身份不符'});
+      return send(res,200,{selectionId,nonce,expiresAt,suggestion,version:checked.manifest.productVersion,acquisitionRoot:path.dirname(candidateRoot),bootstrapStateRoot:paths.bootstrapStateRoot,operationId:transport.operationId});
+    }
     if (req.method === 'GET' && req.url === '/') {
       if (nextUrl) {res.writeHead(303,{location:nextUrl,'cache-control':'no-store'});res.end();return;}
       return send(res,200,renderInstallDestinationPage({version:checked.manifest.productVersion,suggestion,acquisitionRoot:path.dirname(candidateRoot),bootstrapStateRoot:paths.bootstrapStateRoot,nonce,expiresAt,journeyContext}),true);
     }
     if (req.method !== 'POST' || req.url !== '/__foundation/install/selection') return send(res,404,{message:'页面不存在'});
-    if (req.headers.origin !== origin || req.headers['content-type'] !== 'application/json') return send(res,403,{message:'请求来源不符'});
+    if ((transport?!isJourneyRequest(req,transport):req.headers.origin !== origin) || req.headers['content-type'] !== 'application/json') return send(res,403,{message:'请求来源不符'});
     if (phase !== 'waiting' || Date.now() >= expiresAt) return send(res,409,{message:'选择已处理或过期；请查看原对话，不重复执行'});
     let size=0, body='';
     try {

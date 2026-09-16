@@ -1,6 +1,7 @@
 import http from 'node:http';
 import crypto from 'node:crypto';
 import {journeyView} from './journey-view.mjs';
+import {singlePageDocument} from './single-page-view.mjs';
 
 export function downloadText(download) {
   if(!download||!Number.isFinite(download.downloadedBytes)||download.downloadedBytes<0)return '';
@@ -39,19 +40,32 @@ export function acquisitionProgress(record) {
 
 // A bounded, read-only loopback view over the existing in-memory operation.
 // No POST, launch endpoint, confirmation authority or downloaded executable.
-export async function startProgressPage(readRecord) {
+export async function startProgressPage(readRecord, {control = null} = {}) {
   const token=crypto.randomBytes(24).toString('hex'),base=`/${token}`,clients=new Set();
   const html=`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Foundation 获取与安装进度</title><style>body{font:16px/1.6 system-ui;max-width:760px;margin:24px auto;padding:0 20px;color:#18181b;background:#fafafa;overflow-wrap:anywhere}section{background:white;border:1px solid #e4e4e7;border-radius:12px;padding:16px;margin:16px 0}h1{font-size:24px}h2{font-size:18px}a{display:inline-block;padding:12px;border:1px solid #71717a;border-radius:8px;color:inherit}pre{white-space:pre-wrap}a:focus-visible,summary:focus-visible{outline:3px solid #2563eb}[hidden]{display:none}.steps{display:flex;flex-wrap:wrap;gap:8px}.steps p{margin:0;background:#f4f4f5;padding:6px 10px;border-radius:6px;font-size:13px}header{font-size:14px;font-weight:600}#continue{background:#18181b;color:white;font-weight:600;text-decoration:none}#target{overflow-wrap:anywhere}@media(max-width:480px){body{padding:0 16px}.steps p{flex:1 1 110px}}</style><body><header>Foundation</header><h1>正在准备 Foundation</h1><section role="status" aria-live="polite"><h2 id="phase">正在读取同次操作</h2><div id="journey-steps" class="steps"></div><p id="journey-summary"></p><p id="version"></p><p id="download"></p><p id="target"></p><p id="program"></p><p id="skill"></p><p id="project"></p><p id="next"></p><a id="continue" hidden>继续到目录选择 / 本人确认页</a><p id="connection"></p></section><p>此页面只读，不批准安装；程序、对话能力与项目分别确认。未知长度不显示百分比。临时服务结束后，可从原对话读取保留的操作结果。</p><details><summary>操作与恢复详情</summary><pre id="raw"></pre></details><script>const downloadText=${downloadText.toString()};let last=null;function show(p){last=p;document.querySelector('h1').textContent=p.journey.title;document.getElementById('journey-summary').textContent=p.journey.summary;const steps=document.getElementById('journey-steps');steps.replaceChildren();for(const step of p.journey.steps){const line=document.createElement('p');line.textContent=step.title+'：'+step.label;steps.append(line);}for(const key of ['phase','program','skill','project','next'])document.getElementById(key).textContent=p[key]||'';document.getElementById('download').textContent=downloadText(p.download);document.getElementById('version').textContent=p.version?'版本：'+p.version:'';document.getElementById('target').textContent=p.installationRoot?'程序目录：'+p.installationRoot:'';const link=document.getElementById('continue');link.hidden=!p.nextUrl;link.textContent=p.nextLabel;if(p.nextUrl)link.href=p.nextUrl;document.getElementById('raw').textContent=JSON.stringify(p,null,2);}const events=new EventSource(location.pathname+'/events');events.onmessage=e=>show(JSON.parse(e.data));events.onerror=()=>{events.close();document.getElementById('connection').textContent=last&&last.terminal?'临时进度服务已结束，上方保留最后收到的结果。':'连接已中断，当前状态待核实；不自动重试安装。'};window.addEventListener('pagehide',()=>events.close(),{once:true});</script></body></html>`;
   let origin;
+  let terminalObserved=false,terminalRead=null;
   const current=()=>JSON.stringify(acquisitionProgress(readRecord()));
-  const server=http.createServer((req,res)=>{
-    if(req.method!=='GET'||req.headers.host!==origin||req.headers.origin&&req.headers.origin!==`http://${origin}`){res.writeHead(403).end();return;}
+  const server=http.createServer(async(req,res)=>{
+    if(req.headers.host!==origin||req.headers.origin&&req.headers.origin!==`http://${origin}`){res.writeHead(403).end();return;}
+    if(control&&req.method==='GET'&&req.url===base+'/state'){const record=readRecord();if(record.terminal)res.once('finish',()=>{terminalObserved=true;terminalRead?.();});res.writeHead(200,{'content-type':'application/json','cache-control':'no-store'}).end(JSON.stringify({record,progress:acquisitionProgress(record),view:control.view()}));return;}
+    if(control&&req.method==='POST'&&req.url===base+'/action'){
+      if(req.headers.origin!==`http://${origin}`||req.headers['content-type']!=='application/json'){res.writeHead(403).end();return;}
+      try{let body='',size=0;for await(const chunk of req){size+=chunk.length;if(size>16384)throw Error('请求过大');body+=chunk;}const input=JSON.parse(body);if(input.csrf!==token)throw Error('页面确认身份不符');const result=await control.submit(input);res.writeHead(result.status,{'content-type':'application/json','cache-control':'no-store'}).end(JSON.stringify(result.body));}catch(error){res.writeHead(409,{'content-type':'application/json','cache-control':'no-store'}).end(JSON.stringify({message:error.message}));}return;
+    }
+    if(req.method!=='GET'){res.writeHead(403).end();return;}
     const headers={'cache-control':'no-store','x-content-type-options':'nosniff','content-security-policy':"default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'"};
-    if(req.url===base){res.writeHead(200,{...headers,'content-type':'text/html; charset=utf-8'}).end(html);}
+    if(req.url===base){res.writeHead(200,{...headers,'content-type':'text/html; charset=utf-8'}).end(control?singlePageDocument(token):html);}
     else if(req.url===base+'/events'){res.writeHead(200,{...headers,'content-type':'text/event-stream'});res.write(`data: ${current()}\n\n`);clients.add(res);req.on('close',()=>clients.delete(res));}
     else{res.writeHead(404).end();}
   });
   await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve);});
   origin=`127.0.0.1:${server.address().port}`;
-  return {url:`http://${origin}${base}`,publish(){for(const res of clients)res.write(`data: ${current()}\n\n`);},close(){for(const res of clients)res.end();clients.clear();return new Promise(resolve=>server.close(resolve));}};
+  control?.setOrigin(`http://${origin}`);
+  return {url:`http://${origin}${base}`,publish(){for(const res of clients)res.write(`data: ${current()}\n\n`);},async close(){
+    // Allow the same page to receive the terminal snapshot before this bounded
+    // service exits. No polling or page acknowledgement authorizes a mutation.
+    if(control&&readRecord().terminal&&!terminalObserved)await new Promise(resolve=>{const timer=setTimeout(resolve,15000);terminalRead=()=>{clearTimeout(timer);resolve();};});
+    for(const res of clients)res.end();clients.clear();return new Promise(resolve=>server.close(resolve));
+  }};
 }

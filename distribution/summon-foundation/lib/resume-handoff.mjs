@@ -3,7 +3,7 @@ import {installedClient} from './manager-step.mjs';
 import {followSelectedSkill} from './skill-handoff.mjs';
 
 // Explicit user-requested recovery, never an automatic replay of approval.
-export async function resumeSkillHandoff({file,env,onChange}) {
+export async function resumeSkillHandoff({file,env,onChange,journeyControl=null}) {
   const previous=readOperation(file);
   if(previous.pid&&previous.pid!==process.pid){
     try{process.kill(previous.pid,0);throw Error('原进程仍存在，先在原任务查询；不并发恢复');}
@@ -20,5 +20,5 @@ export async function resumeSkillHandoff({file,env,onChange}) {
   }
   const operation={...previous,pid:process.pid,state:'awaiting-skill',terminal:false};
   onChange(operation);
-  return followSelectedSkill({operation,env,onChange});
+  return followSelectedSkill({operation,env,onChange,journeyControl});
 }
