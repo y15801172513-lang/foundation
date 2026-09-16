@@ -10,7 +10,7 @@ Foundation 是一个本地工作台：把项目已记录的页面、组件、关
 
 *真实工作台截图，使用仓库内的 foundation-events 隔离示例；不是用户项目，也不是概念图。*
 
-正在实现单页安装、更新与卸载；程序成功与 Skill 接入分别核验，失败保留结果。新版尚未发布，旧版支持状态见[现行支持策略](docs/install-platform-024.md#现行支持策略)。
+单页安装、更新与卸载试用版已发布；程序成功与 Skill 接入分别核验，失败保留结果。真人试用仍待验收，旧版支持状态见[现行支持策略](docs/install-platform-024.md#现行支持策略)。
 
 ## 你是不是也遇到这些问题
 
@@ -25,11 +25,17 @@ Foundation 是一个本地工作台：把项目已记录的页面、组件、关
 
 ## 用 Codex 安装
 
-**新版单页入口尚未发布，当前没有推荐试用命令。** 正式发布并核验后，此处会提供可直接粘贴到新 Codex 对话的短入口。旧 npm 命令已退出推荐，不需要先安装旧版再迁移。
+在有安装权限、且不属于 Foundation 源码目录的新 Codex 对话中粘贴：
+
+```text
+npx --yes --package @josephyulei/summon-foundation@0.1.6 summon foundation --version 0.2.12
+```
+
+这是固定版本的单页试用入口，不是静默安装。目录选择、程序与所选 Skill 的独立确认都在首次打开的页面继续；不需要先安装旧版再迁移。
 
 当前支持 **macOS Apple Silicon（arm64）**，获取入口需要 **Node.js 22.9+ 与 npm**，以及可用网络、本地命令和浏览器工具。不需要 clone 项目，也不需要自己下载、解包或填写校验参数。缺少依赖或写入权限时先解决前置条件，不会自动全局安装工具。
 
-已发布的 [v0.2.11](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.11) 仅保留历史身份，不代表新版已上线。默认使用 Codex 内置浏览器，系统浏览器仅在告知并同意后备用；新对话持续等待与主动告知仍须真人验收。准备状态见[安装说明](docs/install-with-codex.md)。
+当前试用版是 [v0.2.12](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.12)，配套 [npm 0.1.6](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.6)。默认使用 Codex 内置浏览器，系统浏览器仅在告知并同意后备用；新对话持续等待与主动告知仍须真人验收。完整流程见[安装说明](docs/install-with-codex.md)。
 
 ### 接下来会发生什么
 

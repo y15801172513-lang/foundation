@@ -2,8 +2,8 @@
   "schemaVersion": "2.0.0",
   "exportContractSchemaVersion": "2.0.0",
   "exportContractSha256": "6f6ba11d5caa273a3317431ced805afb236fb1d13cec6ac011128020fba5ea9a",
-  "sourceCommit": "29d5dab5a6c02736adbaeb8a15741d4e523ad03d",
-  "approvedSourceCommit": "29d5dab5a6c02736adbaeb8a15741d4e523ad03d",
+  "sourceCommit": "699add7876965d0fd08174c5f23a2a644f634866",
+  "approvedSourceCommit": "699add7876965d0fd08174c5f23a2a644f634866",
   "sourceState": "clean-exact-commit-approved",
   "productVersion": "0.2.12",
   "licenseStatus": "approved",
@@ -14,17 +14,17 @@
   "publicationEligible": true,
   "commitBinding": {
     "schemaVersion": "2.0.0",
-    "approvedCommit": "29d5dab5a6c02736adbaeb8a15741d4e523ad03d",
-    "gitTree": "59369e240f933e0a9ca9039b1ffeb5d1a5b2b87f",
+    "approvedCommit": "699add7876965d0fd08174c5f23a2a644f634866",
+    "gitTree": "02f462ae496abc00cc6e7ace3bb7e7b43fcb8e21",
     "contractSha256": "6f6ba11d5caa273a3317431ced805afb236fb1d13cec6ac011128020fba5ea9a",
-    "expectedTreeHash": "23ceb8dfa061128c049ff97aa74a7a8339e4f29ae190882df91aeed1e1552c76",
+    "expectedTreeHash": "a33a98049668a6aabad0b5d98e47d10d44c917ceab1a9784d170cadd1ec53421",
     "fileCount": 374
   },
   "fileCount": 376,
   "privateExportedCount": 374,
   "generatedPublicCount": 2,
-  "treeHash": "23ceb8dfa061128c049ff97aa74a7a8339e4f29ae190882df91aeed1e1552c76",
-  "inventoryHash": "4df8441aad33ae451a234a3f3d94cb04f63183576940af6a9cd50d7b773fda21",
+  "treeHash": "a33a98049668a6aabad0b5d98e47d10d44c917ceab1a9784d170cadd1ec53421",
+  "inventoryHash": "34f9827951ee890f19f6a0be8d658a8aaaf6748ea77168f5ed84690e7c40f12c",
   "files": [
     {
       "path": ".gitignore",
@@ -47,15 +47,15 @@
       "type": "file",
       "mode": 420,
       "bytes": 1082,
-      "sha256": "59afea4393975ffc5196ae6c39b13401e72312b0a0068ec84170d689d5107563",
+      "sha256": "151f1fa6f4aa4e2627b2beebee282bbbd6eaf2108ba77251a58e1611f9ce5038",
       "ownership": "generated-public"
     },
     {
       "path": "README.md",
       "type": "file",
       "mode": 420,
-      "bytes": 7673,
-      "sha256": "c0e2ce32d7a946e997868140361f476b448c59cf1d71a813d1f2399b8d66cc24",
+      "bytes": 7885,
+      "sha256": "8a19aecd411faf96c1b6223b3fe9ba219a2228a19c33e593204ad68a40b68cf2",
       "ownership": "private-exported"
     },
     {
@@ -742,8 +742,8 @@
       "path": "docs/cli-reference.md",
       "type": "file",
       "mode": 420,
-      "bytes": 12978,
-      "sha256": "664bb36c0c0453b54f9281c740460f1f9aa6e3daaed09f3242b6db9413dfc40c",
+      "bytes": 13142,
+      "sha256": "657c378721e9764367995b6e3cc49ca12c3173aae4a7ee3493787fbad3346fe4",
       "ownership": "private-exported"
     },
     {
@@ -774,8 +774,8 @@
       "path": "docs/current-status.md",
       "type": "file",
       "mode": 420,
-      "bytes": 9621,
-      "sha256": "984eb6ffd4b3e93a024636e7b4b4073cd4e7e25a5b9e71ec9d1f526e5f80be8b",
+      "bytes": 10559,
+      "sha256": "29df890c7038ad790c4788c6cfccd6ea1cef27f95002c6491d93395acf41df64",
       "ownership": "private-exported"
     },
     {
@@ -814,16 +814,16 @@
       "path": "docs/install-platform-024.md",
       "type": "file",
       "mode": 420,
-      "bytes": 9140,
-      "sha256": "c496d6bcf2f2d788f3e1fe01b3af19f0894d6514269057eb00d29288529d8432",
+      "bytes": 9136,
+      "sha256": "23ac68ca1a68adc9e77ea09181b136f78f44fe5b464e3314aad687925d8eb042",
       "ownership": "private-exported"
     },
     {
       "path": "docs/install-with-codex.md",
       "type": "file",
       "mode": 420,
-      "bytes": 18009,
-      "sha256": "269d9c8bdd92ffd95da22873e0049f19b9a25e9b4f4603fd989d3de01b5fa296",
+      "bytes": 17971,
+      "sha256": "b153dc61944b4a7caa92cd9b472630208eb10c57ac355d8bd5791da515ba0174",
       "ownership": "private-exported"
     },
     {
@@ -838,8 +838,8 @@
       "path": "docs/verification-baseline.md",
       "type": "file",
       "mode": 420,
-      "bytes": 6681,
-      "sha256": "9bd8409b7221c7670001ee8528009bb0a433c6cd990e29ead7bf48350812c7e4",
+      "bytes": 8105,
+      "sha256": "f98a6424a8c0cedcacf91d97899ef11769f6f6b930a8e8a369cc32bcc4e8c764",
       "ownership": "private-exported"
     },
     {

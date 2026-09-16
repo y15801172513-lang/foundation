@@ -1,5 +1,11 @@
 # Verification baseline
 
+## 0.2.12 single-page trial verification (2026-09-16)
+
+Private source `29d5dab5a6c02736adbaeb8a15741d4e523ad03d` maps to independent public source `9d95753568f6445e66f39f4cce0bdf74599fad1a` and immutable [v0.2.12](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.12). The launcher is npm 0.1.6. Two clean builds matched; the final archive, official runtime, entry script and module boundaries were verified. Final-payload entry tests passed 12/12, direct regressions 25/25, and acquisition fixtures 2/2. Isolated selected/no-Skill update and uninstall, Skill refresh, cleanup and modified-file protection passed. Transport fixtures and engineering confirmations are not human acceptance.
+
+The earlier public full suite passed 394 tests with 8 skips. Production bytes were independently compared; only generated provenance/inventory differ, while the corrected integration driver was rerun as its complete final-payload combination. This is historical full-suite reuse, not a claim of a new full-suite execution. Original failures remain in private evidence. GitHub release and each asset proof were checked independently. Reference-image parity and some historical browser observations remain unverified and are explicitly reserved for trial feedback; fresh Codex discovery, human confirmation and unsolicited final replies remain pending. Documentation updates do not alter the immutable runtime binding.
+
 ## 0.2.11 release verification (2026-09-15)
 
 Private source `2f247a333a2f42f5b640f98469b5058b6eea8761` maps to independent public source `ede0dd48296f7498f77d733996c663f55663721c` and [v0.2.11](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.11). The thin launcher is 0.1.5. Clean rebuilds are identical; targeted source checks, final payload entry, Skill continuation, normal/no-Skill/modified-Skill update and owned uninstall checks passed in contained engineering fixtures. Transport/proof fixtures are not anonymous release acceptance; release bytes/proofs and online acquisition are independently checked during publication. Fresh Codex discovery and human confirmation remain separate acceptance gates. Documentation commits do not alter the immutable runtime binding.
