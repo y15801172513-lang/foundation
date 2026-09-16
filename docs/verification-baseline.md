@@ -1,5 +1,13 @@
 # Verification baseline
 
+## 0.2.14 clean-source release verification (2026-09-16)
+
+Private source `35aefe539a272b1822bee5f26ac384cefc18ee43` maps to independent public runtime source `43de085238409851a3ed4b0e3f4bd3a8bea6e440` and immutable [v0.2.14](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.14). The launcher is npm 0.1.8; bundled Skill is 0.2.5. Private and public builds each completed twice without tracked differences. Formal paired export, archive member bytes/modes, official runtime and production module boundaries were verified.
+
+The full source suite passed 443 tests with 9 skips and no failures; final-payload entry tests passed 12/12 and commit-bound acquisition fixtures 2/2. The packed installation, project-use, engineering update and uninstall combination passed after correcting a test-only target-selection condition and rerunning the complete failed combination. Original failure evidence was retained; no production confirmation protection was relaxed. Transport/proof mocks and engineering confirmations are not anonymous acquisition or human acceptance.
+
+GitHub release and all three asset proofs were verified, and the published npm package bytes match the frozen tarball. Public readback is bounded to metadata, small entry assets and read-only discovery; no long full-runtime public install rehearsal was resumed. Real installation/update/uninstall, fresh Codex Skill discovery, proactive conversation follow-through and historical unclosed visual gates remain separate pending acceptance. Documentation commits do not change the runtime source binding.
+
 ## 0.2.12 single-page trial verification (2026-09-16)
 
 Private source `29d5dab5a6c02736adbaeb8a15741d4e523ad03d` maps to independent public source `9d95753568f6445e66f39f4cce0bdf74599fad1a` and immutable [v0.2.12](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.12). The launcher is npm 0.1.6. Two clean builds matched; the final archive, official runtime, entry script and module boundaries were verified. Final-payload entry tests passed 12/12, direct regressions 25/25, and acquisition fixtures 2/2. Isolated selected/no-Skill update and uninstall, Skill refresh, cleanup and modified-file protection passed. Transport fixtures and engineering confirmations are not human acceptance.
