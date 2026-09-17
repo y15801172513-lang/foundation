@@ -1,5 +1,13 @@
 # Verification baseline
 
+## 0.2.15 first-install fix verification (2026-09-17)
+
+Private runtime source `07bb192c0f1d188e578e356f3937cbdc2ce0d491` maps to independent public runtime source `eb98b36785d82e834559bcfce5cad10203798a90` and immutable [v0.2.15](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.15). npm is 0.1.9; bundled Skill remains 0.2.5. Both clean source builds were repeated without tracked differences. Candidate inventory, archive members/modes, official runtime, module boundary and acquisition entry checks passed.
+
+The final byte-bound aggregate passed all five required groups: 43 direct tests, 13 entry tests, 2 formal acquisition tests (zero failures/skips), isolated packed install/Skill/update/reopen/uninstall, and injected-health failure/rollback/nonzero-exit/no-Skill verification. Staged health was actually tested without an installed current record or Foundation source ancestor; it grants no installed operation authority. Missing or false success results remain unverified. The complete failed combinations were rerun after correcting test expectations, serial fixture invocation and dependency setup; production checks were not relaxed. This is targeted final-payload verification, not a new full-source-matrix claim.
+
+GitHub release and each asset proof were verified. The anonymously read npm package matches the frozen tarball; an initial registry transport error was retained and its bounded same-source readback passed. Transport/proof fixtures and engineering confirmations are not human acceptance. Online validation is bounded to metadata, small entry assets, npm bytes and read-only discovery; no long full-runtime public installation rehearsal was resumed. Human first installation, new-task Skill discovery and conversation follow-through remain pending. Documentation commits do not change the immutable runtime binding. Older evidence below is historical and does not invalidate the real first-install defect discovered in 0.2.14.
+
 ## 0.2.14 clean-source release verification (2026-09-16)
 
 Private source `35aefe539a272b1822bee5f26ac384cefc18ee43` maps to independent public runtime source `43de085238409851a3ed4b0e3f4bd3a8bea6e440` and immutable [v0.2.14](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.14). The launcher is npm 0.1.8; bundled Skill is 0.2.5. Private and public builds each completed twice without tracked differences. Formal paired export, archive member bytes/modes, official runtime and production module boundaries were verified.
