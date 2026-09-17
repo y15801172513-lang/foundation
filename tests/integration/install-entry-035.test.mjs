@@ -132,6 +132,9 @@ test('035 real payload: selection, rejection, exact confirmation, install and st
     try{const deadline=Date.now()+15000;while(!opened.includes('"url"')&&reopened.exitCode===null&&Date.now()<deadline)await new Promise(r=>setTimeout(r,50));assert.match(opened,/"url"/,error);const response=await fetch(JSON.parse(opened.trim()).url);assert.equal(response.status,200);fs.writeFileSync(work+'/reopened.html',await response.text());}finally{reopened.kill('SIGTERM');}
     const noInstallCases=[];
     for(const mode of ['cancel','expire','terminate']){
+      const beforeCurrent=fs.readFileSync(destination+'/state/current.json');
+      const skillPath=home+'/.agents/skills/ai-product-foundation-kit';
+      assert.equal(fs.existsSync(skillPath),false);
       const clock=work+'/clock.mjs';
       if(mode==='expire')fs.writeFileSync(clock,`const real=Date.now;let offset=0;Date.now=()=>real()+offset;const later=globalThis.setTimeout;globalThis.setTimeout=(f,n,...a)=>n>590000?later(()=>{offset=n+1;f(...a)},30):later(f,n,...a);`);
       const c=spawn(candidate+'/payload/runtime/bin/node',['--import',work+'/register.mjs',...(mode==='expire'?['--import',clock]:[]),candidate+'/payload/app/packages/cli/index.mjs','install','--choose-destination','--browser','codex'],{cwd:work,env});
@@ -141,7 +144,10 @@ test('035 real payload: selection, rejection, exact confirmation, install and st
         assert.match(out,/AWAITING_FOUNDATION_DIRECTORY_SELECTION/,err);
         if(mode==='cancel'){const first=JSON.parse(out.trim().split('\n')[0]);const html=await(await fetch(first.url)).text();const nonce=html.match(/nonce:"([a-f0-9]{64})"/)[1];const response=await fetch(first.url+'__foundation/install/selection',{method:'POST',headers:{origin:new URL(first.url).origin,'content-type':'application/json'},body:JSON.stringify({nonce,action:'cancel'})});assert.equal(response.status,200);}
         if(mode==='terminate')c.kill('SIGTERM');
-        const exit=await ended;assert.equal(exit.code,0,err);assert.match(out,mode==='cancel'?/cancelled-no-install/:mode==='expire'?/expired-no-install/:/shutdown-no-install/);assert(!out.includes('FOUNDATION_SELECTION_BOUND'));noInstallCases.push({mode,exit,stdout:out,stderr:err,clockSimulated:mode==='expire'});
+        const exit=await ended;assert.equal(exit.code,{cancel:2,expire:3,terminate:1}[mode],err);assert.equal(exit.signal,null);assert.notEqual(c.exitCode,null);
+        assert.match(out,mode==='cancel'?/cancelled-no-install/:mode==='expire'?/expired-no-install/:/shutdown-no-install/);assert(!out.includes('FOUNDATION_SELECTION_BOUND'));assert(!out.includes('AWAITING_FOUNDATION_UI_CONFIRMATION'));
+        assert.deepEqual(fs.readFileSync(destination+'/state/current.json'),beforeCurrent);assert.equal(fs.existsSync(skillPath),false);
+        noInstallCases.push({mode,exit,stdout:out,stderr:err,clockSimulated:mode==='expire',installationChanged:false,skillInstalled:false});
       }finally{if(c.exitCode===null)c.kill('SIGTERM');await ended;}
     }
     invoke(launcher,['--foundation-health']);

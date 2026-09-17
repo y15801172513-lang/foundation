@@ -13,7 +13,7 @@ test('039 uninstall receipt binds full body to live engine result, rejects alter
 });
 
 test('039 selected program success is not whole-flow success before Skill registration', () => {
-  const observed = runtimeObservation({status:'BOOTSTRAP_OPERATION_ENDED',state:'completed',sessionId:'bootstrap-example',installationRoot:'/example/Foundation',journeyContext:{id:'same-flow',skillChoice:'selected'},result:{stableLauncherHealth:'passed'}});
+  const observed = runtimeObservation({status:'BOOTSTRAP_OPERATION_ENDED',state:'completed',sessionId:'bootstrap-example',installationRoot:'/example/Foundation',journeyContext:{id:'same-flow',skillChoice:'selected'},result:{ok:true,stableLauncherHealth:'passed'}});
   assert.equal(observed.terminal,false);
   assert.equal(observed.programState,'completed');
   assert.equal(observed.state,'awaiting-skill');
@@ -24,11 +24,18 @@ test('039 selected program success is not whole-flow success before Skill regist
 });
 
 test('039 explicitly skipped Skill preserves completed program and ends selected flow', () => {
-  const observed = runtimeObservation({status:'BOOTSTRAP_OPERATION_ENDED',state:'completed',sessionId:'bootstrap-example',journeyContext:{id:'same-flow',skillChoice:'skipped'},result:{stableLauncherHealth:'passed'}});
+  const observed = runtimeObservation({status:'BOOTSTRAP_OPERATION_ENDED',state:'completed',sessionId:'bootstrap-example',journeyContext:{id:'same-flow',skillChoice:'skipped'},result:{ok:true,stableLauncherHealth:'passed'}});
   assert.equal(observed.programState,'completed');
   assert.equal(observed.state,'completed');
   assert.equal(observed.terminal,true);
   assert.equal(acquisitionProgress({operationId:'same-flow',...observed}).journey.ended,true);
+});
+
+test('C10 completed alone never proves program success or starts selected Skill',()=>{
+  for(const result of [undefined,{}, {stableLauncherHealth:'passed'}, {ok:false,stableLauncherHealth:'passed'}])for(const skillChoice of ['selected','skipped']){
+    const observed=runtimeObservation({status:'BOOTSTRAP_OPERATION_ENDED',state:'completed',result,journeyContext:{skillChoice}});
+    assert.equal(observed.programState,'verification-required');assert.equal(observed.state,'verification-required');assert.equal(observed.terminal,false);
+  }
 });
 
 test('039 maintenance arguments are exclusive and preserve required explicit targets',()=>{
