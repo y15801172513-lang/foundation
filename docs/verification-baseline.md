@@ -1,8 +1,8 @@
 # Verification baseline
 
-## 0.2.17 / npm 0.1.12 release target
+## 0.2.17 / npm 0.1.12 verified release
 
-Nonempty recovery regression uses native manager writes and preserves nine fact files with two source-bound page records across ten stages. Empty evidence, file-set or byte drift and absent product reads are rejected. Final clean-source six-group release checks and online forward verification are pending this release; engineering fixtures do not establish real installation or host discovery.
+Nonempty recovery regression uses native manager writes and preserves nine fact files with two source-bound page records across ten stages. Empty evidence, file-set or byte drift and absent product reads are rejected. Final clean-source six-group release checks passed (direct 43, entry 13, acquisition 11, update/recovery 17; packed lifecycle and injected health failure also passed, with no skips). Public runtime source `743bec2dee04a80d9d56fd39813dfe9df5163c1b` maps to private source `23c4f645e38d7ff0d8d0a567c6546543ffe18cdc`. GitHub immutable release proofs, all 419 archive members, actual npm tarball, and anonymous acquisition were verified. Post-publication isolated usage is tracked separately; engineering fixtures do not establish real installation or host discovery.
 
 ## npm 0.1.11 acquisition phase correction (2026-09-18)
 

@@ -35,7 +35,7 @@ npx --yes --package @josephyulei/summon-foundation@0.1.12 summon foundation --ve
 
 当前支持 **macOS Apple Silicon（arm64）**，获取入口需要 **Node.js 22.9+ 与 npm**，以及可用网络、本地命令和浏览器工具。不需要 clone 项目，也不需要自己下载、解包或填写校验参数。缺少依赖或写入权限时先解决前置条件，不会自动全局安装工具。
 
-本轮目标试用版是 [v0.2.17](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.17)，配套 [npm 0.1.12](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.12)。默认使用 Codex 内置浏览器，系统浏览器仅在告知并同意后备用；新对话持续等待与主动告知仍须真人验收。完整流程见[安装说明](docs/install-with-codex.md)。
+当前试用版是 [v0.2.17](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.17)，配套 [npm 0.1.12](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.12)。默认使用 Codex 内置浏览器，系统浏览器仅在告知并同意后备用；新对话持续等待与主动告知仍须真人验收。完整流程见[安装说明](docs/install-with-codex.md)。
 
 ### 接下来会发生什么
 
