@@ -1,5 +1,13 @@
 # Verification baseline
 
+## 0.2.16 component reuse and delivery verification (2026-09-18)
+
+Private runtime source `3d4d5e4284f407e2703a125a753c585189421659` maps to public runtime source `f5d307d13b70abb9bb16fc0df2e9a0988081e82a` and immutable [v0.2.16](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.16). npm is 0.1.10; bundled Skill remains 0.2.5. Formal paired exports, clean private/public candidates, all 419 archive members, official Node runtime and actual payload privacy/module checks passed.
+
+The final public payload passed all five lifecycle groups: 43 direct tests, 13 entry tests, 2 acquisition fixtures, isolated packed install/Skill/update/reopen/uninstall, and injected-health failure/rollback/nonzero exit. Targeted unit checks passed 63/63 and public-tree checks 33/33. Actual Chrome verification covered four reuse tasks and 14×2 tab state/detail recovery checks. Test fixture failures were repaired and their complete combinations rerun without relaxing production confirmation. This is targeted verification, not a new full-suite claim.
+
+GitHub release and each asset proof passed; npm registry bytes match the frozen tarball. Anonymous entry script and catalog bytes were compared. No real user installation or long full-runtime public installation rehearsal was performed. Engineering confirmations do not prove human acceptance, fresh-task Skill discovery or proactive conversation follow-through. Documentation commits do not alter the immutable runtime identity.
+
 ## 0.2.15 first-install fix verification (2026-09-17)
 
 Private runtime source `07bb192c0f1d188e578e356f3937cbdc2ce0d491` maps to independent public runtime source `eb98b36785d82e834559bcfce5cad10203798a90` and immutable [v0.2.15](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.15). npm is 0.1.9; bundled Skill remains 0.2.5. Both clean source builds were repeated without tracked differences. Candidate inventory, archive members/modes, official runtime, module boundary and acquisition entry checks passed.

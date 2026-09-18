@@ -2,8 +2,8 @@
   "schemaVersion": "2.0.0",
   "exportContractSchemaVersion": "2.0.0",
   "exportContractSha256": "5e3e157e88bc2a30e3fcec967a9386f7c3883d6bf56ce3482a6ed486bf33c53a",
-  "sourceCommit": "3d4d5e4284f407e2703a125a753c585189421659",
-  "approvedSourceCommit": "3d4d5e4284f407e2703a125a753c585189421659",
+  "sourceCommit": "100f0d132db75eb7fa0177238aaeca8e6f662ac9",
+  "approvedSourceCommit": "100f0d132db75eb7fa0177238aaeca8e6f662ac9",
   "sourceState": "clean-exact-commit-approved",
   "productVersion": "0.2.16",
   "licenseStatus": "approved",
@@ -14,17 +14,17 @@
   "publicationEligible": true,
   "commitBinding": {
     "schemaVersion": "2.0.0",
-    "approvedCommit": "3d4d5e4284f407e2703a125a753c585189421659",
-    "gitTree": "a017ed8a1b7d77d783304b1b0373d7be0c018b57",
+    "approvedCommit": "100f0d132db75eb7fa0177238aaeca8e6f662ac9",
+    "gitTree": "c5eab46d05afb9afcb5346e24c99c01bf515d0f7",
     "contractSha256": "5e3e157e88bc2a30e3fcec967a9386f7c3883d6bf56ce3482a6ed486bf33c53a",
-    "expectedTreeHash": "fc31b45b673214a9e21be79992fa8f0d48cc06eeef8eb42cbd0a712ce2830926",
+    "expectedTreeHash": "69b34c75900da0486fa00f67f585a38496904067e6979db9423e80bf895a4fb0",
     "fileCount": 407
   },
   "fileCount": 409,
   "privateExportedCount": 407,
   "generatedPublicCount": 2,
-  "treeHash": "fc31b45b673214a9e21be79992fa8f0d48cc06eeef8eb42cbd0a712ce2830926",
-  "inventoryHash": "6992b42fb3babff4aac44c3d5b606ad99b705ae97442e6a367c1ba5f8d399560",
+  "treeHash": "69b34c75900da0486fa00f67f585a38496904067e6979db9423e80bf895a4fb0",
+  "inventoryHash": "d5e2c1f333c6a71d3c9d9008e074a5409607c2c2a0683aeb916ffea03c12b275",
   "files": [
     {
       "path": ".gitignore",
@@ -47,15 +47,15 @@
       "type": "file",
       "mode": 420,
       "bytes": 1082,
-      "sha256": "e6538eaf02bd81b61e71cead9d2bfc9a6b264075d20bc381f85056a82524f8ad",
+      "sha256": "1fc483aa68722ced8eb35b1e42809418df7bc70e9c9559f12e10804abeed69c9",
       "ownership": "generated-public"
     },
     {
       "path": "README.md",
       "type": "file",
       "mode": 420,
-      "bytes": 7885,
-      "sha256": "835d3457e2e5e35af39b5847e62c1c3e4c1980955ccd4e5bf2e9305058767d0c",
+      "bytes": 7888,
+      "sha256": "943d1184067d28e7e6b667df2a04cd51609c33d9fecbc28940545cebebe0b3aa",
       "ownership": "private-exported"
     },
     {
@@ -782,8 +782,8 @@
       "path": "docs/cli-reference.md",
       "type": "file",
       "mode": 420,
-      "bytes": 13973,
-      "sha256": "0fd33480c5d0376d307d2d2ab71edaff8a5ed66cf33567e13e28c15d0d5a1af2",
+      "bytes": 14184,
+      "sha256": "ee9a94d00a066cff9032bd42409cbb7e6bc2139a92a4014540cd2cb4e6fc4951",
       "ownership": "private-exported"
     },
     {
@@ -814,8 +814,8 @@
       "path": "docs/current-status.md",
       "type": "file",
       "mode": 420,
-      "bytes": 12386,
-      "sha256": "e2d7b07bc36eeedf7ca7995cb33f20f268b5561c027d13d99a301145ae1591a1",
+      "bytes": 13369,
+      "sha256": "02f31eb4f6f2da18dc944157a5ddd348bc69103d0950eda8c910122d45135b2c",
       "ownership": "private-exported"
     },
     {
@@ -862,8 +862,8 @@
       "path": "docs/install-with-codex.md",
       "type": "file",
       "mode": 420,
-      "bytes": 20939,
-      "sha256": "1c98d37a822845d9a2d73cef920a9196547d971a5c5ae933151ed33c8dde583e",
+      "bytes": 20944,
+      "sha256": "5e15f237feb52e4e6a30c2964c3691c788b08fe8191a2335534565d21d5b20a0",
       "ownership": "private-exported"
     },
     {
@@ -878,8 +878,8 @@
       "path": "docs/verification-baseline.md",
       "type": "file",
       "mode": 420,
-      "bytes": 12976,
-      "sha256": "d537c21dea0d17d01521b5c3ffbea2b265ec55e27814a42e4bf5619d50e87441",
+      "bytes": 14462,
+      "sha256": "ddabfe2cd4ffc9438ae2d0a445f23ceae3b2d20b2600f2244252a3ca708b16a4",
       "ownership": "private-exported"
     },
     {
