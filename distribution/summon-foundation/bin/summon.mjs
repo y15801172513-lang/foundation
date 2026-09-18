@@ -89,6 +89,7 @@ try{
     if(environment.state!=='ready')fail('环境复检未通过：'+environment.state+'；缺少 '+environment.missing.join('、')+'；保留当前安装，不修改系统工具');
     let candidate;
     if(args.update){
+      updateOperation({phase:'discovering'});
       const {context,receipt}=await acquireInWorker({version:args.version,stage,operationId:operation.operationId,onContext:context=>updateOperation({version:context.version,sourceCommit:context.sourceCommit}),onProgress:download=>updateOperation({download}),onPhase:phase=>updateOperation({phase,...(phase==='fetching-and-verifying-runtime'?{download:null}:{})})});
       const directory=plainPath(path.dirname(receipt.launcher)),manifest=JSON.parse(fs.readFileSync(plainPath(path.join(directory,'manifest.json'))));
       if(manifest.productVersion!==context.version)fail('获取版本与候选不一致');
@@ -120,6 +121,7 @@ try{
       const choice=await journeyControl.waitChoice();
       updateOperation({phase:'discovering',intentSelected:true,destinationIntent:choice.destination,scopeIntent:{kind:choice.scopeKind,projectRoot:choice.projectRoot},destinationCheck:choice.destinationCheck,journeyContext:{id:operation.operationId,skillChoice:choice.skillChoice}});
     }
+    updateOperation({phase:'discovering'});
     const {context,receipt}=await acquireInWorker({version:args.version,stage,operationId:operation.operationId,onContext:context=>updateOperation({version:context.version,sourceCommit:context.sourceCommit}),onProgress:download=>updateOperation({download}),onPhase:phase=>updateOperation({phase,...(phase==='fetching-and-verifying-runtime'?{download:null}:{})})});console.log(JSON.stringify({status:'GITHUB_ACQUISITION_VERIFIED',...receipt,destinationIntent:args.destination}));
     updateOperation({phase:'acquired',version:context.version,sourceCommit:context.sourceCommit});
     if(args.acquire){updateOperation({state:'update-input-ready',terminal:true});console.log(JSON.stringify({status:'UPDATE_INPUT_READY_NOT_APPLIED',candidate:path.dirname(receipt.launcher),receipt:path.join(stage,'acquisition.json'),next:'使用当前健康安装的稳定入口生成独立更新计划；本人确认后才更新。获取回执不是删除授权。'}));await progressPage.close();progressPage=null;process.exit(0);}

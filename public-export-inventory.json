@@ -1,9 +1,9 @@
 {
   "schemaVersion": "2.0.0",
   "exportContractSchemaVersion": "2.0.0",
-  "exportContractSha256": "5e3e157e88bc2a30e3fcec967a9386f7c3883d6bf56ce3482a6ed486bf33c53a",
-  "sourceCommit": "100f0d132db75eb7fa0177238aaeca8e6f662ac9",
-  "approvedSourceCommit": "100f0d132db75eb7fa0177238aaeca8e6f662ac9",
+  "exportContractSha256": "06361f10322436dccab97833c6cb1892a4fddaf14b54ae7ba974f86bb0853148",
+  "sourceCommit": "937dc28e935fd46ff40d85bb513942fbe910db0c",
+  "approvedSourceCommit": "937dc28e935fd46ff40d85bb513942fbe910db0c",
   "sourceState": "clean-exact-commit-approved",
   "productVersion": "0.2.16",
   "licenseStatus": "approved",
@@ -14,17 +14,17 @@
   "publicationEligible": true,
   "commitBinding": {
     "schemaVersion": "2.0.0",
-    "approvedCommit": "100f0d132db75eb7fa0177238aaeca8e6f662ac9",
-    "gitTree": "c5eab46d05afb9afcb5346e24c99c01bf515d0f7",
-    "contractSha256": "5e3e157e88bc2a30e3fcec967a9386f7c3883d6bf56ce3482a6ed486bf33c53a",
-    "expectedTreeHash": "69b34c75900da0486fa00f67f585a38496904067e6979db9423e80bf895a4fb0",
+    "approvedCommit": "937dc28e935fd46ff40d85bb513942fbe910db0c",
+    "gitTree": "34300d1dbce8ac0ea5cc7f77925b75b64a0f24e0",
+    "contractSha256": "06361f10322436dccab97833c6cb1892a4fddaf14b54ae7ba974f86bb0853148",
+    "expectedTreeHash": "56026adb541c3b50edcf437887e0735dbbd0948c5bf529661744a1bce245992e",
     "fileCount": 407
   },
   "fileCount": 409,
   "privateExportedCount": 407,
   "generatedPublicCount": 2,
-  "treeHash": "69b34c75900da0486fa00f67f585a38496904067e6979db9423e80bf895a4fb0",
-  "inventoryHash": "d5e2c1f333c6a71d3c9d9008e074a5409607c2c2a0683aeb916ffea03c12b275",
+  "treeHash": "56026adb541c3b50edcf437887e0735dbbd0948c5bf529661744a1bce245992e",
+  "inventoryHash": "a26e1f6d83447d1e15bad9499f9c3ba736651511119d9a9337026d3dc19848b1",
   "files": [
     {
       "path": ".gitignore",
@@ -47,7 +47,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 1082,
-      "sha256": "1fc483aa68722ced8eb35b1e42809418df7bc70e9c9559f12e10804abeed69c9",
+      "sha256": "d993c0594fb7fa7c6ea9f3c9e3b471dabfc2acc2c7cce3eafd1b1bba5023087b",
       "ownership": "generated-public"
     },
     {
@@ -567,7 +567,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 3605,
-      "sha256": "101aa5344ebea60f2b858ec362519b511963e19f56083061b416d0a2b5fae521",
+      "sha256": "c4cd671441500de86469e262f5a71bb8c11bb7c6b9085363697299d43c80c270",
       "ownership": "private-exported"
     },
     {
@@ -590,8 +590,8 @@
       "path": "distribution/summon-foundation/bin/summon.mjs",
       "type": "file",
       "mode": 493,
-      "bytes": 17495,
-      "sha256": "0f80c0229c3495878abd3289a36b767c0ee0820a08181cfd85e0e9e1fa4c4076",
+      "bytes": 17585,
+      "sha256": "3d6b44ea25c3309e135b9a8d2c033c9116b9b14ef9d6e64025de06dd58154b9a",
       "ownership": "private-exported"
     },
     {
@@ -735,7 +735,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 21856,
-      "sha256": "8c5776fc9b8509ec3002c56bc3ac9a147acb32e160eaf7f2e95bf85fddda1180",
+      "sha256": "0d76cb4b7eee86df765f1d12ee47dfbcbdaf9f4387021f0ea0e01025e110ee42",
       "ownership": "private-exported"
     },
     {
@@ -743,7 +743,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 801,
-      "sha256": "83890d0afbc8693cf70adf23b90b0bd6d5ca673e3b061d8323773b2bbf314c87",
+      "sha256": "dc741bff566ae349ef428b89f0a8d654af0d9b6df71f355cb48e8a18b307eda8",
       "ownership": "private-exported"
     },
     {
