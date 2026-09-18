@@ -1,5 +1,11 @@
 # Verification baseline
 
+## npm 0.1.11 acquisition phase correction (2026-09-18)
+
+The launcher now persists discovering before update and direct acquisition enter the real worker guard. The immutable Foundation 0.2.16 runtime is unchanged. CLI, parent persistence, worker IPC and acquisition directory validation are exercised together; the original CLI reproduces the failure. Wrong operation identity, terminal records, wrong phases and unknown directory contents remain rejected.
+
+Both precommit and clean-commit release aggregates passed all five groups: 43 direct tests, 13 entry tests, 11 acquisition tests including the new CLI chain, packed lifecycle and injected-health rollback. The exact npm tarball passed privacy and byte checks and matches the registry readback. Engineering fixtures are not real-user update or Skill acceptance; those remain pending.
+
 ## 0.2.16 component reuse and delivery verification (2026-09-18)
 
 Private runtime source `3d4d5e4284f407e2703a125a753c585189421659` maps to public runtime source `f5d307d13b70abb9bb16fc0df2e9a0988081e82a` and immutable [v0.2.16](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.16). npm is 0.1.10; bundled Skill remains 0.2.5. Formal paired exports, clean private/public candidates, all 419 archive members, official Node runtime and actual payload privacy/module checks passed.

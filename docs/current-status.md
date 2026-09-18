@@ -2,11 +2,15 @@
 
 ## 当前支持状态
 
-单页试用版 [0.2.16](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.16) 与 [npm 0.1.10](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.10) 已发布。旧正式产品线已退出维护；唯一支持政策见[安装与生命周期合同](install-platform-024.md#现行支持策略)，当前命令见[安装说明](install-with-codex.md)。
+单页试用版 [0.2.16](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.16) 与 [npm 0.1.11](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.11) 已发布。旧正式产品线已退出维护；唯一支持政策见[安装与生命周期合同](install-platform-024.md#现行支持策略)，当前命令见[安装说明](install-with-codex.md)。
+
+## 启动器修复：0.1.11（2026-09-18）
+
+修复已有安装更新和直接获取材料在下载前被错误拒绝的问题。程序继续使用不可变 Foundation 0.2.16；每项更新确认和数据保护保持独立。npm 实际包已回读一致，五组发布验收与 CLI 状态链路回归通过。真实旧版更新与 Skill 接续仍待独立验收。
 
 ## 当前发行：0.2.16（2026-09-18）
 
-运行载荷绑定公共源码 `f5d307d13b70abb9bb16fc0df2e9a0988081e82a`，对应私有源码 `3d4d5e4284f407e2703a125a753c585189421659`；npm 0.1.10，随包 Skill 0.2.5。文档提交不改变运行载荷身份。
+运行载荷绑定公共源码 `f5d307d13b70abb9bb16fc0df2e9a0988081e82a`，对应私有源码 `3d4d5e4284f407e2703a125a753c585189421659`；npm 0.1.11，随包 Skill 0.2.5。文档提交不改变运行载荷身份。
 
 本版加强真实组件复用与任务范围交付核验，分别记录组件定义、运行行为、布局与真人接受；工作台跨标签页刷新交付结果，关系详情随当前对象更新，保留节点位置和未完成草稿。
 
