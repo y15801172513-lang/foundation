@@ -2,13 +2,27 @@ import {spawn,spawnSync} from 'node:child_process';
 import path from 'node:path';
 import {plainPath} from './acquire.mjs';
 
+import {operationFailure,installedCommandFailure} from './operation-failure.mjs';
+export {operationFailure,installedCommandFailure} from './operation-failure.mjs';
+
+export function assertUpdateEngineSupport(inspection,{root,stage}={}) {
+  if(['0.2.15','0.2.16'].includes(inspection?.installation?.current?.version)&&root&&stage){
+    const relative=path.relative(path.dirname(plainPath(root)),plainPath(stage));
+    if(relative&&!relative.startsWith('..'+path.sep)&&relative!=='..'&&!path.isAbsolute(relative))return;
+  }
+  if(inspection?.supportedLifecycleOptions?.updateCandidateAuthority!=='os-account-acquisition-v1'){
+    const detail=operationFailure({code:'UPDATE_ENGINE_ACQUISITION_UNSUPPORTED',stage:'authority',retryable:false});
+    throw Object.assign(Error(detail.next),detail,{diagnostic:detail});
+  }
+}
+
 // A client of the existing installed manager, never a confirmation authority.
 export function installedClient(root,env,journeyControl=null) {
   root=plainPath(root);
   const launcher=plainPath(path.join(root,'bin/foundation-kit'));
   const call=args=>{
     const r=spawnSync(launcher,args,{env,encoding:'utf8',timeout:30000,maxBuffer:4*1024*1024});
-    if(r.status!==0){const e=Error('已安装入口检查失败；保留已核实结果，不自动重放');e.code='INSTALLED_COMMAND_FAILED';e.command=args.slice(0,2);e.exitCode=r.status;throw e;}
+    if(r.status!==0)throw installedCommandFailure(r);
     return JSON.parse(r.stdout);
   };
   return {root,launcher,call,env,journeyControl};

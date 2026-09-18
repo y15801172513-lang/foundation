@@ -87,7 +87,8 @@ export function createLifecyclePlan({operation, profile = 'core', mode = null, t
   if(existingScope&&usageScope&&canonicalStringify(existingScope)!==canonicalStringify(usageScope))throw new LifecycleError('INSTALL_SCOPE_MIGRATION_UNSUPPORTED','更新或修复不改变使用范围；本轮不提供范围迁移');
   verifyInstallationScope(effectiveScope,target);
   const sandbox = sandboxRoot ? path.resolve(sandboxRoot) : authority.trustedRootRealPath;
-  if (candidate?.path) assertTrustedCandidatePath(candidate.path, authority);
+  let acquisitionSnapshot=null;
+  if (candidate?.path) assertTrustedCandidatePath(candidate.path, authority,{captureAcquisition:operation==='update'?snapshot=>{acquisitionSnapshot=snapshot;}:null});
   const selectedExtensions = [...(extensions ?? LIFECYCLE_PROFILES[profile].extensions)].sort();
   const selectedAiBridge = profile === 'recommended' ? true : profile === 'core' ? false : aiBridge === true;
   const installId = `install-${sha256(canonicalStringify({targetRelative: trustedTarget.targetRelative, platform, arch, installIdentity})).slice(0, 24)}`;
@@ -120,7 +121,8 @@ export function createLifecyclePlan({operation, profile = 'core', mode = null, t
       bytes: Number(candidate.bytes || 0),
       version: candidate.version || targetVersion,
       acquisition: candidate.acquisition || 'local-ingestion',
-      remoteAcquisition: 'pending',
+      remoteAcquisition: acquisitionSnapshot?'verified-acquisition-record':'pending',
+      ...(acquisitionSnapshot?{acquisitionSnapshot}:{}),
     } : null,
     extensions: selectedExtensions,
     selection: {privateRuntime: true, foundationCore: true, managementCenter: true, aiBridge: selectedAiBridge, extensions: selectedExtensions},

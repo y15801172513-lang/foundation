@@ -1,5 +1,9 @@
 # Verification baseline
 
+## 0.2.17 / npm 0.1.12 release target
+
+Nonempty recovery regression uses native manager writes and preserves nine fact files with two source-bound page records across ten stages. Empty evidence, file-set or byte drift and absent product reads are rejected. Final clean-source six-group release checks and online forward verification are pending this release; engineering fixtures do not establish real installation or host discovery.
+
 ## npm 0.1.11 acquisition phase correction (2026-09-18)
 
 The launcher now persists discovering before update and direct acquisition enter the real worker guard. The immutable Foundation 0.2.16 runtime is unchanged. CLI, parent persistence, worker IPC and acquisition directory validation are exercised together; the original CLI reproduces the failure. Wrong operation identity, terminal records, wrong phases and unknown directory contents remain rejected.

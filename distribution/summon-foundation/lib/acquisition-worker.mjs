@@ -3,6 +3,7 @@
 import {parentPort, workerData} from 'node:worker_threads';
 import {inspectRelease, acquireRelease} from './acquire.mjs';
 
+let phase='discovering';
 try {
   const context = inspectRelease(workerData.version);
   // The parent persists context atomically in the stage. Finish that write
@@ -15,10 +16,10 @@ try {
   await recorded;
   const receipt = await acquireRelease(context, workerData.stage, {
     operationId:workerData.operationId,
-    onPhase:phase=>parentPort.postMessage({type:'phase',phase}),
+    onPhase:value=>{phase=value;parentPort.postMessage({type:'phase',phase});},
     onProgress:download=>parentPort.postMessage({type:'progress',download}),
   });
   parentPort.postMessage({type:'complete',receipt});
 } catch(error) {
-  parentPort.postMessage({type:'failure',code:error.code,diagnostic:error.diagnostic||null,message:String(error.message).replace(/https?:\/\/\S+/g,'[已脱敏网址]').replace(/(?:github_pat_|ghp_|npm_)[A-Za-z0-9_]+/g,'[已脱敏凭据]')});
+  parentPort.postMessage({type:'failure',code:error.code||'ACQUISITION_VALIDATION_FAILED',stage:phase,retryable:error.code==='ACQUISITION_TRANSPORT_FAILED',diagnostic:error.diagnostic||null,message:String(error.message).replace(/https?:\/\/\S+/g,'[已脱敏网址]').replace(/(?:github_pat_|ghp_|npm_)[A-Za-z0-9_]+/g,'[已脱敏凭据]')});
 }

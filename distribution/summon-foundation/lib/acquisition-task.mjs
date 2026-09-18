@@ -11,7 +11,7 @@ export function acquireInWorker({version,stage,operationId,onContext=()=>{},onPh
       else if(event.type==='phase')onPhase(event.phase);
       else if(event.type==='progress')onProgress(event.download);
       else if(event.type==='complete')receipt=event.receipt;
-      else if(event.type==='failure')failure=Object.assign(Error(event.message),{code:event.code,diagnostic:event.diagnostic});
+      else if(event.type==='failure')failure=Object.assign(Error(event.message),{code:event.code,stage:event.stage,retryable:event.retryable,diagnostic:event.diagnostic});
     });
     worker.on('error',error=>{failure=error;});
     worker.once('exit',code=>{

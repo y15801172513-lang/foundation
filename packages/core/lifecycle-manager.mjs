@@ -328,7 +328,7 @@ export function revalidateLocalManagerPlan(plan, {now = Date.now(), consumedEffe
 }
 
 export function inspectLocalLifecycle({installationRoot, project = null, operationRequirement = null, capabilityId = null} = {}) {
-  const result = {schemaVersion: LOCAL_LIFECYCLE_MANAGER_VERSION, aiSurface: LOCAL_LIFECYCLE_AI_SURFACE, supportedProjectOperations: closedProjectHandlerCatalog(), supportedLifecycleOptions: {update:['cleanupAcquisition'],updateCleanupExecutor:'confirmed-update-engine'}, mutationPerformed: false};
+  const result = {schemaVersion: LOCAL_LIFECYCLE_MANAGER_VERSION, aiSurface: LOCAL_LIFECYCLE_AI_SURFACE, supportedProjectOperations: closedProjectHandlerCatalog(), supportedLifecycleOptions: {update:['cleanupAcquisition'],updateCleanupExecutor:'confirmed-update-engine',updateCandidateAuthority:'os-account-acquisition-v1'}, mutationPerformed: false};
   if (installationRoot) result.installation = inspectInstallation(installationRoot);
   if (project) result.project = inspectProjectAuthority(project, {installationRoot});
   if (installationRoot) {

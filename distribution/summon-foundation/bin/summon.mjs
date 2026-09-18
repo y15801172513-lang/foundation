@@ -8,7 +8,7 @@ import {acquireInWorker} from '../lib/acquisition-task.mjs';
 import {startProgressPage} from '../lib/progress-page.mjs';
 import {followSelectedSkill} from '../lib/skill-handoff.mjs';
 import {followMaintenance} from '../lib/maintenance-handoff.mjs';
-import {installedClient} from '../lib/manager-step.mjs';
+import {installedClient,assertUpdateEngineSupport,operationFailure} from '../lib/manager-step.mjs';
 import {resumeSkillHandoff} from '../lib/resume-handoff.mjs';
 import {parseSummonArgs} from '../lib/cli-options.mjs';
 import {createOperation,saveOperation,readOperation,runtimeObservation,operationExitCode} from '../lib/operation-result.mjs';
@@ -78,7 +78,7 @@ try{
   }else if(maintenance){
     plainPath(args.root);
     const env={...process.env};for(const key of ['NODE_OPTIONS','NODE_PATH','NODE_V8_COVERAGE','NODE_REDIRECT_WARNINGS','NODE_COMPILE_CACHE','NODE_COMPILE_CACHE_PORTABLE','NODE_PRESERVE_SYMLINKS'])delete env[key];
-    const installed=installedClient(args.root,env),current=installed.call(['manager','inspect','--root',args.root]).installation?.current;
+    const installed=installedClient(args.root,env),inspection=installed.call(['manager','inspect','--root',args.root]),current=inspection.installation?.current;
     if(!current?.identity?.installId)fail('当前安装身份无法核实；尚未获取或执行维护');
     const capability=spawnSync(installed.launcher,['--help'],{encoding:'utf8',env,timeout:15000});
     if(capability.status!==0||!capability.stdout.includes('--journey-channel'))fail('当前安装不受新版单页流程支持。请另行确认卸载旧版并重新安装新版；本次不删除、不迁移、不回退旧页面');
@@ -89,6 +89,7 @@ try{
     if(environment.state!=='ready')fail('环境复检未通过：'+environment.state+'；缺少 '+environment.missing.join('、')+'；保留当前安装，不修改系统工具');
     let candidate;
     if(args.update){
+      assertUpdateEngineSupport(inspection,{root:args.root,stage});
       updateOperation({phase:'discovering'});
       const {context,receipt}=await acquireInWorker({version:args.version,stage,operationId:operation.operationId,onContext:context=>updateOperation({version:context.version,sourceCommit:context.sourceCommit}),onProgress:download=>updateOperation({download}),onPhase:phase=>updateOperation({phase,...(phase==='fetching-and-verifying-runtime'?{download:null}:{})})});
       const directory=plainPath(path.dirname(receipt.launcher)),manifest=JSON.parse(fs.readFileSync(plainPath(path.join(directory,'manifest.json'))));
@@ -149,4 +150,4 @@ try{
     if(!operation.terminal)updateOperation({state:'verification-required',terminal:true,childExitCode:ended.code,next:'服务退出不等于成功或取消；只读核验原 session 与 installed 状态，不自动重试'});
     process.exitCode=operationExitCode(operation);
   }
-}catch(e){const message=String(e.message).replace(/https?:\/\/\S+/g,'[已脱敏网址]').replace(/(?:github_pat_|ghp_|npm_)[A-Za-z0-9_]+/g,'[已脱敏凭据]');updateOperation({state:e.code==='ENTRY_CHOICE_CANCELLED'?'cancelled-no-install':e.code==='ENTRY_CHOICE_EXPIRED'?'expired-no-install':operation?.programState==='completed'?'partial':operation&&operation.installationWrites!=='none'?'verification-required':'failed',terminal:true,...(operation?.programState==='completed'?{failedPhase:operation.phase,phase:'finished'}:{}),errorCode:['ACQUISITION_TRANSPORT_FAILED','ACQUISITION_VALIDATION_FAILED','ENTRY_CHOICE_CANCELLED','ENTRY_CHOICE_EXPIRED'].includes(e.code)?e.code:'INSTALL_ENTRY_FAILED',diagnostic:e.diagnostic||null,next:message+'。先核验旧工具进程已结束及同次结果；保留材料，不自动重试或重放安装确认'});console.error(`错误：${message}`);process.exitCode=operationExitCode(operation);}finally{if(progressPage)await progressPage.close();}
+}catch(e){const failure=operationFailure(e);const message=String(e.message).replace(/https?:\/\/\S+/g,'[已脱敏网址]').replace(/(?:github_pat_|ghp_|npm_)[A-Za-z0-9_]+/g,'[已脱敏凭据]');updateOperation({state:e.code==='ENTRY_CHOICE_CANCELLED'?'cancelled-no-install':e.code==='ENTRY_CHOICE_EXPIRED'?'expired-no-install':operation?.programState==='completed'?'partial':operation&&operation.installationWrites!=='none'?'verification-required':'failed',terminal:true,...(operation?.programState==='completed'?{failedPhase:operation.phase,phase:'finished'}:{}),errorCode:failure.code,errorStage:failure.stage,retryable:failure.retryable,diagnostic:{...failure,...(e.code==='ACQUISITION_TRANSPORT_FAILED'?{transport:e.diagnostic}:{} )},next:(e.diagnostic?.category?failure.next:message)+'。先核验旧工具进程已结束及同次结果；保留材料，不自动重试或重放安装确认'});console.error(`错误：[${failure.code} / ${failure.stage} / retryable=${failure.retryable}] ${message}`);process.exitCode=operationExitCode(operation);}finally{if(progressPage)await progressPage.close();}

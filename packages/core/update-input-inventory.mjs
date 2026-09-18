@@ -14,6 +14,45 @@ function identity(file){const s=fs.lstatSync(plain(file));if(s.uid!==process.get
 function fileRecord(file){const s=fs.lstatSync(plain(file));if(!s.isFile()||s.nlink!==1)reject('不是独占普通文件');return{path:file,...identity(file),bytes:s.size,sha256:hash(fs.readFileSync(file))};}
 const overlaps=(a,b)=>a===b||a.startsWith(b+path.sep)||b.startsWith(a+path.sep);
 
+// Read-only admission, not installation authority. The signed exact plan binds
+// these identities; apply repeats this snapshot before using any candidate.
+export function snapshotAcquisitionCandidate(candidatePath,{homeRealPath,installRoot}) {
+  const cache=path.join(homeRealPath,'Library/Caches/ai-product-foundation-kit-acquisition');
+  const stage=path.dirname(candidatePath);
+  for(const p of [homeRealPath,path.join(homeRealPath,'Library'),path.join(homeRealPath,'Library/Caches')]){const s=identity(p);if((s.mode&0o022)!==0||!fs.lstatSync(p).isDirectory())reject('账户缓存祖先可被其他用户写入');}
+  if(path.dirname(stage)!==cache||!/^acquisition\.[A-Za-z0-9]+$/.test(path.basename(stage))||path.basename(candidatePath)!=='candidate')reject('不属于 OS 账户标准获取目录');
+  for(const p of [cache,stage]){const s=identity(p);if(s.mode!==0o700)reject('获取目录不是当前账户独占 0700');}
+  const operationFile=path.join(stage,'operation-result.json');if(fileRecord(operationFile).mode!==0o600)reject('操作记录权限无效');
+  const operation=JSON.parse(fs.readFileSync(operationFile));
+  if(operation.terminal!==false||!['acquired','awaiting-confirmation','executing'].includes(operation.phase)||!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(operation.operationId||''))reject('获取操作不是本次未结束记录');
+  if(operation.installationRoot&&operation.installationRoot!==installRoot)reject('操作绑定其他安装目录');
+  const receipt=JSON.parse(fs.readFileSync(plain(path.join(stage,'acquisition.json'))));
+  const manifest=JSON.parse(fs.readFileSync(plain(path.join(candidatePath,'manifest.json'))));
+  const canonical=v=>Array.isArray(v)?'['+v.map(canonical).join(',')+']':v&&typeof v==='object'?'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+canonical(v[k])).join(',')+'}':JSON.stringify(v);
+  const {candidateHash,...body}=manifest;
+  if(manifest.source?.kind!=='repository-local-build'||manifest.platform!==process.platform||manifest.arch!==process.arch||manifest.runtime?.officialSourceVerified!==true||!Number.isSafeInteger(receipt.releaseId)||receipt.releaseId<=0)reject('不是当前平台的正式来源候选');
+  if(hash(canonical(body))!==candidateHash||receipt.verification!=='github-release-signature-timestamp-and-byte-binding'||receipt.repository!=='y15801172513-lang/foundation'||receipt.repositoryId!==1363748227||receipt.sourceCommit!==manifest.build?.identity||!/^[a-f0-9]{40}$/.test(receipt.sourceCommit||'')||receipt.tag!=='v'+manifest.productVersion||operation.version!==manifest.productVersion||operation.sourceCommit!==receipt.sourceCommit)reject('获取来源、操作或清单身份不一致');
+  const snapshot=snapshotUpdateInputs({path:candidatePath,manifestHash:candidateHash},installRoot);
+  const catalogName=`foundation-release-${manifest.productVersion}-macos-arm64.json`;
+  const allowed=new Set(['candidate','acquisition.json','operation-result.json','tuf-targets','tuf-metadata',receipt.asset,receipt.asset+'.verification.json',catalogName,catalogName+'.verification.json']);
+  for(const name of fs.readdirSync(stage))if(!allowed.has(name))reject('获取目录包含未知内容');
+  const proofFile=path.join(stage,receipt.asset+'.verification.json');fileRecord(proofFile);
+  const proof=JSON.parse(fs.readFileSync(proofFile));
+  for(const key of ['repository','repositoryId','releaseId','tag','sourceCommit','asset','bytes','sha256','verification'])if(proof[key]!==receipt[key])reject('获取回执与来源核验记录不一致');
+  const sourceEvidence=[];
+  for(const name of [receipt.asset+'.verification.json',catalogName,catalogName+'.verification.json'])sourceEvidence.push(fileRecord(path.join(stage,name)));
+  const catalog=JSON.parse(fs.readFileSync(path.join(stage,catalogName)));
+  const releases=catalog.releases?.filter(x=>x.version===manifest.productVersion&&x.sourceCommit===receipt.sourceCommit&&x.candidateHash===candidateHash&&x.sha256===receipt.sha256&&x.bytes===receipt.bytes&&x.repositoryId===receipt.repositoryId);
+  if(releases?.length!==1||releases[0].platform!==manifest.platform||releases[0].arch!==manifest.arch||releases[0].runtime?.binarySha256!==manifest.files.find(f=>f.path===manifest.runtime.path)?.sha256||releases[0].url!==`https://github.com/y15801172513-lang/foundation/releases/download/${receipt.tag}/${receipt.asset}`)reject('发行目录未绑定本次候选');
+  const catalogProof=JSON.parse(fs.readFileSync(path.join(stage,catalogName+'.verification.json')));
+  for(const key of ['repository','repositoryId','releaseId','tag','sourceCommit','verification'])if(catalogProof[key]!==receipt[key])reject('发行目录来源证明不一致');
+  const catalogBytes=fs.readFileSync(path.join(stage,catalogName));if(catalogProof.asset!==catalogName||catalogProof.bytes!==catalogBytes.length||catalogProof.sha256!==hash(catalogBytes))reject('发行目录证明未绑定字节');
+  const evidenceDirectories=[];
+  function evidence(dir){evidenceDirectories.push({path:dir,...identity(dir)});for(const name of fs.readdirSync(dir).sort()){const p=path.join(dir,name);plain(p);if(fs.lstatSync(p).isDirectory())evidence(p);else sourceEvidence.push(fileRecord(p));}}
+  for(const name of ['tuf-targets','tuf-metadata'])evidence(path.join(stage,name));
+  return {...snapshot,operationId:operation.operationId,sourceCommit:receipt.sourceCommit,cacheIdentity:identity(cache),sourceEvidence:sourceEvidence.sort((a,b)=>a.path.localeCompare(b.path)),evidenceDirectories};
+}
+
 // Read-only plan material. Execution is called only by the already-authorized
 // transaction after a successful update, never by an exposed cleanup command.
 export function snapshotUpdateInputs(candidate,installationRoot){
@@ -28,7 +67,7 @@ export function snapshotUpdateInputs(candidate,installationRoot){
   if(manifest.candidateHash!==candidate.manifestHash)reject('候选身份不一致');
   const expected=new Map([['manifest.json',null],['foundation-kit',manifest.launcher],...manifest.files.map(r=>['payload/'+r.path,r])]);
   const files=[archive];const directories=[];
-  function walk(dir){const prefix=path.relative(candidate.path,dir);if(prefix&&![...expected.keys()].some(p=>p.startsWith(prefix+'/')))reject('候选含未知目录');directories.push({path:dir,...identity(dir)});for(const name of fs.readdirSync(dir)){const file=path.join(dir,name),s=fs.lstatSync(file);if(s.isDirectory()&&!s.isSymbolicLink())walk(file);else {const relative=path.relative(candidate.path,file);if(!expected.has(relative))reject('候选含未知文件');const record=fileRecord(file),bound=expected.get(relative);if(bound&&(record.bytes!==bound.size||record.mode!==bound.mode||record.sha256!==bound.sha256))reject('候选文件已修改');files.push(record);}}}
+  function walk(dir){const prefix=path.relative(candidate.path,dir);if(prefix&&![...expected.keys()].some(p=>p.startsWith(prefix+'/')))reject('候选含未知目录');directories.push({path:dir,...identity(dir)});for(const name of fs.readdirSync(dir).sort()){const file=path.join(dir,name),s=fs.lstatSync(file);if(s.isDirectory()&&!s.isSymbolicLink())walk(file);else {const relative=path.relative(candidate.path,file);if(!expected.has(relative))reject('候选含未知文件');const record=fileRecord(file),bound=expected.get(relative);if(bound&&(record.bytes!==bound.size||record.mode!==bound.mode||record.sha256!==bound.sha256))reject('候选文件已修改');files.push(record);}}}
   walk(candidate.path);
   if(files.length!==expected.size+1)reject('候选缺失文件');
   return {schemaVersion:'1.0.0',executor:'confirmed-update-engine',root,rootIdentity:identity(root),candidateHash:candidate.manifestHash,receipt:receiptRecord,files:files.sort((a,b)=>a.path<b.path?-1:a.path>b.path?1:0),directories:directories.sort((a,b)=>b.path.length-a.path.length),bytes:files.reduce((n,r)=>n+r.bytes,0),trigger:'same-confirmed-update-completed-current-health-and-consumers-ended',preserves:['acquisition.json','verification receipts','TUF metadata','installed current and rollback','projects','shared or unknown or changed files'],activity:'must-recheck-after-update',deletionAuthority:'same-human-confirmed-plan-and-host-permissions-required'};

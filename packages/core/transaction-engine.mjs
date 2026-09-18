@@ -403,7 +403,7 @@ function assertRetainedProjectCapabilities(root,appRoot) {
 }
 
 function validateBoundCandidate(plan) {
-  assertTrustedCandidatePath(plan.candidate.path);
+  assertTrustedCandidatePath(plan.candidate.path,undefined,{expectedAcquisition:plan.operation==='update'?plan.candidate.acquisitionSnapshot:null});
   const checked = validateCandidate(plan.candidate.path, {platform: plan.platform, arch: plan.arch, requireRuntime: true});
   if (!checked.ok) throw new LifecycleError(checked.error.code, checked.error.message, {stage: checked.error.stage});
   const runtime = runtimeRecord(checked.manifest);

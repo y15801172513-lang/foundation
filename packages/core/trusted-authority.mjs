@@ -5,6 +5,7 @@ import crypto from 'node:crypto';
 import {LifecycleError} from './install-contract.mjs';
 import {isWithin} from './path-boundary.mjs';
 import {resolveFoundationPlatformPaths} from './platform-paths.mjs';
+import {snapshotAcquisitionCandidate} from './update-input-inventory.mjs';
 
 const WINDOWS_ABSOLUTE = /^(?:[a-z]:[\\/]|\\\\)/iu;
 let activeFirstInstallCandidateRoot = null;
@@ -311,13 +312,21 @@ export function resolveTrustedTargetForApply(plan) {
   return {authority, target: effectiveTarget};
 }
 
-export function assertTrustedCandidatePath(candidatePath, authority = deriveTrustedLifecycleAuthority()) {
+export function assertTrustedCandidatePath(candidatePath, authority = deriveTrustedLifecycleAuthority(), {captureAcquisition = null, expectedAcquisition = null} = {}) {
   assertHostAbsolute(candidatePath);
   const candidate = path.resolve(candidatePath);
   if (authority.mode === 'platform-first-install-candidate') {
     if (candidate !== authority.candidateRootRealPath || !fs.existsSync(candidate) || fs.lstatSync(candidate).isSymbolicLink() || fs.realpathSync(candidate) !== candidate) {
       throw new LifecycleError('CANDIDATE_AUTHORITY_MISMATCH', '首次安装仅接受当前自托管 launcher 所属的 exact candidate', {stage: 'authority'});
     }
+    return candidate;
+  }
+  if(authority.mode==='platform-installed-runtime'&&!isWithin(authority.trustedRootRealPath,candidate)){
+    if(!captureAcquisition&&!expectedAcquisition)throw new LifecycleError('ACQUISITION_CACHE_PLAN_BINDING_REQUIRED','标准获取候选必须绑定本次精确计划',{stage:'authority'});
+    let snapshot;
+    try{snapshot=snapshotAcquisitionCandidate(candidate,authority);}catch{throw new LifecycleError('ACQUISITION_CACHE_REJECTED','标准获取候选路径、归属、来源或字节无法核实；保留材料，不重复下载',{stage:'authority'});}
+    if(expectedAcquisition&&canonical(snapshot)!==canonical(expectedAcquisition))throw new LifecycleError('ACQUISITION_CACHE_CHANGED','获取候选或目录身份已变化，原批准不再适用',{stage:'authority'});
+    captureAcquisition?.(snapshot);
     return candidate;
   }
   inspectAncestors(candidate, authority);
