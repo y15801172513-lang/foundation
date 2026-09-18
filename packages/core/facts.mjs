@@ -2,10 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import {realProject, resolveProjectFile} from './path-boundary.mjs';
-import {validEventStatusIdentity} from './identity.mjs';
 import {canonicalStringify} from './install-contract.mjs';
 import {applyProjectMutationPlan} from './project-authority.mjs';
 import {normalizeRelationHandlerPayload} from './project-mutation-handlers.mjs';
+import {inspectFactExtensions} from './fact-contracts.mjs';
+import {inspectAssetReferences} from './asset-model.mjs';
 
 export const FACT_FILES = ['project', 'pages', 'relations', 'design-tokens', 'components', 'interactions', 'motions', 'changes', 'figma'];
 export const now = () => new Date().toISOString();
@@ -104,7 +105,8 @@ function assetDocuments(facts) {
 }
 
 export function validateFacts(facts, {previewConfig, projectRoot} = {}) {
-  const errors = [];
+  const extensionIssues=inspectFactExtensions(facts);
+  const errors = [...extensionIssues.map(issue=>`${issue.objectId}: ${issue.message}`), ...(extensionIssues.length?[]:inspectAssetReferences(facts))];
   for (const name of FACT_FILES) {
     const document = facts[name];
     if (!document || !document.schemaVersion || !Array.isArray(document.items)) {
@@ -143,7 +145,6 @@ export function validateFacts(facts, {previewConfig, projectRoot} = {}) {
     for (const [usageIndex, usage] of (component.usageLocations || []).entries()) {
       if (!pageIds.has(usage.pageId)) errors.push(`components.json.items[${componentIndex}].usageLocations[${usageIndex}].pageId 引用了不存在的页面：${usage.pageId}`);
       if (usage.variant && !familyVariants.get(component.family)?.has(usage.variant)) errors.push(`components.json.items[${componentIndex}].usageLocations[${usageIndex}].variant 引用了不存在的变体：${usage.variant}`);
-      if (component.id === 'component_event_status_badge' && !validEventStatusIdentity({pageId: usage.pageId, eventId: usage.eventId, status: usage.variant, instanceId: usage.instanceId})) errors.push(`components.json 资产 ${component.id} 字段 usageLocations[${usageIndex}].instanceId 与 EventStatus 页面/事件/状态身份规则不一致：${usage.instanceId}`);
       if (usage.instanceId && instances.has(usage.instanceId)) errors.push(`components.json 资产 ${component.id} 字段 usageLocations[${usageIndex}].instanceId 跨组件重复：${usage.instanceId}，已由 ${instances.get(usage.instanceId)} 登记`);
       if (usage.instanceId) instances.set(usage.instanceId, component.id);
     }
@@ -157,6 +158,7 @@ export function validateFacts(facts, {previewConfig, projectRoot} = {}) {
           catch (error) { errors.push(error.message); }
         }
       }
+      for (const reference of references(asset.pageIds)) if (!pageIds.has(reference)) errors.push(`${factName}.json 资产 ${asset.id} 字段 pageIds 引用了不存在的页面：${reference}`);
       for (const field of ['dependencies', 'composes']) {
         for (const reference of references(asset[field])) if (!assetIds.has(reference)) errors.push(`${factName}.json 资产 ${asset.id} 字段 ${field} 引用了未登记资产：${reference}`);
       }

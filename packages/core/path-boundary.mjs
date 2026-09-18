@@ -18,6 +18,7 @@ export function normalizePublicPath(value, field) {
   let decoded;
   try { decoded = decodeURIComponent(value); } catch { throw new Error(`${field} 包含无效 URL 编码`); }
   if (decoded.split('/').includes('..') || path.posix.normalize(decoded) !== decoded) throw new Error(`${field} 不得包含路径穿越`);
+  if (/[?#%\\\0]/u.test(decoded)) throw new Error(`${field} 包含歧义编码或查询片段`);
   return decoded;
 }
 
@@ -35,4 +36,13 @@ export function resolveProjectFile(project, file, field, {mustExist = true} = {}
   if (!isWithin(realRoot, realFile)) throw new Error(`${field} 通过符号链接逃出项目根目录：${file}`);
   if (!fs.statSync(realFile).isFile()) throw new Error(`${field} 必须引用文件：${file}`);
   return realFile;
+}
+
+// Product declarations use a dedicated subspace; all other workbench routes are reserved.
+export function normalizePreviewPath(value, field = '预览路径') {
+  const normalized = normalizePublicPath(value, field);
+  if (normalized === '/' || normalized === '/index.html' ||
+      (normalized.startsWith('/__foundation') && !normalized.startsWith('/__foundation/declarations/')) ||
+      normalized.startsWith('/assets/chunks/') || normalized.startsWith('/assets/binary/') || normalized.startsWith('/assets/foundation-fonts/')) throw new Error(`${field} 与工作台保留路径冲突：${normalized}`);
+  return normalized;
 }

@@ -1,4 +1,4 @@
-import {Component, lazy, Suspense, useEffect, useReducer, useRef, useState} from 'react';
+import {Component, lazy, Suspense, useEffect, useMemo, useReducer, useRef, useState} from 'react';
 import {buildContextRecord, contextPlainText, resolveComponentSelection} from '@foundation/core/context';
 import {Moon, Sun} from 'lucide-react';
 import {MetadataText} from '@/components/foundation/content-roles';
@@ -7,12 +7,12 @@ import {NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuLi
 import {Spinner} from '@/components/ui/spinner';
 import {TooltipProvider} from '@/components/ui/tooltip';
 import {isAllowedPreviewMessage} from '@/features/preview/bridge-policy.mjs';
-import {createWorkspaceState, transitionWorkspace} from '@/state/workspace-state.mjs';
+import {createWorkspaceState, transitionWorkspace,selectionRef} from '@/state/workspace-state.mjs';
 import {applyWorkspaceTheme, readWorkspaceTheme} from '@/theme/workspace-theme.mjs';
 import {copyContextPlainText} from './copy-context.mjs';
 import {enrichInspectorObject} from './inspector-context.mjs';
 
-const model = window.__FOUNDATION_MODEL__ || {project: {name: 'Foundation'}, pages: [], relations: [], components: [], assets: [], changes: [], interactions: [], preview: {mode: 'local-static', allowedOrigins: ['self']}};
+const initialModel = window.__FOUNDATION_MODEL__ || {project: {name: 'Foundation'}, pages: [], relations: [], components: [], assets: [], changes: [], interactions: [], preview: {mode: 'local-static', allowedOrigins: ['self']}};
 const InformationLogicWorkspace = lazy(() => import('./information-logic-workspace').then((module) => ({default: module.InformationLogicWorkspace})));
 const AssetManagementWorkspace = lazy(() => import('./asset-management-workspace').then((module) => ({default: module.AssetManagementWorkspace})));
 const PageBuildingWorkspace = lazy(() => import('./page-building-workspace').then((module) => ({default: module.PageBuildingWorkspace})));
@@ -43,14 +43,38 @@ class WorkspaceChunkBoundary extends Component {
 }
 
 export function WorkspaceApp() {
+  const [model,setModel]=useState(initialModel);
+  const channel=useMemo(()=>globalThis.crypto.randomUUID(),[model.revision]);
+  const [updateMessage,setUpdateMessage]=useState('');
+  useEffect(()=>{
+    if(!model.revision)return undefined;
+    let cancelled=false,timer;
+    const poll=async()=>{
+      try {
+        const response=await fetch('/__foundation/revision');
+        if(!response.ok)throw new Error('工作台身份待核，请从当前安装重新打开');
+        const current=await response.json();
+        setUpdateMessage(current.updateFailed ? `更新失败，保留上一完整视图；当前验收不可沿用：${current.updateFailed}` : '');
+        if(current.revision && current.revision!==model.revision) {
+          const reply=await fetch('/__foundation/model?revision='+encodeURIComponent(current.revision));
+          if(!reply.ok)throw new Error('完整版本暂不可用，保留当前视图');
+          const next=await reply.json();
+          if(next.revision!==current.revision)throw new Error('版本读取冲突，稍后重试');
+          if(!cancelled){setModel(next);setRelationState({items:next.relations,version:next.relationsVersion});dispatch({type:'apply-snapshot',model:next});}
+        }
+      }catch(error){if(!cancelled)setUpdateMessage(error.message);}
+      if(!cancelled)timer=setTimeout(poll,document.hidden?10000:2000);
+    };
+    timer=setTimeout(poll,2000);return()=>{cancelled=true;clearTimeout(timer);};
+  },[model.revision]);
   const [theme, setTheme] = useState(() => {
     const initial = readWorkspaceTheme();
     applyWorkspaceTheme(initial);
     return initial;
   });
-  const [state, dispatch] = useReducer((current, action) => transitionWorkspace(current, action), createWorkspaceState({pageId: model.entryPage}));
+  const [state, dispatch] = useReducer((current, action) => transitionWorkspace(current, action), createWorkspaceState({pageId: model.entryPage,projectId:model.project.projectId,revision:model.revision}));
   const [relationState, setRelationState] = useState({items: model.relations || [], version: model.relationsVersion || null});
-  const workspaceModel = {...model, relations: relationState.items, relationsVersion: relationState.version};
+  const workspaceModel = {...model, preview:{...model.preview,revision:model.revision,projectId:model.project.projectId,channel}, relations: relationState.items, relationsVersion: relationState.version};
   const [bridge, setBridge] = useState({label: '等待预览就绪…', route: null, connected: false});
   const [inspector, setInspector] = useState({active: false, phase: 'inactive', object: null});
   const [defaultInspectedObject, setDefaultInspectedObject] = useState(null);
@@ -62,14 +86,15 @@ export function WorkspaceApp() {
   const selection = resolveComponentSelection(workspaceModel.components, {componentId: state.componentId, instanceId: state.instanceId, eventId: state.eventId, variant: state.variant, pageId: state.componentPageId || state.pageId});
   const component = selection?.component || null;
   const selectedAsset = (workspaceModel.assets || []).find((asset) => asset.assetId === (state.assetId || selection?.componentId)) || null;
-  const recordInput = {project: workspaceModel.project, pages: workspaceModel.pages, relations: workspaceModel.relations, assets: workspaceModel.assets || [], mode: state.workspaceArea === 'assets' ? 'assets' : state.buildingMode, pageId: state.pageId};
+  const recordInput = {selectionRef:selectionRef(state),project: workspaceModel.project, pages: workspaceModel.pages, relations: workspaceModel.relations, assets: workspaceModel.assets || [], interactions: workspaceModel.interactions, changes: workspaceModel.changes, figma: workspaceModel.figma, mode: state.workspaceArea === 'assets' ? 'assets' : state.buildingMode, pageId: state.pageId};
   const pageContextRecord = buildContextRecord({...recordInput, selection, scope: 'page'});
   const componentContextRecord = buildContextRecord({...recordInput, selection, scope: 'component'});
-  const assetContextRecord = buildContextRecord({...recordInput, selection: selectedAsset ? {asset: selectedAsset, instanceId: state.instanceId, eventId: state.eventId, variant: selectedAsset.variant} : null, scope: 'asset'});
+  const assetContextRecord = buildContextRecord({...recordInput, selection: selectedAsset ? {asset: selectedAsset, instanceId: state.instanceId, eventId: state.eventId, variant: state.variant,...selectionRef(state)} : null, scope: 'asset'});
+  const statusMessage = updateMessage || state.selectionNotice;
   const pageContext = contextPlainText(pageContextRecord);
   const componentContext = contextPlainText(componentContextRecord);
   const assetContext = contextPlainText(assetContextRecord);
-  const postToPreview = (message) => iframeRef.current?.contentWindow?.postMessage({namespace: 'ai-product-foundation-preview', ...message}, window.location.origin);
+  const postToPreview = (message) => iframeRef.current?.contentWindow?.postMessage({namespace: 'ai-product-foundation-preview', projectId:workspaceModelRef.current.preview.projectId,revision:workspaceModelRef.current.preview.revision,channel:workspaceModelRef.current.preview.channel,...message}, window.location.origin);
 
   useEffect(() => { inspectorRef.current = inspector; workspaceModelRef.current = workspaceModel; }, [inspector, workspaceModel]);
 
@@ -81,7 +106,7 @@ export function WorkspaceApp() {
 
   useEffect(() => {
     const onMessage = (event) => {
-      if (!isAllowedPreviewMessage(event, {iframeWindow: iframeRef.current?.contentWindow, currentOrigin: window.location.origin, preview: model.preview})) return;
+      if (!isAllowedPreviewMessage(event, {iframeWindow: iframeRef.current?.contentWindow, currentOrigin: window.location.origin, preview: workspaceModelRef.current.preview})) return;
       if (event.data.kind === 'preview-ready') {
         setBridge({label: `已连接 · ${event.data.route}`, route: event.data.route, connected: true});
         setDefaultInspectedObject(event.data.object ? enrichInspectorObject(event.data.object, workspaceModelRef.current) : null);
@@ -92,6 +117,9 @@ export function WorkspaceApp() {
       if (event.data.kind === 'inspect-hovered' && inspectorRef.current.active) setInspector((current) => ({...current, phase: 'hover'}));
       if (event.data.kind === 'inspect-selected' && inspectorRef.current.active) {
         setInspector({active: true, phase: 'locked', object: enrichInspectorObject(event.data.object, workspaceModelRef.current)});
+        const object=event.data.object;
+        if(object?.componentId)dispatch({type:'set-component',componentId:object.componentId,instanceId:object.instanceId,pageId:object.pageId,eventId:object.eventId,eventState:object.eventState,variant:object.variant});
+        else dispatch({type:'clear-component'});
         dispatch({type: 'set-panel-context', context: 'object'});
       }
       if (event.data.kind === 'inspect-selection-invalidated') setInspector((current) => ({active: current.active, phase: current.active ? 'hover' : 'inactive', object: null}));
@@ -138,7 +166,7 @@ export function WorkspaceApp() {
   const content = state.workspaceArea === 'building' && state.buildingMode === 'logic'
     ? <WorkspaceChunkBoundary title="逻辑搭建"><Suspense fallback={<LogicWorkspaceLoading />}><InformationLogicWorkspace model={workspaceModel} pageId={state.pageId} theme={theme} onSelectPage={(pageId) => dispatch({type: 'set-page', pageId})} onOpenPage={openPageBuilding} onRelationSaved={relationSaved} onRelationsRefreshed={relationsRefreshed} /></Suspense></WorkspaceChunkBoundary>
     : state.workspaceArea === 'assets'
-      ? <WorkspaceChunkBoundary title="资产管理"><Suspense fallback={<AssetWorkspaceLoading />}><AssetManagementWorkspace model={workspaceModel} selectedAsset={selectedAsset} assetRecord={assetContextRecord} assetRawText={assetContext} onSelectAsset={(assetId) => dispatch({type: 'set-asset', assetId})} onCopyAsset={() => copyContext(assetContext)} /></Suspense></WorkspaceChunkBoundary>
+      ? <WorkspaceChunkBoundary title="资产管理"><Suspense fallback={<AssetWorkspaceLoading />}><AssetManagementWorkspace model={workspaceModel} selectedAsset={selectedAsset} selection={selectionRef(state)} onSelectionChange={dispatch} assetRecord={assetContextRecord} assetRawText={assetContext} onSelectAsset={(assetId) => dispatch({type: 'set-asset', assetId})} onCopyAsset={() => copyContext(assetContext)} /></Suspense></WorkspaceChunkBoundary>
       : <WorkspaceChunkBoundary title="预览搭建"><Suspense fallback={<PreviewWorkspaceLoading />}><PageBuildingWorkspace model={workspaceModel} state={state} dispatch={dispatch} iframeRef={iframeRef} panelProps={panelProps} inspectorActive={inspector.active} onToggleInspector={toggleInspector} onPreviewLoad={onPreviewLoad} /></Suspense></WorkspaceChunkBoundary>;
   const setBuildingMode = (mode) => { if (mode !== 'preview' && inspector.active) toggleInspector(); dispatch({type: 'set-building-mode', mode}); };
   const openAssets = () => { if (inspector.active) toggleInspector(); dispatch({type: 'open-assets'}); };
@@ -148,5 +176,5 @@ export function WorkspaceApp() {
     themeRef.current = next;
     setTheme(next);
   };
-  return <TooltipProvider><div className="app-shell"><header className="topbar"><span className="topbar-project truncate text-base font-medium" aria-label={workspaceModel.project?.name || 'Foundation'} title={workspaceModel.project?.name || 'Foundation'}>{workspaceModel.project?.name || 'Foundation'}</span><NavigationMenu className="topbar-navigation" aria-label="工作区"><NavigationMenuList><NavigationMenuItem><NavigationMenuLink href="#preview" active={state.workspaceArea === 'building' && state.buildingMode === 'preview'} onClick={(event) => { event.preventDefault(); setBuildingMode('preview'); }}>预览搭建</NavigationMenuLink></NavigationMenuItem><NavigationMenuItem><NavigationMenuLink href="#logic" active={state.workspaceArea === 'building' && state.buildingMode === 'logic'} onClick={(event) => { event.preventDefault(); setBuildingMode('logic'); }}>逻辑搭建</NavigationMenuLink></NavigationMenuItem><NavigationMenuItem><NavigationMenuLink href="#assets" active={state.workspaceArea === 'assets'} onClick={(event) => { event.preventDefault(); openAssets(); }}>资产管理</NavigationMenuLink></NavigationMenuItem></NavigationMenuList></NavigationMenu><FoundationIconButton data-theme-toggle className="ml-1" label={dark ? '切换到亮模式' : '切换到暗模式'} aria-pressed={dark} onClick={toggleTheme}>{dark ? <Sun data-icon="inline-start" /> : <Moon data-icon="inline-start" />}</FoundationIconButton></header>{content}<footer className="statusbar"><span title={model.delivery?.summary}>{model.projectSelected === false ? '未选择项目 · 不自动扫描或启用' : model.delivery?.state === 'sync-pending' ? 'Foundation 同步待完成 · 只读检查可查看缺口' : bridge.label}</span><span>Foundation 项目资料 · {workspaceModel.pages.length} 个页面 · {workspaceModel.components.length} 个组件</span></footer></div></TooltipProvider>;
+  return <TooltipProvider><div className="app-shell"><header className="topbar"><span className="topbar-project truncate text-base font-medium" aria-label={workspaceModel.project?.name || 'Foundation'} title={workspaceModel.project?.name || 'Foundation'}>{workspaceModel.project?.name || 'Foundation'}</span><NavigationMenu className="topbar-navigation" aria-label="工作区"><NavigationMenuList><NavigationMenuItem><NavigationMenuLink href="#preview" active={state.workspaceArea === 'building' && state.buildingMode === 'preview'} onClick={(event) => { event.preventDefault(); setBuildingMode('preview'); }}>预览搭建</NavigationMenuLink></NavigationMenuItem><NavigationMenuItem><NavigationMenuLink href="#logic" active={state.workspaceArea === 'building' && state.buildingMode === 'logic'} onClick={(event) => { event.preventDefault(); setBuildingMode('logic'); }}>逻辑搭建</NavigationMenuLink></NavigationMenuItem><NavigationMenuItem><NavigationMenuLink href="#assets" active={state.workspaceArea === 'assets'} onClick={(event) => { event.preventDefault(); openAssets(); }}>资产管理</NavigationMenuLink></NavigationMenuItem></NavigationMenuList></NavigationMenu><FoundationIconButton data-theme-toggle className="ml-1" label={dark ? '切换到亮模式' : '切换到暗模式'} aria-pressed={dark} onClick={toggleTheme}>{dark ? <Sun data-icon="inline-start" /> : <Moon data-icon="inline-start" />}</FoundationIconButton></header>{statusMessage ? <MetadataText role="status">{statusMessage}</MetadataText> : null}{content}<footer className="statusbar"><span title={model.delivery?.summary}>{model.projectSelected === false ? '未选择项目 · 不自动扫描或启用' : model.synchronization?.authorization === 'revoked' ? '持续同步已撤销 · 保留资料只读查看' : model.synchronization && model.synchronization.state !== 'latest' ? '持续授权与最新状态独立 · 内容更新待核' : model.delivery?.contentIntegrity?.ready === false ? '内容交付不完整 · 请查看缺口' : model.delivery?.state === 'sync-pending' ? 'Foundation 同步待完成 · 只读检查可查看缺口' : bridge.label}</span><span>Foundation 项目资料 · {workspaceModel.pages.length} 个页面 · {workspaceModel.components.length} 个组件</span></footer></div></TooltipProvider>;
 }

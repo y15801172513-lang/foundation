@@ -1,3 +1,5 @@
+import {requiredFactCapabilities} from './asset-model.mjs';
+import {continueProjectPreparation} from './project-sync.mjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import {readInstallationScope} from './installation-scope.mjs';
@@ -48,6 +50,16 @@ export const PROJECT_BINDING_VERSION = PROJECT_LAYOUT_VERSION;
 const PORTABLE_RELATIVE = `${PROJECT_LAYOUT_PATHS.integration}/binding.json`;
 const IDENTITY_RELATIVE = PROJECT_LAYOUT_PATHS.identity;
 const OWNERSHIP_RELATIVE = PROJECT_LAYOUT_PATHS.ownership;
+export const CONTINUOUS_SYNC_SCOPE = Object.freeze({schemaVersion: '1.0.0', operations: ['asset-facts-batch', 'relation-facts-write', 'foundation-skeleton-and-facts-create', 'project-rules-adopt'], writeScope: ['.foundation/facts/*.json', '.foundation/preview.json', 'missing-project-preparation', 'owned-project-rule-guide'], sourceWrites: false});
+function continuousEvidence(plan) {
+  const state = inspectProjectAuthority(plan.project, {installationRoot: plan.installationRoot});
+  const grant = state.continuousSync;
+  if (state.state !== 'enabled' || !state.agreement || grant?.state !== 'active' || grant.revision !== plan.continuousSyncRevision || grant.projectId !== plan.projectId || grant.installId !== plan.installId || canonicalStringify(grant.scope) !== canonicalStringify(CONTINUOUS_SYNC_SCOPE) || !grant.scope.operations.includes(plan.operation)) throw new LifecycleError('PROJECT_SYNC_AUTHORITY_REQUIRED', '持续同步授权未授予、已撤销、修订变化或超出范围；保留代码与待同步项', {stage: 'project-sync'});
+  if (plan.operation === 'project-rules-adopt' && plan.handler.payload.technology !== grant.technology) throw new LifecycleError('PROJECT_SYNC_SCOPE_CHANGED', '采用技术栈超出首次披露范围', {stage: 'project-sync'});
+  if (plan.operation === 'foundation-skeleton-and-facts-create' && plan.handler.payload.includePreview && !grant.includePreview) throw new LifecycleError('PROJECT_SYNC_SCOPE_CHANGED', '首次授权未包含预览准备', {stage: 'project-sync'});
+  return {source: 'project-continuous-authorization', authorizationId: `project-sync-${plan.projectId}-${grant.revision}`, revision: grant.revision, grantPlanId: grant.planId, scope: grant.scope};
+}
+
 
 function fsyncDirectory(directory) {
   let descriptor;
@@ -56,6 +68,9 @@ function fsyncDirectory(directory) {
 }
 
 function writeJsonAtomic(file, value, mode = 0o600) {
+  let ancestor = file;
+  while (!fs.existsSync(ancestor)) ancestor = path.dirname(ancestor);
+  if (fs.lstatSync(ancestor).isSymbolicLink() || fs.realpathSync(ancestor) !== ancestor) throw new LifecycleError('PROJECT_WRITE_PATH_UNSAFE', '写入路径包含符号链接');
   fs.mkdirSync(path.dirname(file), {recursive: true});
   const temporary = `${file}.${process.pid}.${crypto.randomUUID()}.tmp`;
   const descriptor = fs.openSync(temporary, 'wx', mode);
@@ -226,7 +241,7 @@ export function inspectProjectAuthority(project, {installationRoot = null} = {})
   if (portable.value?.state === 'disabled') return {schemaVersion: '1.0.0', state: 'disabled', project: target, role: role.role, projectId: portable.value.projectId, reason: recordMatches(record, target, portable) && record.state === 'disabled' ? 'project-disabled' : 'portable-and-machine-authority-disagree', agreement: recordMatches(record, target, portable) && record.state === 'disabled', mutationPerformed: false};
   if (portable.value?.state === 'enabled' && record?.state === 'enabled' && recordMatches(record, target, portable)) {
     const authorityIdentity = sha256(canonicalStringify({currentInstallId: context.current.identity.installId, currentIdentity: context.current.identity, currentIntegrityHash: context.currentIntegrityHash, project: target, canonicalPath: canonicalPath(target), projectIdentity: projectIdentity(target), portableBinding: portable.value, portableBindingHash: portable.hash, machineRecord: record, registryFileHash: registry.fileHash}));
-    return {schemaVersion: '1.0.0', state: 'enabled', project: target, role: role.role, projectId: portable.value.projectId, bindingVersion: portable.value.bindingVersion, installationRoot: context.root, agreement: true, authorityIdentity, mutationPerformed: false};
+    return {schemaVersion: '1.0.0', state: 'enabled', project: target, role: role.role, projectId: portable.value.projectId, bindingVersion: portable.value.bindingVersion, installationRoot: context.root, agreement: true, authorityIdentity, continuousSync: record.continuousSync || {state: 'not-granted'}, mutationPerformed: false};
   }
   return {schemaVersion: '1.0.0', state: 'unmanaged', project: target, role: role.role, projectId: portable.value?.projectId || null, reason: portable.value ? 'portable-and-machine-authority-disagree' : 'no-portable-binding', agreement: false, mutationPerformed: false};
 }
@@ -255,8 +270,10 @@ function validateProjectPlan(plan, now = Date.now()) {
   if (now > plan.expiresAt) throw new LifecycleError('PROJECT_PLAN_EXPIRED', '项目权限 plan 已过期，请重新生成', {stage: 'project-plan', retryable: true});
 }
 
-export function createProjectAuthorityPlan({operation, project, installationRoot, createFromTemplate = false, rebind = false, now = Date.now(), ttlMs = 15 * 60 * 1000}) {
+export function createProjectAuthorityPlan({operation, project, installationRoot, createFromTemplate = false, rebind = false, continuousSync = null, includePreview = false, technology = 'preserve', now = Date.now(), ttlMs = 15 * 60 * 1000}) {
   if (!['enable', 'disable'].includes(operation)) throw new LifecycleError('PROJECT_OPERATION_INVALID', '项目权限只支持 enable 或 disable', {stage: 'project-plan'});
+  if (![null, 'grant', 'revoke'].includes(continuousSync) || typeof includePreview !== 'boolean' || !['preserve', 'react-shadcn'].includes(technology)) throw new LifecycleError('PROJECT_SYNC_SCOPE_INVALID', '持续授权选择或准备范围无效');
+  if (operation === 'disable' && continuousSync === 'grant') throw new LifecycleError('PROJECT_SYNC_SCOPE_INVALID', '停用不能同时授予持续同步');
   if (createFromTemplate && operation !== 'enable') throw new LifecycleError('PROJECT_CREATE_OPERATION_INVALID', 'create 只能生成 enable plan', {stage: 'project-plan'});
   const context = installationContext(installationRoot);
   const target = assertEligibleProject(project, context.root, {mayNotExist: createFromTemplate});
@@ -280,11 +297,11 @@ export function createProjectAuthorityPlan({operation, project, installationRoot
   const projectId = operation === 'disable' ? status.projectId : (portable.value?.projectId || existingIdentity?.projectId || `project-${crypto.randomUUID()}`);
   const template = createFromTemplate ? installedTemplate(context) : null;
   const changes = operation === 'enable'
-    ? [...(createFromTemplate ? ['create-project-from-packaged-template'] : []), 'write-project-identity-if-absent', 'create-foundation-facts-if-absent', 'write-owned-integration-binding', 'write-project-ownership-manifest', 'write-signed-machine-registration', 'enable-foundation-management']
+    ? [...(createFromTemplate ? ['create-project-from-packaged-template'] : []), 'write-project-identity-if-absent', 'create-foundation-facts-if-absent', 'write-owned-integration-binding', 'write-project-ownership-manifest', 'write-signed-machine-registration', 'enable-foundation-management', ...(continuousSync === 'grant' ? ['grant-project-continuous-sync', 'prepare-missing-facts', 'adopt-project-rules', ...(includePreview ? ['prepare-preview-if-absent'] : [])] : continuousSync === 'revoke' ? ['revoke-project-continuous-sync'] : [])]
     : ['mark-machine-registration-disabled', 'mark-portable-project-binding-disabled', 'stop-foundation-management'];
   const seed = {
     schemaVersion: '1.0.0', bindingVersion: PROJECT_BINDING_VERSION, operation, project: target, installationRoot: context.root, installId: context.current.identity.installId, projectId,
-    createFromTemplate, rebind, createdAt: now, expiresAt: now + ttlMs,
+    createFromTemplate, rebind, continuousSync, syncScope: continuousSync === 'grant' ? CONTINUOUS_SYNC_SCOPE : null, includePreview, technology, createdAt: now, expiresAt: now + ttlMs,
     projectSnapshot: {exists: fs.existsSync(target), identity: fs.existsSync(target) ? projectIdentity(target) : null, protected: fs.existsSync(target) ? snapshotProtectedProjectData(target) : null},
     templateSnapshot: template ? {path: template.path, hash: template.hash} : null,
     portableBeforeHash: portable.hash, registryBeforeHash: registry.fileHash, currentIntegrityHash: context.currentIntegrityHash,
@@ -297,7 +314,7 @@ export function createProjectAuthorityPlan({operation, project, installationRoot
     byteCount: fs.existsSync(target) ? snapshotProtectedProjectData(target).byteCount : 0,
     protectedDataHashes: fs.existsSync(target) ? snapshotProtectedProjectData(target).hashes : {},
     expectedBeforeState: {project: fs.existsSync(target) ? snapshotProtectedProjectData(target) : null, registryHash: registry.fileHash, currentIntegrityHash: context.currentIntegrityHash},
-    semantics: operation === 'disable' ? '停止 Foundation 对该项目的管理；不删除项目资料，不卸载 Foundation；保留 disabled integration binding、项目 identity、facts、backups、未知文件和项目代码' : '启用 Foundation 对该项目的显式管理',
+    semantics: operation === 'disable' ? '停止 Foundation 对该项目的管理；不删除项目资料，不卸载 Foundation；保留 disabled integration binding、项目 identity、facts、backups、未知文件和项目代码' : `启用 Foundation 对该项目的显式管理${continuousSync === 'grant' ? '；同页准备缺项并采用规则；授予本项目持续事实、关系、源码摘要及受支持预览登记权限；关闭页面/预览/对话不撤销，不包含源码、软件、其他项目写入' : continuousSync === 'revoke' ? '；撤销持续同步，保留资料且打开不恢复' : ''}`,
   };
   return planIntegrity(seed);
 }
@@ -485,7 +502,7 @@ export function applyProjectAuthorityPlan({plan, now = Date.now()}) {
       const portableHash = sha256(fs.readFileSync(portableFile));
       registry = registryContext(context);
       const payload = structuredClone(registry.payload);
-      payload.projects[plan.projectId] = {projectId: plan.projectId, bindingVersion: PROJECT_BINDING_VERSION, state: 'enabled', realPath: plan.project, canonicalPath: canonicalPath(plan.project), projectIdentity: projectIdentity(plan.project), portableBindingHash: portableHash, confirmationEvidence: {confirmationId: authorization.confirmationId || authorization.authorizationId, effectHash: authorization.effectHash, planId: plan.planId, confirmedAt: now}};
+      payload.projects[plan.projectId] = {projectId: plan.projectId, bindingVersion: PROJECT_BINDING_VERSION, state: 'enabled', realPath: plan.project, canonicalPath: canonicalPath(plan.project), projectIdentity: projectIdentity(plan.project), portableBindingHash: portableHash, continuousSync: plan.continuousSync === 'grant' ? {state: 'active', revision: (registry.payload.projects[plan.projectId]?.continuousSync?.revision || 0) + 1, projectId: plan.projectId, installId: plan.installId, scope: CONTINUOUS_SYNC_SCOPE, technology: plan.technology, includePreview: plan.includePreview, planId: plan.planId, grantedAt: now} : {state: plan.continuousSync === 'revoke' || plan.operation === 'disable' ? 'revoked' : 'not-granted', revision: (registry.payload.projects[plan.projectId]?.continuousSync?.revision || 0) + 1, revokedAt: now}, confirmationEvidence: {confirmationId: authorization.confirmationId || authorization.authorizationId, effectHash: authorization.effectHash, planId: plan.planId, confirmedAt: now}};
       writeJsonAtomic(registry.file, {...payload, integrity: signTrustedPayload(payload)});
       writeProjectJournal(journalFile, journal, 'machine-written', 'machine-registration-written');
       operationCheckpoint('after-machine-registration');
@@ -493,7 +510,7 @@ export function applyProjectAuthorityPlan({plan, now = Date.now()}) {
       const status = inspectProjectAuthority(plan.project, {installationRoot: context.root});
       if (status.state !== 'enabled' || status.projectId !== plan.projectId) throw new LifecycleError('PROJECT_AUTHORITY_CHANGED', 'disable apply 前项目权限已变化', {stage: 'project-apply'});
       const payload = structuredClone(registry.payload);
-      payload.projects[plan.projectId] = {...payload.projects[plan.projectId], state: 'disabled', confirmationEvidence: {confirmationId: authorization.confirmationId || authorization.authorizationId, effectHash: authorization.effectHash, planId: plan.planId, confirmedAt: now}};
+      payload.projects[plan.projectId] = {...payload.projects[plan.projectId], state: 'disabled', continuousSync: plan.continuousSync === 'grant' ? {state: 'active', revision: (registry.payload.projects[plan.projectId]?.continuousSync?.revision || 0) + 1, projectId: plan.projectId, installId: plan.installId, scope: CONTINUOUS_SYNC_SCOPE, technology: plan.technology, includePreview: plan.includePreview, planId: plan.planId, grantedAt: now} : {state: plan.continuousSync === 'revoke' || plan.operation === 'disable' ? 'revoked' : 'not-granted', revision: (registry.payload.projects[plan.projectId]?.continuousSync?.revision || 0) + 1, revokedAt: now}, confirmationEvidence: {confirmationId: authorization.confirmationId || authorization.authorizationId, effectHash: authorization.effectHash, planId: plan.planId, confirmedAt: now}};
       writeJsonAtomic(registry.file, {...payload, integrity: signTrustedPayload(payload)});
       writeProjectJournal(journalFile, journal, 'machine-written', 'machine-registration-disabled');
       operationCheckpoint('after-machine-registration');
@@ -511,7 +528,10 @@ export function applyProjectAuthorityPlan({plan, now = Date.now()}) {
     journal.outcome = 'completed';
     writeProjectJournal(journalFile, journal, 'completed', 'operation-complete');
     updateTrustedPreIntent(preIntent, 'completed', {completedAt: Date.now(), outcome: 'completed'});
-    return {ok: true, operation: plan.operation, project: plan.project, projectId: plan.projectId, state: plan.operation === 'enable' ? 'enabled' : 'disabled', preserved: plan.preserves, semantics: plan.semantics, authorization: {authorizationId: authorization.authorizationId, effectHash: authorization.effectHash}};
+    releaseProjectGuard(guard); guard = null;
+    releaseTrustedTargetGuard(trustedGuard); trustedGuard = null;
+    const preparation = plan.continuousSync === 'grant' ? continueProjectPreparation({project:plan.project, installationRoot:plan.installationRoot}) : null;
+    return {ok: !preparation || preparation.ok, preparation, operation: plan.operation, project: plan.project, projectId: plan.projectId, state: plan.operation === 'enable' ? 'enabled' : 'disabled', preserved: plan.preserves, semantics: plan.semantics, authorization: {authorizationId: authorization.authorizationId, effectHash: authorization.effectHash}};
   } catch (error) {
     if (!consumed) {
       try { failExactManagerConfirmationAtBoundary(reservation, {code: error.code || 'PROJECT_AUTHORITY_FAILED', intentWritten: false, intentId: plan.planId}); } catch {}
@@ -679,6 +699,10 @@ export function createProjectMutationPlan({operation, project, installationRoot,
   const context = installationContext(installationRoot);
   const authority = assertProjectMutationAuthority(target, {installationRoot: context.root, capability: operation});
   if (operation === 'project-rules-adopt' && handlerPayload?.installationRoot !== context.root) throw new LifecycleError('PROJECT_HANDLER_BINDING_MISMATCH', '规则采用必须绑定同一安装', {stage: 'project-mutation-plan'});
+  if(operation==='asset-facts-batch'){
+    const proposed={};for(const kind of ['components','changes']){const file=path.join(target,'.foundation/facts',kind+'.json');const existing=fs.existsSync(file)?readJson(file):{items:[]};proposed[kind]={items:[...existing.items,...(handlerPayload?.documents?.find(d=>d.kind===kind)?.upserts || [])]};}
+    const required=requiredFactCapabilities(proposed);if(required.length){const rules=readCurrentFoundationRules({installationRoot:context.root,project:target});if(required.some(capability=>!rules.factCapabilities.includes(capability)))throw new LifecycleError('FACT_CAPABILITY_REQUIRED','当前运行时不支持新事实合同；保持只读，禁止旧运行时写入',{stage:'project-mutation-plan'});}
+  }
   const handler = deriveClosedHandlerBinding({operation, project: target, handlerPayload});
   const seed = {
     schemaVersion: '1.0.0',
@@ -693,6 +717,7 @@ export function createProjectMutationPlan({operation, project, installationRoot,
     handler: {handlerId: handler.handlerId, handlerVersion: handler.handlerVersion, payload: handler.payload, payloadHash: handler.payloadHash, allowedWriteSet: handler.allowedWriteSet, beforeStateHash: handler.beforeStateHash},
     projectSnapshot: {identity: projectIdentity(target), currentIdentityHash: sha256(canonicalStringify(context.current)), portableHash: fs.existsSync(path.join(target, ...PORTABLE_RELATIVE.split('/'))) ? sha256(fs.readFileSync(path.join(target, ...PORTABLE_RELATIVE.split('/')))) : null, protected: snapshotProtectedProjectData(target)},
     authorityState: authority.state,
+    continuousSyncRevision: authority.continuousSync?.state === 'active' && CONTINUOUS_SYNC_SCOPE.operations.includes(operation) ? authority.continuousSync.revision : null,
     createdAt: now,
     expiresAt: now + ttlMs,
   };
@@ -707,7 +732,8 @@ function validateProjectMutationPlan(plan, now = Date.now()) {
 }
 
 export function applyProjectMutationPlan({plan, now = Date.now()}) {
-  validateProjectMutationPlan(plan, now);
+  // Expiration prevents new writes, not readback of an already completed exact batch.
+  validateProjectMutationPlan(plan, Math.min(now, plan?.expiresAt ?? now));
   const checkCurrent = () => {
     if (plan.projectSnapshot.currentIdentityHash !== sha256(canonicalStringify(installationContext(plan.installationRoot).current))) throw new LifecycleError('PROJECT_TASK_CURRENT_CHANGED', '当前安装已变化或旧计划未绑定 current；重新读取规则并准备新计划', {stage: 'project-mutation'});
   };
@@ -716,10 +742,19 @@ export function applyProjectMutationPlan({plan, now = Date.now()}) {
   if (!sameIdentity(projectIdentity(target), plan.projectSnapshot.identity)) throw new LifecycleError('PROJECT_REPLACED_AFTER_PLAN', 'project mutation plan 后目录被移动或替换', {stage: 'project-mutation'});
   const authority = assertProjectMutationAuthority(target, {installationRoot: plan.installationRoot, capability: plan.operation});
   if (authority.projectId !== plan.projectId) throw new LifecycleError('PROJECT_AUTHORITY_CHANGED', 'project mutation plan 后项目 authority 已变化', {stage: 'project-mutation'});
+  const continuous = plan.continuousSyncRevision !== null && plan.continuousSyncRevision !== undefined;
+  const grantEvidence = continuous ? continuousEvidence(plan) : null;
+  const completedFile = path.join(plan.installationRoot, 'state', 'project-mutation-journals', `${plan.planId}.json`);
+  if (continuous && fs.existsSync(completedFile)) {
+    const completed = signedPayload(readJson(completedFile), 'PROJECT_MUTATION_JOURNAL_INVALID', '同步日志');
+    if (completed.planHash === plan.integrity.hash && completed.outcome === 'completed' && canonicalStringify(snapshotClosedHandlerWrites(target, plan.handler.allowedWriteSet).snapshots) === canonicalStringify(completed.after)) return {...completed.result, idempotent: true};
+    throw new LifecycleError('PROJECT_SYNC_REPLAN_REQUIRED', '已有执行记录或落盘发生变化，请重读并生成新计划');
+  }
+  validateProjectMutationPlan(plan, now);
   assertClosedHandlerBinding(plan);
   const effect = authorizationEffectForProjectMutationPlan(plan);
-  const reservation = reserveExactManagerConfirmationAtBoundary(effect);
-  const authorization = publicManagerConfirmationEvidence(reservation);
+  const reservation = continuous ? null : reserveExactManagerConfirmationAtBoundary(effect);
+  const authorization = continuous ? {...grantEvidence, effectHash: effect.effectHash} : publicManagerConfirmationEvidence(reservation);
   const before = snapshotClosedHandlerWrites(target, plan.handler.allowedWriteSet);
   let preIntent = null;
   let trustedGuard = null;
@@ -736,27 +771,33 @@ export function applyProjectMutationPlan({plan, now = Date.now()}) {
     const currentAuthority = assertProjectMutationAuthority(target, {installationRoot: plan.installationRoot, capability: plan.operation});
     if (currentAuthority.projectId !== plan.projectId) throw new LifecycleError('PROJECT_AUTHORITY_CHANGED', '取得项目互斥权后 authority 已变化', {stage: 'project-mutation'});
     assertClosedHandlerBinding(plan);
-    consumeExactManagerConfirmationAtBoundary(reservation, {effectHash: effect.effectHash, intentId: plan.planId, intentPathHash: preIntent.fileHash});
+    if (continuous) continuousEvidence(plan);
+    else consumeExactManagerConfirmationAtBoundary(reservation, {effectHash: effect.effectHash, intentId: plan.planId, intentPathHash: preIntent.fileHash});
     consumed = true;
     updateTrustedPreIntent(preIntent, 'consumed', {consumedAt: Date.now()});
     operationCheckpoint('after-project-authorization-consume');
     const base = path.join(plan.installationRoot, 'state', 'project-mutation-journals');
     journalFile = path.join(base, `${plan.planId}.json`);
-    journal = {schemaVersion: '1.0.0', operationId: plan.planId, operation: plan.operation, project: target, projectId: plan.projectId, effectHash: effect.effectHash, authorization, planHash: plan.integrity.hash, handler: plan.handler, before: before.snapshots, status: 'executing', outcome: null, createdAt: now};
+    journal = {schemaVersion: '1.0.0', operationId: plan.planId, operation: plan.operation, project: target, projectId: plan.projectId, effectHash: effect.effectHash, authorization, planHash: plan.integrity.hash, expectedOutputs: plan.actions.flatMap(action => action.documents || action.files || []), handler: plan.handler, before: before.snapshots, status: 'executing', outcome: null, createdAt: now};
     writeJsonAtomic(journalFile, {...journal, integrity: signTrustedPayload(journal)});
     operationCheckpoint('before-project-handler-execute');
     const result = executeClosedProjectHandler(plan);
     operationCheckpoint('after-project-handler-execute');
-    journal = {...journal, status: 'completed', outcome: 'completed', completedAt: Date.now()};
+    journal = {...journal, result, after: snapshotClosedHandlerWrites(target, plan.handler.allowedWriteSet).snapshots, status: 'completed', outcome: 'completed', completedAt: Date.now()};
     writeJsonAtomic(journalFile, {...journal, integrity: signTrustedPayload(journal)});
     updateTrustedPreIntent(preIntent, 'completed', {completedAt: Date.now(), outcome: 'completed'});
     return result;
   } catch (error) {
     if (!consumed) {
-      try { failExactManagerConfirmationAtBoundary(reservation, {code: error.code || 'PROJECT_MUTATION_FAILED', intentWritten: false, intentId: plan.planId}); } catch {}
+      try { if (reservation) failExactManagerConfirmationAtBoundary(reservation, {code: error.code || 'PROJECT_MUTATION_FAILED', intentWritten: false, intentId: plan.planId}); } catch {}
       if (preIntent) try { updateTrustedPreIntent(preIntent, 'cancelled', {cancelledAt: Date.now(), errorCode: error.code || 'PROJECT_MUTATION_FAILED'}); } catch {}
     } else {
       try {
+        if (continuous) {
+          const expected = plan.actions.flatMap(action => action.documents || action.files || []);
+          const actual = snapshotClosedHandlerWrites(target,plan.handler.allowedWriteSet).snapshots;
+          for (const item of actual) if (canonicalStringify(item) !== canonicalStringify(before.snapshots.find(previous=>previous.path===item.path)) && !(item.kind === 'file' && item.sha256 === expected.find(output=>output.path===item.path)?.sha256)) throw new LifecycleError('PROJECT_SYNC_RECOVERY_CONFLICT','失败后出现未知事实写入，保留现场而不覆盖');
+        }
         restoreClosedHandlerWrites(target, before.snapshots);
         if (journalFile && journal) {
           journal = {...journal, status: 'completed', outcome: 'rolled-back', failedAt: Date.now(), errorCode: error.code || 'PROJECT_MUTATION_FAILED'};
@@ -823,13 +864,31 @@ function validateProjectMutationRecoveryPlan(plan, now) {
   if (now > plan.expiresAt) throw new LifecycleError('PROJECT_MUTATION_RECOVERY_PLAN_EXPIRED', 'project mutation recovery plan 已过期', {stage: 'project-mutation-recovery'});
 }
 
-export function applyProjectMutationRecoveryPlan({plan, now = Date.now()}) {
+export function applyProjectMutationRecoveryPlan({plan, now = Date.now(), continuous = false}) {
   validateProjectMutationRecoveryPlan(plan, now);
   const current = inspectProjectMutationRecovery(plan.project);
   if (canonicalStringify(current) !== canonicalStringify(plan.recoverySnapshot)) throw new LifecycleError('PROJECT_MUTATION_RECOVERY_STATE_CHANGED', 'project mutation recovery scope 在 plan 后变化', {stage: 'project-mutation-recovery'});
   const effect = authorizationEffectForProjectMutationRecoveryPlan(plan);
-  const reservation = reserveExactManagerConfirmationAtBoundary(effect);
-  const authorization = publicManagerConfirmationEvidence(reservation);
+  const verifyContinuous = () => {
+    const entries = plan.recoverySnapshot.pending;
+    if (!entries.length) throw new LifecycleError('PROJECT_SYNC_RECOVERY_UNSAFE','缺少可信恢复条目');
+    for (const entry of entries) {
+      const state = inspectProjectAuthority(plan.project,{installationRoot:entry.beforeState.installationRoot});
+      if (state.state !== 'enabled' || state.continuousSync?.state !== 'active' || entry.authorization?.source !== 'project-continuous-authorization' || entry.authorization.revision !== state.continuousSync.revision) throw new LifecycleError('PROJECT_SYNC_AUTHORITY_REQUIRED','恢复前持续授权已变化；保留现场');
+      const before = entry.beforeState.handlerWriteSnapshots;
+      const journalFile = path.join(entry.beforeState.installationRoot,'state','project-mutation-journals',`${entry.intentId}.json`);
+      const journal = fs.existsSync(journalFile) ? signedPayload(readJson(journalFile),'PROJECT_MUTATION_JOURNAL_INVALID','同步恢复日志') : null;
+      const actual = snapshotClosedHandlerWrites(plan.project,before.map(item=>item.path)).snapshots;
+      for (const item of actual) {
+        const original = before.find(value=>value.path===item.path);
+        const output = journal?.expectedOutputs?.find(value=>value.path===item.path);
+        if (canonicalStringify(item) !== canonicalStringify(original) && !(item.kind === 'file' && item.sha256 === output?.sha256)) throw new LifecycleError('PROJECT_SYNC_RECOVERY_CONFLICT','中断后发现未知写入；保留现场，不覆盖用户修改');
+      }
+    }
+    return {source:'project-continuous-authorization',authorizationId:`continuous-recovery-${plan.planId}`,revision:entries[0].authorization.revision,effectHash:effect.effectHash};
+  };
+  const reservation = continuous ? null : reserveExactManagerConfirmationAtBoundary(effect);
+  const authorization = continuous ? verifyContinuous() : publicManagerConfirmationEvidence(reservation);
   let preIntent = null;
   let trustedGuard = null;
   let consumed = false;
@@ -838,12 +897,13 @@ export function applyProjectMutationRecoveryPlan({plan, now = Date.now()}) {
     verifyTrustedPreIntentScope(plan.recoverySnapshot.pending);
     trustedGuard = acquireTrustedTargetGuard(preIntent, {recoverIntentIds: plan.recoverySnapshot.pending.map((entry) => entry.intentId)});
     verifyTrustedPreIntentScope(plan.recoverySnapshot.pending);
-    consumeExactManagerConfirmationAtBoundary(reservation, {effectHash: effect.effectHash, intentId: plan.planId, intentPathHash: preIntent.fileHash});
+    if (continuous) verifyContinuous();
+    else consumeExactManagerConfirmationAtBoundary(reservation, {effectHash: effect.effectHash, intentId: plan.planId, intentPathHash: preIntent.fileHash});
     consumed = true;
     updateTrustedPreIntent(preIntent, 'consumed', {consumedAt: Date.now()});
     for (const entry of plan.recoverySnapshot.pending) {
       if (entry.status === 'planned') {
-        try { failExactManagerConfirmationAtBoundary(entry.authorization, {code: 'AUTHORIZED_PROJECT_MUTATION_RECOVERY_CANCELLED_PRECONSUME_RESERVATION', intentWritten: false, intentId: entry.intentId}); } catch {}
+        try { if (!continuous) failExactManagerConfirmationAtBoundary(entry.authorization, {code: 'AUTHORIZED_PROJECT_MUTATION_RECOVERY_CANCELLED_PRECONSUME_RESERVATION', intentWritten: false, intentId: entry.intentId}); } catch {}
         continue;
       }
       restoreClosedHandlerWrites(plan.project, entry.beforeState.handlerWriteSnapshots);
@@ -860,7 +920,7 @@ export function applyProjectMutationRecoveryPlan({plan, now = Date.now()}) {
     return {ok: true, status: 'recovered', project: plan.project, recovered, authorization: {authorizationId: authorization.authorizationId, effectHash: effect.effectHash}};
   } catch (error) {
     if (!consumed) {
-      try { failExactManagerConfirmationAtBoundary(reservation, {code: error.code || 'PROJECT_MUTATION_RECOVERY_FAILED', intentWritten: false, intentId: plan.planId}); } catch {}
+      try { if (reservation) failExactManagerConfirmationAtBoundary(reservation, {code: error.code || 'PROJECT_MUTATION_RECOVERY_FAILED', intentWritten: false, intentId: plan.planId}); } catch {}
       if (preIntent) try { updateTrustedPreIntent(preIntent, 'cancelled', {cancelledAt: Date.now(), errorCode: error.code || 'PROJECT_MUTATION_RECOVERY_FAILED'}); } catch {}
     } else if (preIntent) try { updateTrustedPreIntent(preIntent, 'manual-action-required', {failedAt: Date.now(), errorCode: error.code || 'PROJECT_MUTATION_RECOVERY_FAILED'}); } catch {}
     throw error;

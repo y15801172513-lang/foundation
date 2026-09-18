@@ -3,7 +3,7 @@ import path from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {buildCandidate, createFoundationRuntimeDescriptor, productVersion, readRepositoryGitCommit} from '@foundation/core';
-import {thirdPartyNotices} from './third-party-notices.mjs';
+import {thirdPartyNotices,productionDependencyClosure} from './third-party-notices.mjs';
 import {auditCapabilityArtifact} from '../packages/core/capability-authority.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -55,7 +55,7 @@ function bundle(entry, destination, external = []) {
     '--target=node20',
     '--log-level=warning',
     `--metafile=${metafile}`,
-    ...external.map((specifier) => `--external:${specifier}`),
+    ...['ts-morph',...external].map((specifier) => `--external:${specifier}`),
     `--outfile=${target}`,
   ], {cwd: ROOT, encoding: 'utf8'});
   if (run.status !== 0) throw new Error(`候选模块闭包构建失败：${entry}\n${run.stderr || run.stdout}`);
@@ -90,6 +90,18 @@ copy('packages/cli/package.json');
 copy('apps/management-center/package.json');
 copy('apps/management-center/package.json', 'node_modules/@foundation/management-center/package.json');
 copy('apps/management-center/dist', 'node_modules/@foundation/management-center/dist');
+const analysisDependencies=productionDependencyClosure(ROOT,['ts-morph']);
+for(const dependency of analysisDependencies) {
+  copy(dependency.relative,dependency.relative,(_file,entry)=>entry.name!=='node_modules');
+  bundledInputs.add(`${dependency.relative}/package.json`);
+}
+fs.writeFileSync(path.join(SOURCE,'app','analysis-dependencies.json'),JSON.stringify(analysisDependencies.map(({directory,...record})=>record),null,2)+'\n');
+copy('packages/core/schemas','artifacts/schemas');
+copy('packages/core/notices','artifacts/notices');
+for(const directory of ['packages/cli','node_modules/@foundation/management-center/src/server']) {
+  copy('packages/core/source-analysis.mjs',`${directory}/source-analysis.mjs`);
+  copy('packages/core/source-analysis-worker.mjs',`${directory}/source-analysis-worker.mjs`);
+}
 bundle('packages/cli/index.mjs', 'packages/cli/index.mjs', ['@foundation/management-center', './runtime-surface.mjs', './browser-launch.mjs', './platform-account.mjs']);
 bundle('packages/core/uninstall-finalizer.mjs', 'packages/cli/uninstall-finalizer.mjs', ['./runtime-surface.mjs']);
 copy('packages/core/runtime-surface.mjs', 'packages/cli/runtime-surface.mjs');
@@ -97,6 +109,7 @@ copy('packages/core/browser-launch.mjs', 'packages/cli/browser-launch.mjs');
 copy('packages/core/platform-account.mjs', 'packages/cli/platform-account.mjs');
 bundle('apps/management-center/src/server/index.mjs', 'node_modules/@foundation/management-center/src/server/index.mjs', ['./runtime-surface.mjs']);
 copy('packages/core/runtime-surface.mjs', 'node_modules/@foundation/management-center/src/server/runtime-surface.mjs');
+bundle('apps/management-center/src/server/workbench-validation-worker.mjs','node_modules/@foundation/management-center/src/server/workbench-validation-worker.mjs',['./runtime-surface.mjs']);
 copy('templates');
 copy('skills', 'artifacts/skills');
 copy('rules', 'artifacts/rules');
@@ -111,6 +124,7 @@ const runtimeDescriptor = createFoundationRuntimeDescriptor({
   arch: process.arch,
   buildIdentity: `${COMMIT}${DIRTY ? '+worktree' : ''}`,
   supportedProjectDataFormats: ['0.1.0', '0.1.1'],
+  factCapabilities:['component-delivery/1','semantic-review/1'],
   ruleCapabilityEndpoint: 'artifacts',
   ruleCapabilityEndpointRoot: path.join(SOURCE, 'app', 'artifacts'),
   capabilityFacts: {

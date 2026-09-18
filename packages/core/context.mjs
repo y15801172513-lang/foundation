@@ -1,3 +1,4 @@
+import {contentFromProjection} from './content-integrity.mjs';
 import {humanLabel} from './human-labels.mjs';
 import {foundationUiPolicyRecord} from './ui-policy.mjs';
 
@@ -14,7 +15,7 @@ function scopeGaps(item) {
   return {missing: missing.sort(), pending: [...(item?.pending || [])].sort(), conflicts: [...(item?.conflicts || [])].sort(), unverified: item?.verificationStatus && item.verificationStatus !== 'verified' ? [item.verificationStatus] : []};
 }
 
-export function buildContextRecord({project, pages = [], relations = [], assets = [], selection = null, pageId, mode = 'page_building', scope = 'page'}) {
+export function buildContextRecord({project, pages = [], relations = [], assets = [], interactions = [], changes = [], figma = [], selection = null, pageId, mode = 'page_building', scope = 'page',selectionRef = null}) {
   const page = pages.find((item) => item.id === pageId) || pages.find((item) => item.entry) || null;
   const pageById = new Map(pages.map((item) => [item.id, item]));
   const assetById = new Map(assets.map((item) => [item.assetId || item.id, item]));
@@ -25,14 +26,16 @@ export function buildContextRecord({project, pages = [], relations = [], assets 
   const relationPageIds = assetScope ? new Set((asset?.usedByPages || []).map((usage) => usage.pageId)) : new Set(page?.id ? [page.id] : []);
   const related = relations.filter((item) => relationPageIds.has(item.from) || relationPageIds.has(item.to)).sort((left, right) => left.id.localeCompare(right.id));
   const scopedAssets = assetScope && asset ? [asset] : pageAssets;
-  const changes = [...new Map(scopedAssets.flatMap((item) => item.recentChanges || []).map((item) => [item.id, item])).values()].sort((left, right) => left.id.localeCompare(right.id));
+  const recentChanges = [...new Map(scopedAssets.flatMap((item) => item.recentChanges || []).map((item) => [item.id, item])).values()].sort((left, right) => left.id.localeCompare(right.id));
   const usagePages = assetScope ? (asset?.usedByPages || []).map((usage) => usage.pageId) : [];
   const selfComponents = assetScope && asset?.assetType === 'component' ? [asset.assetId] : [];
   const impactPages = [...new Set([...scopedAssets.flatMap((item) => item.impactPages || []), ...usagePages])].sort();
   const impactComponents = [...new Set([...scopedAssets.flatMap((item) => item.impactComponents || []), ...selfComponents])].sort();
   const gaps = scopeGaps(assetScope ? asset : page);
+  const contentIntegrity = contentFromProjection({pages, relations, assets, interactions, changes, figma});
+  gaps.missing = [...new Set([...gaps.missing, ...contentIntegrity.issues.map(issue => issue.message)])];
   const uiPolicy = project?.effectivePolicy || project?.uiPolicy || foundationUiPolicyRecord(project?.governanceMode === 'shadcn-first' ? 'new' : 'existing');
-  return {scope, project, uiPolicy, page, asset, selection, mode, pageAssets, relations: related, interactions: related.map((item) => ({id: item.id, trigger: item.trigger, condition: item.condition, from: item.from, to: item.to})), recentChanges: changes, impactPages, impactComponents, figmaImpact: asset?.figma || {status: '未映射'}, ...gaps, factsVersion: project?.dataFormatVersion || 'unknown', pageById, assetById};
+  return {selectionRef,assessment: project?.deliveryAssessment || assets.find(a=>a.deliveryAssessment)?.deliveryAssessment || null, contentIntegrity, scope, project, uiPolicy, page, asset, selection, mode, pageAssets, relations: related, interactions: related.map((item) => ({id: item.id, trigger: item.trigger, condition: item.condition, from: item.from, to: item.to})), recentChanges, impactPages, impactComponents, figmaImpact: asset?.figma || {status: '未映射'}, ...gaps, factsVersion: project?.dataFormatVersion || 'unknown', pageById, assetById};
 }
 
 const valueOrUnknown = (value) => value || 'unknown';
@@ -43,6 +46,11 @@ const assetLabel = (record, assetId) => record.assetById?.get(assetId)?.name || 
 export function contextPlainText(record) {
   const base = [
     `scope: ${valueOrUnknown(record.scope)}`,
+    `selection: ${JSON.stringify(record.selectionRef)}`,
+    `delivery assessment: ${JSON.stringify(record.assessment || {aggregate:'pending'})}`,
+    `definition binding: ${JSON.stringify(record.asset?.assetModel?.binding || null)}`,
+    `reuse summary: ${JSON.stringify(record.asset?.reuseSummary || null)}`,
+    `reuse decisions: ${JSON.stringify(record.asset?.reuseSummary ? record.asset.reuseSummary.decisions : record.recentChanges.flatMap(c=>c.reuseDecisions || []))}`,
     `project name: ${valueOrUnknown(record.project?.name)}`,
     `project id: ${valueOrUnknown(record.project?.projectId)}`,
     `facts version: ${valueOrUnknown(record.factsVersion)}`,
@@ -103,9 +111,20 @@ export function contextHumanView(record) {
     `验证状态：${humanLabel('verification', subject?.verificationStatus)}`
   ];
   if (isAsset && subject?.assetType === 'design-token') technical.push(`令牌值：${subject.value ?? '尚未登记'}`, `引用：${subject.references?.join('、') || '尚未登记'}`, `适用范围：${humanLabel('scope', subject.tokenScope)}`);
+  const issueOccurrences = new Map();
+  const deliveryEntries = [{id: 'assessment-result', text: `当前结果：${({passed:'通过',failed:'失败',blocked:'受阻',pending:'待核'})[record.assessment?.aggregate] || '待核'}`}, ...(record.assessment?.issues || []).map((issue, index) => {
+    // Same message can belong to different requirements/dimensions. Preserve its
+    // source identity across state changes; even malformed duplicate IDs stay unique.
+    const identity = issue.id || `unidentified:${index}`;
+    const occurrence = issueOccurrences.get(identity) || 0;
+    issueOccurrences.set(identity, occurrence + 1);
+    return {id: JSON.stringify(['issue', identity, occurrence]), issueId: issue.id || null, text: issue.message};
+  })];
   return {
     identity: {title, summary: `${title}：${purpose} 当前状态：${status}。`, status},
     sections: [
+      ...(isAsset && subject?.reuseSummary ? [{id:'reuse',title:'复用判断',items:[subject.reuseSummary.label,subject.reuseSummary.limitation,...subject.reuseSummary.decisions.map(entry=>`${entry.taskId} / 修订${entry.scopeRevision} / ${entry.decision.id}：${entry.decision.reason}（${entry.state === 'registered' ? '当前已登记' : entry.state === 'stale' ? '历史或过期' : '关联待核'}）`)]}] : []),
+      {id:'delivery',title:'交付验收',entries:deliveryEntries,items:deliveryEntries.map(entry=>entry.text)},
       {id: 'actions', title: '用户可以做什么', items: actions.length ? actions : ['尚未登记可执行操作。']},
       {id: 'related', title: '和哪里有关', items: related.length ? related : ['尚未登记直接关系。']},
       {id: 'changes', title: '最近发生了什么', items: changes.length ? changes : ['尚未登记最近变化。']},
@@ -127,6 +146,10 @@ export function resolveComponentSelection(components = [], selection = {}) {
   if (!componentId) return null;
   const declared = components.find((component) => component.id === componentId);
   if (!declared) return null;
+  if(declared.assetModel) {
+    if(instanceId && !usageMatches(declared,{instanceId,pageId}))return null;
+    return {component:declared,componentId:declared.id,assetId:declared.id,instanceId,variant,pageId,eventId,scenarioId:selection.scenarioId || null,variantValues:selection.variantValues || {}};
+  }
   const familyCandidates = components.filter((component) => component.family === declared.family);
   const candidates = familyCandidates.length ? familyCandidates : [declared];
   const exactUsage = candidates.find((component) => component.variant === variant && usageMatches(component, {instanceId, pageId}));

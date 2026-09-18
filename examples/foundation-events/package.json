@@ -4,7 +4,7 @@
   "version": "0.2.7",
   "type": "module",
   "scripts": {
-    "build": "vite build"
+    "build": "vite build --configLoader native"
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",

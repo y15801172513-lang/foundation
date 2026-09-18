@@ -3,7 +3,7 @@
 
 ## 单页产品接续入口
 
-新安装只为当前用户提供一份程序与一份可选的 Codex 对话功能。软件位置不是业务项目位置；不要让用户选择项目安装模式，也不为另一个项目重新安装。每个项目通过独立接入、准备和采用流程使用同一程序，已有就绪项目继续使用；项目文件、规则和例外分别保管。已有项目专属安装仍按原身份识别和保护，不自动迁移、覆盖或删除。发现已有安装先检查并给出打开/更新选项；无定位线索时只询问原软件位置，不扫描电脑。
+新安装只为当前用户提供一份程序与一份可选的 Codex 对话功能。软件位置不是业务项目位置；不要让用户选择项目安装模式，也不为另一个项目重新安装。每个项目通过一次同页明确披露的接入、准备、采用及持续同步授权使用同一程序，已有就绪项目继续使用；项目文件、规则和例外分别保管。已有项目专属安装仍按原身份识别和保护，不自动迁移、覆盖或删除。发现已有安装先检查并给出打开/更新选项；无定位线索时只询问原软件位置，不扫描电脑。
 
 支持边界遵守公共安装说明引用的《安装与生命周期合同》现行支持策略；不要推荐已退出维护的旧 npm 入口，也不自动迁移或删除旧安装。
 
@@ -106,3 +106,9 @@ AI 只能检查、请求 exact 计划、打开 Foundation 本地管理器和读�
 Foundation-global decline/uninstalled suppression 只能由用户在 Foundation settings 中通过 manager-confirmed preference plan 更改。AI 不能 durable decline、accept 或 reopen，只能说明如何打开 settings。
 
 没有本机工具权限时只解释并提供命令，不得声称已执行。不要把模型生成文本拼成 shell 字符串；只传受约束的结构化参数。
+
+## 项目持续授权入口（041）
+
+使用 manager request-plan --operation enable 的 parameters-json 指定 project、installationRoot、continuousSync:grant、technology:preserve 及 includePreview（明确布尔值）。同一页面说明范围、由本人首次确认，并自动完成缺项准备与规则采用；失败保留已完成项，下一次 project sync 重读后接续。旧 enabled 不继承持续权限。
+
+project sync --root <安装根> --project <精确项目> 在任务开始、代码修改后及打开时执行；--payload <项目内文件> 提交需求生成的精确封闭批次。持续授权内不弹逐批确认；不授予源码、软件、其他项目或任意 shell 权限。sync-status 是只读核对。只有显式 disable 或 enable 的 continuousSync:revoke 才停止后续同步；仅打开不恢复。程序只会在有触发进程时运行，未知语义保留待核。

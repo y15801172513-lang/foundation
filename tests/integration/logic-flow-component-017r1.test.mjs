@@ -11,7 +11,10 @@ function installDom() {
   Object.assign(globalThis, {window: dom.window, document: dom.window.document, HTMLElement: dom.window.HTMLElement, Element: dom.window.Element, Node: dom.window.Node, SVGElement: dom.window.SVGElement, Event: dom.window.Event, MouseEvent: dom.window.MouseEvent, MutationObserver: dom.window.MutationObserver, getComputedStyle: dom.window.getComputedStyle, IS_REACT_ACT_ENVIRONMENT: true});
   Object.defineProperty(globalThis, 'navigator', {value: dom.window.navigator, configurable: true});
   dom.window.HTMLElement.prototype.getBoundingClientRect = () => ({x: 0, y: 0, left: 0, top: 0, right: 1000, bottom: 700, width: 1000, height: 700, toJSON() { return this; }});
-  globalThis.ResizeObserver = class {constructor(callback) { this.callback = callback; } observe(target) { this.callback([{target, contentRect: target.getBoundingClientRect()}]); } unobserve() {} disconnect() {}};
+  for (const [key, value] of Object.entries({offsetWidth: 1000, offsetHeight: 700, clientWidth: 1000, clientHeight: 700})) Object.defineProperty(dom.window.HTMLElement.prototype, key, {get: () => value, configurable: true});
+  dom.window.document.elementFromPoint = () => null;
+  dom.window.SVGElement.prototype.getBBox = () => ({x: 0, y: 0, width: 200, height: 20});
+  globalThis.ResizeObserver = class {constructor(callback) { this.callback = callback; } observe(target) { setTimeout(() => { if (target.isConnected) this.callback([{target, contentRect: target.getBoundingClientRect()}]); }, 0); } unobserve() {} disconnect() {}};
   globalThis.matchMedia = () => ({matches: false, addEventListener() {}, removeEventListener() {}});
   globalThis.requestAnimationFrame = (callback) => setTimeout(() => callback(Date.now()), 0);
   globalThis.cancelAnimationFrame = (id) => clearTimeout(id);
@@ -23,7 +26,7 @@ function installDom() {
 
 test('React Flow 仅让当前页面卡运行 live iframe，大量页面保持静态摘要且关系编辑器提交规范 draft', async (t) => {
   const dom = installDom();
-  const vite = await createServer({root: path.join(ROOT, 'apps/management-center'), configFile: path.join(ROOT, 'apps/management-center/vite.config.js'), optimizeDeps: {noDiscovery: true}, server: {middlewareMode: true}});
+  const vite = await createServer({root: path.join(ROOT, 'apps/management-center'), configFile: path.join(ROOT, 'apps/management-center/vite.config.js'), configLoader: 'native', cacheDir: path.join(ROOT, '.tmp/046-structure-opt/vite-cache'), optimizeDeps: {noDiscovery: true}, server: {middlewareMode: true}});
   t.after(async () => { await vite.close(); dom.window.close(); });
   const {act, createElement} = await import('react');
   const {createRoot} = await import('react-dom/client');
@@ -71,6 +74,52 @@ test('React Flow 仅让当前页面卡运行 live iframe，大量页面保持静
   const open = [...container.querySelectorAll('button')].find((button) => button.textContent.includes('在预览中打开'));
   await act(async () => open.dispatchEvent(new MouseEvent('click', {bubbles: true})));
   assert.equal(opened.length, 1);
+
+  // Keep a selected relation current without requiring another click after a snapshot.
+  const relation = facts.relations.items[0];
+  const renderRelations = async (relations) => act(async () => root.render(createElement(InformationLogicWorkspace, {model: {pages, relations, relationsVersion: 'updated'}, pageId: 'page_events_home', theme: 'dark', onSelectPage() {}, onOpenPage() {}, onRelationSaved() {}})));
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 30)); });
+  const edge = [...container.querySelectorAll('.react-flow__edge')].find((item) => item.dataset.id === relation.id);
+  assert.ok(edge, '真实 React Flow 应渲染可选择的关系');
+  await act(async () => edge.dispatchEvent(new MouseEvent('click', {bubbles: true})));
+  const inspector = () => container.querySelector('.logic-relation-inspector').textContent;
+  assert.ok(inspector().includes(relation.trigger));
+  const positions = () => [...container.querySelectorAll('.react-flow__node')].map((item) => [item.dataset.id, item.style.transform]);
+  await act(async () => unlock.dispatchEvent(new MouseEvent('click', {bubbles: true})));
+  const movable = container.querySelector('.react-flow__node');
+  const beforeMove = positions();
+  await act(async () => movable.dispatchEvent(new MouseEvent('click', {bubbles: true})));
+  await act(async () => movable.dispatchEvent(new dom.window.KeyboardEvent('keydown', {key: 'ArrowRight', bubbles: true})));
+  const initialPositions = positions();
+  assert.notDeepEqual(initialPositions, beforeMove, '夹具应实际移动节点后检查位置保留');
+  const sourceHandle = container.querySelector('[data-page-id="page_events_manage"] [data-handleid="new-source"]');
+  const targetHandle = container.querySelector('[data-page-id="page_events_home"] [data-handleid="new-target"]');
+  await act(async () => sourceHandle.dispatchEvent(new MouseEvent('click', {bubbles: true})));
+  await act(async () => targetHandle.dispatchEvent(new MouseEvent('click', {bubbles: true})));
+  assert.ok(document.querySelector('[role="dialog"]'), '连线应打开独立关系草稿');
+  const draftInput = document.querySelector('#relation-trigger');
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value').set.call(draftInput, '保留中的草稿');
+    draftInput.dispatchEvent(new Event('input', {bubbles: true}));
+  });
+  const changed = {...relation, trigger: '更新后的触发', condition: '更新后的条件', runtimeBinding: 'verified', status: 'verified'};
+  await renderRelations(facts.relations.items.map((item) => item.id === relation.id ? changed : item));
+  assert.match(inspector(), /更新后的触发/);
+  assert.match(inspector(), /更新后的条件/);
+  assert.match(inspector(), /运行跳转已验证/);
+  assert.deepEqual(positions(), initialPositions, '更新关系不得重置节点位置');
+  assert.equal(document.querySelector('#relation-trigger').value, '保留中的草稿');
+  await act(async () => { await new Promise(resolve => setTimeout(resolve, 30)); });
+  assert.ok(container.querySelector('.relation-draft'), '刷新事实不得移除草稿连线');
+  await renderRelations(facts.relations.items.filter((item) => item.id !== relation.id));
+  assert.match(inspector(), /所选关系已不在当前事实中/);
+  assert.doesNotMatch(inspector(), /更新后的触发|更新后的条件|运行跳转已验证/);
+  await renderRelations(facts.relations.items.map((item) => item.id === relation.id ? changed : item));
+  assert.match(inspector(), /更新后的触发/, '同一关系恢复后应自动显示当前记录');
+
+  const cancelDraft = [...document.querySelectorAll('[role="dialog"] button')].find(item => item.textContent === '取消');
+  await act(async () => cancelDraft.dispatchEvent(new MouseEvent('click', {bubbles: true})));
+  assert.equal(container.querySelector('.relation-draft'), null);
 
   const manyPages = Array.from({length: 30}, (_, index) => ({id: `page_scale_${index}`, name: `规模页面 ${index}`, route: `/events?scale=${index}`, preview: `/events?scale=${index}`, verificationStatus: 'verified'}));
   await act(async () => root.render(createElement(InformationLogicWorkspace, {model: {pages: manyPages, relations: [], relationsVersion: 'version'}, pageId: 'page_scale_0', theme: 'light', onSelectPage() {}, onOpenPage() {}, onRelationSaved() {}})));

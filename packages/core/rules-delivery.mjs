@@ -1,3 +1,4 @@
+import {inspectProjectAuthority} from './project-authority.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import {resolveFoundationBridgeContext} from './ai-bridge.mjs';
@@ -51,5 +52,7 @@ export function readCurrentFoundationRules({installationRoot, project = null} = 
     : !preparation.factsReady ? {action: 'confirm-project-preparation', operation: 'foundation-skeleton-and-facts-create', handlerPayload: {includePreview: false}, missing: preparation.missing, message: '说明补齐文件清单，通过现有管理器单独确认后重新检查；不覆盖项目代码、规则或预览'}
     : !adoption ? {action: 'confirm-rules-adoption', operation: 'project-rules-adopt', message: '明确技术栈并单独确认采用规则；已有项目保持原技术栈'}
     : {action: 'read-current-rules', message: '读取本次返回的规则、有效策略与项目例外；修改仍需对应批准'};
-  return {ok: true, schemaVersion: '1.0.0', programVersion: bridge.currentVersion, ruleVersion: manifest.ruleVersion, adoptionSchemaVersion: manifest.adoptionSchemaVersion, dataFormatVersion: bridge.dataFormat || null, currentIdentityHash: bridge.currentIdentityHash, endpointIdentity: bridge.currentRuleEndpointIdentity, adoption, projectEnabled: Boolean(project), rulesAvailable: true, preparation, effectivePolicy: policy, nextStep, projectRulesReady: Boolean(policy?.executable), documents, mutationPerformed: false, hostDiscoveryVerified: false};
+  const continuousSync = project ? inspectProjectAuthority(project,{installationRoot}).continuousSync || {state:'not-granted'} : null;
+  if (continuousSync?.state === 'active' && ['confirm-project-preparation','confirm-rules-adoption'].includes(nextStep.action)) { nextStep.action = 'continue-project-preparation'; nextStep.message = '首次持续授权范围内自动接续，无需逐批确认'; }
+  return {continuousSync, factCapabilities:bridge.factCapabilities || [],ok: true, schemaVersion: '1.0.0', programVersion: bridge.currentVersion, ruleVersion: manifest.ruleVersion, adoptionSchemaVersion: manifest.adoptionSchemaVersion, dataFormatVersion: bridge.dataFormat || null, currentIdentityHash: bridge.currentIdentityHash, endpointIdentity: bridge.currentRuleEndpointIdentity, adoption, projectEnabled: Boolean(project), rulesAvailable: true, preparation, effectivePolicy: policy, nextStep, projectRulesReady: Boolean(policy?.executable), documents, mutationPerformed: false, hostDiscoveryVerified: false};
 }

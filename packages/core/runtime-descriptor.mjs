@@ -62,7 +62,7 @@ function assertCapabilityFacts(facts) {
   }
 }
 
-export function createFoundationRuntimeDescriptor({productVersion, platform, arch, buildIdentity, supportedProjectDataFormats, ruleCapabilityEndpoint = 'artifacts', ruleCapabilityEndpointRoot = null, capabilityFacts = {bundled: [], ...STATE_SOURCES}}) {
+export function createFoundationRuntimeDescriptor({productVersion, platform, arch, buildIdentity, supportedProjectDataFormats, factCapabilities=[], ruleCapabilityEndpoint = 'artifacts', ruleCapabilityEndpointRoot = null, capabilityFacts = {bundled: [], ...STATE_SOURCES}}) {
   if (typeof productVersion !== 'string' || !productVersion || typeof platform !== 'string' || !platform || typeof arch !== 'string' || !arch) throw invalid('RUNTIME_DESCRIPTOR_INPUT_INVALID', 'runtime descriptor 缺少 productVersion/platform/arch');
   if (!Array.isArray(supportedProjectDataFormats) || !supportedProjectDataFormats.length || supportedProjectDataFormats.some((value) => typeof value !== 'string' || !value)) throw invalid('RUNTIME_DESCRIPTOR_INPUT_INVALID', 'runtime descriptor 需要非空 supportedProjectDataFormats');
   if (!validRelative(ruleCapabilityEndpoint)) throw invalid('RUNTIME_DESCRIPTOR_INPUT_INVALID', 'rule/capability endpoint 必须是 app 内规范相对路径');
@@ -74,6 +74,7 @@ export function createFoundationRuntimeDescriptor({productVersion, platform, arc
     bridgeApiVersion: FOUNDATION_BRIDGE_API_VERSION,
     runtimeIdentity: {productVersion, platform, arch, buildIdentity: String(buildIdentity || 'uncommitted-local')},
     supportedProjectDataFormats: [...new Set(supportedProjectDataFormats)].sort(),
+    factCapabilities:[...factCapabilities],
     ruleCapabilityEndpoint: {path: ruleCapabilityEndpoint, type: 'directory', ...endpoint},
     capabilityFacts: structuredClone(capabilityFacts),
   };

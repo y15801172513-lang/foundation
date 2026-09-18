@@ -149,7 +149,8 @@ export function resolveFoundationBridgeContext(input = {}) {
     if (!projectId || projectId !== projectAuthority.projectId) return inert('PROJECT_AUTHORITY_MISMATCH', {...base, descriptorHash, endpointHealth: endpoint, projectId, projectAuthority});
     projectAuthorityIdentity = projectAuthority.authorityIdentity;
     dataFormat = layout.identity?.dataFormatVersion || layout.identity?.legacyFoundation?.dataFormatVersion || null;
-    if (!dataFormat || !descriptor.supportedProjectDataFormats.includes(dataFormat)) return inert('PROJECT_DATA_INCOMPATIBLE_READ_ONLY', {...base, descriptorHash, endpointHealth: endpoint, projectId, projectAuthority, dataFormat, supportedProjectDataFormats: descriptor.supportedProjectDataFormats, compatibility: 'read-only'});
+    if (!dataFormat || !descriptor.supportedProjectDataFormats.includes(dataFormat)) return inert('PROJECT_DATA_INCOMPATIBLE_READ_ONLY', {...base, descriptorHash, endpointHealth: endpoint, projectId, projectAuthority, dataFormat, supportedProjectDataFormats: descriptor.supportedProjectDataFormats,
+    factCapabilities:descriptor.factCapabilities || [], compatibility: 'read-only'});
   }
 
   let capability = Object.freeze({required: false, code: 'CAPABILITY_NOT_REQUIRED', usable: false});
@@ -181,6 +182,7 @@ export function resolveFoundationBridgeContext(input = {}) {
     currentRuleEndpoint: endpoint.path,
     currentRuleEndpointIdentity: endpoint.treeHash,
     supportedProjectDataFormats: descriptor.supportedProjectDataFormats,
+    factCapabilities:descriptor.factCapabilities || [],
     projectId,
     projectAuthority,
     projectAuthorityIdentity,

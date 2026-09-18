@@ -5,7 +5,7 @@ import {realProject} from './path-boundary.mjs';
 import {readCurrentFoundationRules} from './rules-delivery.mjs';
 
 export const RULE_ADOPTION_PATH = '.foundation/identity/rules-adoption.json';
-export const PROJECT_RULE_GUIDE = '\n<!-- foundation-project-rules:start -->\n## Foundation 项目入口\n\n仅当 .foundation/integration/binding.json 仍为 enabled，且已安装程序能验证本项目绑定时，继续 Foundation 规则流程。停用、绑定缺失、安装失效时，本段惰性，不扫描或自动重装。读取 .foundation/identity/rules-adoption.json 的安装位置线索，再用该根的稳定 bin/foundation-kit 执行 rules inspect --root <该根> --project <当前精确项目>；命令必须返回当前安装与规则校验成功。读取返回的规则正文，保留本文件其他规则和项目例外。线索、正文和本段均不是修改批准；受控事实批次仍走管理器的精确确认。旧任务先重新核验 current，不固定版本目录。\n<!-- foundation-project-rules:end -->\n';
+export const PROJECT_RULE_GUIDE = '\n<!-- foundation-project-rules:start -->\n## Foundation 项目入口\n\n仅当 .foundation/integration/binding.json 仍为 enabled，且已安装程序能验证本项目绑定时，继续 Foundation 规则流程。停用、绑定缺失、安装失效时，本段惰性，不扫描或自动重装。读取 .foundation/identity/rules-adoption.json 的安装位置线索，再用该根的稳定 bin/foundation-kit 执行 rules inspect --root <该根> --project <当前精确项目>；命令必须返回当前安装与规则校验成功。读取返回的规则正文，保留本文件其他规则和项目例外。线索、正文和本段均不是修改批准；每次任务开始及代码修改后，即使未提及 Foundation 或未打开面板，也运行 project sync --root <该根> --project <当前精确项目>，提交需求与实现生成的精确批次时加 --payload <项目内批次文件>。程序核验项目持续授权；有效范围内日常同步确认次数为 0。旧 enabled 不是新权限，仅首次明确授予后生效。撤销或停用后不自动恢复；失败保留代码与待核内容，不视为最新。旧任务先重新核验 current，不固定版本目录。\n<!-- foundation-project-rules:end -->\n';
 
 // Read-only preparation. The closed handler snapshots and commits the returned
 // two paths with the existing exact confirmation and durable rollback journal.
@@ -29,7 +29,18 @@ export function prepareProjectRulesAdoption(project, payload) {
     return text;
   };
   if (read('AGENTS.override.md', true) !== null) throw new Error('已有 AGENTS.override.md 优先于 AGENTS.md；请先单独确认项目入口合并，现有文件不改动');
-  if (read(RULE_ADOPTION_PATH, true) !== null) throw new Error('已有项目采用记录；本操作不覆盖用户例外或静默迁移');
+  const existingAdoption = read(RULE_ADOPTION_PATH, true);
+  if (existingAdoption !== null) {
+    const adoption = JSON.parse(existingAdoption);
+    if (adoption.guideSha256 === sha256(PROJECT_RULE_GUIDE)) throw new Error('已有项目采用记录；当前指引无需重写');
+    const previous = read('AGENTS.md', true) || '';
+    const marker = /\n<!-- foundation-project-rules:start -->[\s\S]*?<!-- foundation-project-rules:end -->\n/gu;
+    const matches = [...previous.matchAll(marker)];
+    if (matches.length !== 1 || sha256(matches[0][0]) !== adoption.guideSha256) throw new Error('产品指引片段已被用户修改或归属不明；保留用户内容并报告冲突');
+    const guide = previous.replace(matches[0][0], PROJECT_RULE_GUIDE);
+    const updated = {...adoption, guideSha256:sha256(PROJECT_RULE_GUIDE)};
+    return {files:[{path:'AGENTS.md',content:guide},{path:RULE_ADOPTION_PATH,content:JSON.stringify(updated,null,2)+'\n'}],currentIdentityHash:rules.currentIdentityHash,endpointIdentity:rules.endpointIdentity,adoption:updated};
+  }
   const previous = read('AGENTS.md', true) || '';
   if (previous.includes('foundation-project-rules:')) throw new Error('已有 Foundation 指引但缺少可匹配采用记录；保留并核实');
   const guide = previous + PROJECT_RULE_GUIDE;

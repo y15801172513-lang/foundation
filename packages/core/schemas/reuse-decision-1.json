@@ -1,0 +1,163 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "foundation:reuse-decision-1",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "kind": {
+      "enum": [
+        "same-instance",
+        "variant",
+        "composition",
+        "base-update",
+        "new",
+        "local",
+        "not-asset"
+      ]
+    },
+    "requirementId": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "responsibility": {
+      "type": "string",
+      "minLength": 1
+    },
+    "candidateIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9_-]+$"
+      }
+    },
+    "rejectedCandidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "assetId": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "assetId",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "search": {
+      "type": "object",
+      "properties": {
+        "paths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "inputDigest": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "query": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "paths",
+        "inputDigest",
+        "query"
+      ],
+      "additionalProperties": false
+    },
+    "assetId": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "expectedUsages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "file": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*\\\\)[^\\u0000]+$"
+          },
+          "definitionId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "role": {
+            "enum": [
+              "source-use",
+              "preview-only"
+            ]
+          },
+          "minimum": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "file",
+          "definitionId"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "affectedInstanceIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9_-]+$"
+      }
+    },
+    "scopeRevision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "beforeDigest": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "afterDigest": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "id",
+    "kind",
+    "requirementId",
+    "reason",
+    "candidateIds",
+    "rejectedCandidates",
+    "search",
+    "scopeRevision"
+  ],
+  "additionalProperties": false
+}

@@ -11,6 +11,7 @@ import {sanitizeNodeStartupEnvironment} from './node-startup-environment.mjs';
 import {classifyProcessOwner, observeProcessFingerprint} from './process-owner.mjs';
 import {finishConfirmedUpdateInputs} from './update-input-inventory.mjs';
 import {verifyInstallationScope} from './installation-scope.mjs';
+import {requiredFactCapabilities} from './asset-model.mjs';
 import {
   acquisitionNetworkDisconnected,
   currentRuntimeIdentity,
@@ -385,12 +386,29 @@ function verifyRecordFromReceipt(root, record, receipt, code, categories = null,
   if (probe) healthProbe(root, record, {code});
 }
 
+function assertRetainedProjectCapabilities(root,appRoot) {
+  const registryFile=path.join(root,'state/projects.json');if(!fs.existsSync(registryFile))return;
+  if(fs.realpathSync(registryFile)!==registryFile)throw new LifecycleError('PROJECT_COMPATIBILITY_UNKNOWN','项目注册路径已变化；不能切换运行时');
+  const registry=signedPayload(readJson(registryFile),'PROJECT_COMPATIBILITY_UNKNOWN','project registry');
+  const descriptor=readJson(path.join(appRoot,'foundation-runtime-descriptor.json'));
+  for(const record of Object.values(registry.projects || {})) {
+    const project=record.realPath;
+    if(!fs.existsSync(project))continue;
+    const stat=fs.statSync(project);
+    if(fs.realpathSync(project)!==project||record.projectIdentity?.device!==String(stat.dev)||record.projectIdentity?.inode!==String(stat.ino))throw new LifecycleError('PROJECT_COMPATIBILITY_UNKNOWN','保留项目身份已变化；不能证明降级兼容');
+    const facts={};
+    for(const kind of ['components','changes']){const file=path.join(project,'.foundation/facts',kind+'.json');if(fs.existsSync(file)){if(fs.realpathSync(file)!==file)throw new LifecycleError('PROJECT_COMPATIBILITY_UNKNOWN','保留事实路径不安全');facts[kind]=readJson(file);}}
+    if(requiredFactCapabilities(facts).some(required=>!descriptor.factCapabilities?.includes(required)))throw new LifecycleError('PROJECT_DOWNGRADE_INCOMPATIBLE','保留项目使用 component-delivery/1；目标运行时缺少该能力，拒绝受管降级',{stage:'compatibility'});
+  }
+}
+
 function validateBoundCandidate(plan) {
   assertTrustedCandidatePath(plan.candidate.path);
   const checked = validateCandidate(plan.candidate.path, {platform: plan.platform, arch: plan.arch, requireRuntime: true});
   if (!checked.ok) throw new LifecycleError(checked.error.code, checked.error.message, {stage: checked.error.stage});
   const runtime = runtimeRecord(checked.manifest);
   if (checked.manifest.candidateHash !== plan.candidate.manifestHash || checked.manifest.productVersion !== plan.targetVersion || checked.manifest.totalBytes !== plan.candidate.bytes || (plan.candidate.runtimeHash && runtime?.sha256 !== plan.candidate.runtimeHash) || plan.candidate.acquisition !== 'local-ingestion') throw new LifecycleError('CANDIDATE_PLAN_MISMATCH', '候选完整 identity/字节/获取模式与 plan 不一致', {stage: 'candidate-verify'});
+  assertRetainedProjectCapabilities(plan.targetRoot,path.join(plan.candidate.path,'payload/app'));
   return checked;
 }
 
@@ -518,6 +536,7 @@ function rollbackOperation({plan, root, journal, journalFile}) {
   if (!target) throw new LifecycleError('ROLLBACK_VERSION_MISSING', `未保留可回退版本：${plan.targetVersion}`, {stage: 'rollback'});
   try { verifyRecordFromReceipt(root, target, receiptForIdentity(root, target.identity), 'ROLLBACK_TARGET_UNHEALTHY', ['app', 'runtime']); }
   catch (error) { throw new LifecycleError('ROLLBACK_TARGET_UNHEALTHY', error.message, {stage: 'rollback'}); }
+  assertRetainedProjectCapabilities(root,path.join(root,target.appPath));
   journal.identity = target.identity;
   writeJournal(journalFile, journal, 'staged', 'rollback-target-verified');
   const shim = path.join(root, 'bin', plan.platform === 'win32' ? 'foundation-kit.cmd' : 'foundation-kit');

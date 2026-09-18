@@ -1,3 +1,5 @@
+import {inspectProjectPreparation} from './facts.mjs';
+import {readCurrentFoundationRules} from './rules-delivery.mjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import {closedProjectHandlerCatalog} from './project-mutation-handlers.mjs';
@@ -194,6 +196,8 @@ export function createPendingLocalManagerSession({plan, stateRoot, now = Date.no
     operation: plan.operation,
     scope: plan.codexIntegration?.scope || plan.codexRemoval?.scope || plan.scope || (plan.projectScoped ? 'project' : plan.capabilityId ? 'installation' : null),
     projectId: plan.projectId || null,
+    projectPreparation: plan.continuousSync === 'grant' ? {scope:plan.syncScope, includePreview:plan.includePreview, technology:plan.technology, name:path.basename(plan.project), initial:{factsReady:inspectProjectPreparation(plan.project).factsReady, rulesReady:(()=>{try{return readCurrentFoundationRules({project:plan.project,installationRoot:plan.installationRoot}).projectRulesReady;}catch{return false;}})(), enabled:inspectProjectAuthority(plan.project,{installationRoot:plan.installationRoot}).continuousSync?.state === 'active'}} : null,
+    synchronizationChoice: plan.continuousSync || null,
     capabilityId: plan.capabilityId || null,
     capabilityType: plan.capabilityType || null,
     skillRefresh: Boolean(plan.codexIntegration?.refresh),
@@ -345,7 +349,7 @@ function exactInput(value, allowed, code = 'MANAGER_REQUEST_INPUT_INVALID') {
 function buildRequestedPlan(operation, parameters) {
   exactInput(parameters, [
     'profile', 'mode', 'targetRoot', 'sandboxRoot', 'currentVersion', 'targetVersion', 'candidate', 'extensions', 'aiBridge', 'recoverySnapshot',
-    'project', 'installationRoot', 'createFromTemplate', 'rebind', 'manifestFile', 'projects', 'resultFile', 'decision', 'settingsFile',
+    'project', 'installationRoot', 'createFromTemplate', 'rebind', 'continuousSync', 'includePreview', 'technology', 'manifestFile', 'projects', 'resultFile', 'decision', 'settingsFile',
     'handlerOperation', 'handlerPayload', 'preserves', 'capabilityIds', 'now', 'ttlMs', 'connectCodex', 'cleanupAcquisition',
   ]);
   const clean = structuredClone(parameters);

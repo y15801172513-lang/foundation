@@ -38,12 +38,12 @@ export const ASSET_PREVIEW_REGISTRY = Object.freeze({
 
 function previewInput(search = window.location.search) {
   const params = new URLSearchParams(search);
-  return {assetId: params.get('assetId') || '', requestedVariant: params.get('variant') || '', channel: params.get('channel') || ''};
+  return {assetId: params.get('assetId') || '', requestedVariant: params.get('variant') || '', channel: params.get('channel') || '',projectId:params.get('projectId') || null,revision:params.get('revision') || null};
 }
 
-function postPreviewStatus({assetId, channel}, status, message = '') {
+function postPreviewStatus({assetId, channel,projectId,revision}, status, message = '') {
   if (!assetId || !channel) return;
-  window.parent.postMessage({namespace: ASSET_PREVIEW_NAMESPACE, kind: 'status', assetId, channel, status, message: String(message).slice(0, 300)}, window.location.origin);
+  window.parent.postMessage({namespace: ASSET_PREVIEW_NAMESPACE, kind: 'status', assetId, channel,...(revision?{projectId,revision}:{}), status, message: String(message).slice(0, 300)}, window.location.origin);
 }
 
 export class AssetPreviewBoundary extends Component {
@@ -60,7 +60,7 @@ export function AssetPreviewApp({search}) {
   useEffect(() => {
     const announce = () => postPreviewStatus(input, registration ? 'ready' : 'unsupported', registration ? '' : '当前实现未登记安全预览适配器');
     const onMessage = (event) => {
-      if (isAssetPreviewStatusRequest(event, {parentWindow: window.parent, parentOrigin: assetPreviewParentOrigin(document.referrer), assetId: input.assetId, channel: input.channel})) announce();
+      if (isAssetPreviewStatusRequest(event, {parentWindow: window.parent, parentOrigin: assetPreviewParentOrigin(document.referrer), assetId: input.assetId, channel: input.channel,projectId:input.projectId,revision:input.revision})) announce();
     };
     window.addEventListener('message', onMessage);
     announce();

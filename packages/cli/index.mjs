@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+import {synchronizeProject, inspectProjectSync,analyzeProjectSources,verifyProjectDefinition,prepareProjectSemanticReview,submitProjectSemanticReview} from '../core/project-sync.mjs';
+import {analyzeSources} from '../core/source-analysis.mjs';
+import {openOrReuseWorkbench} from '../core/workbench-runtime.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
@@ -37,7 +40,7 @@ import {CLI_ROUTE_GROUPS, parseCliInvocation} from './command-contract.mjs';
 import {conversationHelp} from '../core/conversation-commands.mjs';
 import {readCurrentFoundationRules} from '../core/rules-delivery.mjs';
 import {inspectProjectDelivery} from '../core/project-delivery.mjs';
-import {createInstalledWorkbenchServer} from '@foundation/management-center';
+import {createInstalledWorkbenchServer,verifyInstalledProjectBrowser} from '@foundation/management-center';
 import {deriveTrustedLifecycleAuthority} from '../core/trusted-authority.mjs';
 import {readInstallationScope} from '../core/installation-scope.mjs';
 
@@ -120,6 +123,25 @@ export function upgradeProject(project, {plan} = {}) {
 
 function runProjectCli(args, output) {
   const command = args[1];
+  if(command==='verify-browser')return verifyInstalledProjectBrowser({project:option(args,'--project'),installationRoot:option(args,'--root'),taskId:option(args,'--task-id'),assetId:option(args,'--asset-id'),scenarioId:option(args,'--scenario-id'),requirementId:option(args,'--requirement-id')}).then(result=>{output.log(JSON.stringify(result,null,2));if(result.state!=='passed')process.exitCode=2;},error=>{output.error(`错误：浏览器验证失败（${error.message}）`);process.exitCode=1;});
+  if(command==='prepare-semantic-review')return Promise.resolve().then(()=>prepareProjectSemanticReview({project:option(args,'--project'),installationRoot:option(args,'--root'),taskId:option(args,'--task-id'),assetId:option(args,'--asset-id'),requirementId:option(args,'--requirement-id')})).then(result=>output.log(JSON.stringify(result,null,2)),error=>{output.error(`错误：语义核验准备失败（${error.message}）`);process.exitCode=1;});
+  if(command==='submit-semantic-review')return Promise.resolve().then(()=>submitProjectSemanticReview({project:option(args,'--project'),installationRoot:option(args,'--root'),prepared:JSON.parse(fs.readFileSync(option(args,'--plan'),'utf8')),review:JSON.parse(fs.readFileSync(option(args,'--review'),'utf8'))})).then(result=>{output.log(JSON.stringify(result,null,2));if(result.report.result!=='passed')process.exitCode=2;},error=>{output.error(`错误：语义核验提交失败（${error.message}）`);process.exitCode=1;});
+  if(command==='verify-definition')return verifyProjectDefinition({project:option(args,'--project'),installationRoot:option(args,'--root'),entryRoots:JSON.parse(option(args,'--entry-roots-json')),taskId:option(args,'--task-id'),assetId:option(args,'--asset-id'),requirementId:option(args,'--requirement-id')}).then(result=>{output.log(JSON.stringify(result,null,2));if(result.report.result!=='passed')process.exitCode=2;},error=>{output.error(`错误：定义验证失败（${error.message}）`);process.exitCode=1;});
+  if(command==='analyze') {
+    const project=option(args,'--project'),installationRoot=option(args,'--root');
+    const authority=inspectProjectAuthority(project,{installationRoot});
+    if(authority.state!=='enabled'||!authority.agreement)throw new Error('源码分析需要当前已核验的项目绑定');
+    const entryRoots=JSON.parse(option(args,'--entry-roots-json'));
+    if(!Array.isArray(entryRoots)||!entryRoots.length)throw new Error('源码分析需显式 entry roots');
+    return analyzeProjectSources({project,installationRoot,entryRoots}).then(result=>{output.log(JSON.stringify(result,null,2));if(result.coverage.state==='partial')process.exitCode=2;},error=>{output.error(`错误：${error.message}`);process.exitCode=1;});
+  }
+  if (command === 'sync' || command === 'sync-status') {
+    const payloadFile = option(args, '--payload');
+    const result = command === 'sync-status' ? inspectProjectSync({project:option(args,'--project'),installationRoot:option(args,'--root')}) : synchronizeProject({project:option(args,'--project'),installationRoot:option(args,'--root'),handlerPayload:payloadFile ? JSON.parse(fs.readFileSync(payloadFile,'utf8')) : null});
+    output.log(JSON.stringify(result,null,2));
+    if (['failed','conflict','stopped'].includes(result.state)) process.exitCode = 1;
+    return;
+  }
   if (command === 'delivery-check') return output.log(JSON.stringify(inspectProjectDelivery({installationRoot: option(args, '--root'), project: option(args, '--project'), changes: JSON.parse(option(args, '--changes-json')), requirePreview: args.includes('--require-preview')}), null, 2));
   if (command === 'inventory') return output.log(JSON.stringify(inventoryProject(option(args, '--project', args[2]), {installationRoot: option(args, '--root')}), null, 2));
   if (command === 'status') return output.log(JSON.stringify(inspectProjectAuthority(option(args, '--project', args[2]), {installationRoot: option(args, '--root')}), null, 2));
@@ -207,10 +229,7 @@ export function runCli(args = process.argv.slice(2), output = console) {
   if (command === '--help') output.log(conversationHelp());
   if (command === '--help') output.log('单页内部通道：--journey-channel（仅 install 或 manager open-manager；需要私有 IPC 绑定，不提供确认命令）');
   if (command === 'workbench') {
-    const server = createInstalledWorkbenchServer({installationRoot: option(args, '--root'), project: option(args, '--project')});
-    server.on('error', error => { output.error(`错误：工作台启动失败（${error.code || error.message}）`); process.exitCode = 1; });
-    server.listen(0, '127.0.0.1', () => output.log(JSON.stringify({url:`http://127.0.0.1:${server.address().port}/`, surface:'installed-workbench', mutationPerformed:false})));
-    return;
+    return openOrReuseWorkbench({installationRoot:option(args,'--root'),project:option(args,'--project'),createServer:createInstalledWorkbenchServer}).then(record=>output.log(JSON.stringify(record)),error=>{output.error(`错误：工作台启动失败（${error.message}）`);process.exitCode=1;});
   }
   if (command === '--help') output.log('Foundation 对话入口（真实获取与使用尚待验收）\ninspect 不查远端：发布 unknown，获取 not-checked；unsigned 不表示未发布。版本来自可信 GitHub 入口清单。\n只读检查：onboarding inspect [--destination <绝对目录>]\n候选安装：install [--destination <绝对目录>] --browser codex\n页面选择目录：install --choose-destination --browser codex [--journey-id <仅关联展示的标识>]（选择后仍须本人确认精确计划）\n安装结果：onboarding status --session-id <返回值>\n唯一工作台：workbench open --root <实际安装目录> [--project <明确选定的已接入项目>]\n诊断概览（不是工作台）：onboarding open --root <实际安装目录>\n项目/维护：manager inspect → request-plan → open-manager → status\n规则只读：rules inspect --root <安装根> [--project <项目>]\n版本、目录和 Skill 是意向；必须由用户在绑定计划的管理器页面确认。没有 confirm/apply/yes 直写入口。源码 CLI 需要开发 Node；已安装 launcher 使用私有 Runtime。');
   else if (!command) output.log(lifecycleMenu());

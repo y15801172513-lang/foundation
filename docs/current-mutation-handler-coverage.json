@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "promptId": "AI-PFK-REAL-USER-INSTALL-AND-FIRST-USE-030R1",
+  "promptId": "AI-PFK-COMPONENT-REUSE-AND-DELIVERY-CLOSURE-046",
   "guaranteeScope": "Foundation-owned production entrypoints; same-user unrestricted shell edits remain outside the product boundary",
   "closedProjectHandlers": [
     "extension-shadcn-apply",
@@ -46,6 +46,14 @@
       "mutation": "manager-internal only"
     },
     {
+      "id": "cli-project-sync",
+      "surface": "CLI task/build integration",
+      "entry": "packages/cli/index.mjs#project sync",
+      "dispatcher": "packages/core/project-sync.mjs#synchronizeProject",
+      "lowestWriteGate": "signed project grant revision -> exact closed plan -> project guard -> recheck grant -> handler -> journal",
+      "mutation": "only active project continuous scope; no per-batch human receipt"
+    },
+    {
       "id": "cli-upgrade",
       "surface": "CLI",
       "entry": "packages/cli/index.mjs#upgradeProject",
@@ -81,17 +89,25 @@
       "id": "http-management-center-relation",
       "surface": "HTTP and management-center",
       "entry": "apps/management-center/src/server/center-server.mjs#POST /__foundation/relations",
-      "dispatcher": "create exact plan and open loopback manager only",
-      "lowestWriteGate": "manager-confirmed relation-facts-write handler",
-      "mutation": "no route mutation before manager confirmation"
+      "dispatcher": "exact relation plan -> continuous grant or first manager confirmation",
+      "lowestWriteGate": "same project guard and closed relation handler",
+      "mutation": "active grant: zero per-batch confirmation; legacy: manager confirmation"
+    },
+    {
+      "id": "http-project-preparation",
+      "surface": "Same-URL project preparation manager",
+      "entry": "packages/core/lifecycle-manager-host.mjs#serverForRecord",
+      "dispatcher": "first exact enable confirmation; recheck creates a fresh pending plan; resume calls synchronizeProject",
+      "lowestWriteGate": "Origin + nonce + unchanged durable record; resume requires active project grant, fixed handlers and project guard; revocation never regrants",
+      "mutation": "first grant confirmed once; continuation has zero ordinary confirmations"
     },
     {
       "id": "node-project-mutation",
       "surface": "Node internal engine",
       "entry": "packages/core/project-authority.mjs#applyProjectMutationPlan",
       "dispatcher": "fixed handler selected by immutable plan",
-      "lowestWriteGate": "durable pre-intent -> guard -> exact manager consume -> fixed handler",
-      "mutation": "fails closed outside manager execution"
+      "lowestWriteGate": "signed continuous project grant or exact manager confirmation -> durable intent -> project guard -> recheck -> fixed handler",
+      "mutation": "fails closed without matching scope and revision"
     },
     {
       "id": "node-relation-helper",
@@ -124,9 +140,42 @@
       "dispatcher": "signed continuation bound to consumed manager confirmation",
       "lowestWriteGate": "verify manager-confirmed continuation before owned deletion",
       "mutation": "bounded lifecycle continuation"
+    },
+    {
+      "id": "workbench-sync",
+      "surface": "installed workbench open",
+      "entry": "apps/management-center/src/server/center-server.mjs#createManagementCenterServer",
+      "dispatcher": "packages/core/project-sync.mjs#synchronizeProject",
+      "lowestWriteGate": "same project continuous scope and exact handler; revoked projects stay stopped",
+      "mutation": "bounded reconciliation at open; no background process promise"
+    },
+    {
+      "id": "project-analysis-cache",
+      "surface": "explicit project analysis",
+      "entry": "packages/core/project-sync.mjs#analyzeProjectSources",
+      "dispatcher": "built-in source worker",
+      "lowestWriteGate": "current rules and project identity -> exact live input recheck -> signed observation -> bounded installation-owned cache",
+      "mutation": "cache only; no project Facts"
+    },
+    {
+      "id": "controlled-evidence",
+      "surface": "explicit definition/browser verification",
+      "entry": "packages/core/project-sync.mjs#verifyProjectDefinition; apps/management-center/src/server/center-server.mjs#verifyInstalledProjectBrowser",
+      "dispatcher": "fixed definition checks or scope-bound declarative CDP checks",
+      "lowestWriteGate": "healthy installation/project -> exact scope/input -> owned runner -> current input recheck -> receipt; Facts only through original batch",
+      "mutation": "owned browser profile and receipt output; no arbitrary callbacks or project writes"
+    },
+    {
+      "id": "workbench-instance-record",
+      "surface": "CLI workbench open",
+      "entry": "packages/core/workbench-runtime.mjs#openOrReuseWorkbench",
+      "dispatcher": "canonical installation/project instance mutex",
+      "lowestWriteGate": "healthy authority -> physical identity -> PID fingerprint -> nonce handshake -> owned state record",
+      "mutation": "installation-owned instance state only; GET does not synchronize or analyze"
     }
   ],
   "productionWriterFiles": [
+    "apps/management-center/src/server/center-server.mjs",
     "packages/core/candidate-package.mjs",
     "packages/core/capability-authority.mjs",
     "packages/core/codex-skill-registration.mjs",
@@ -137,10 +186,14 @@
     "packages/core/project-authority.mjs",
     "packages/core/project-layout.mjs",
     "packages/core/project-mutation-handlers.mjs",
+    "packages/core/project-sync.mjs",
     "packages/core/project-transaction.mjs",
     "packages/core/transaction-engine.mjs",
     "packages/core/trusted-authority.mjs",
     "packages/core/trusted-intent-ledger.mjs",
-    "packages/core/uninstall-finalizer.mjs"
-  ]
+    "packages/core/uninstall-finalizer.mjs",
+    "packages/core/update-input-inventory.mjs",
+    "packages/core/workbench-runtime.mjs"
+  ],
+  "inheritedPromptId": "AI-PFK-PROJECT-CONTINUOUS-SYNC-041"
 }

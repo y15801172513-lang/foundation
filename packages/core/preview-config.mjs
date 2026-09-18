@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {foundationFiles, readFacts} from './facts.mjs';
-import {normalizePublicPath, resolveProjectFile} from './path-boundary.mjs';
+import {normalizePreviewPath, resolveProjectFile} from './path-boundary.mjs';
 
 export const PREVIEW_SCHEMA_VERSION = '0.1.0';
 export const PREVIEW_MODES = ['local-static'];
@@ -21,7 +21,7 @@ function validateEntries(project, entries, kind, errors) {
     }
     let publicPath;
     let absoluteFile;
-    try { publicPath = normalizePublicPath(entry.path, `${prefix}.path`); } catch (error) { errors.push(error.message); }
+    try { publicPath = normalizePreviewPath(entry.path, `${prefix}.path`); } catch (error) { errors.push(error.message); }
     try { absoluteFile = resolveProjectFile(project, entry.file, `${prefix}.file`); } catch (error) { errors.push(error.message); }
     if (publicPath && seen.has(publicPath)) errors.push(`${prefix}.path 重复声明：${publicPath}`);
     if (publicPath) seen.add(publicPath);

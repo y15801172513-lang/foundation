@@ -10,15 +10,15 @@ export function assetPreviewParentOrigin(referrer) {
   } catch { return ''; }
 }
 
-export function isAssetPreviewStatusRequest(event, {parentWindow, parentOrigin, assetId, channel}) {
+export function isAssetPreviewStatusRequest(event, {parentWindow, parentOrigin, assetId, channel, projectId, revision}) {
   const data = event?.data;
   if (!event || !parentWindow || event.source !== parentWindow || event.origin !== parentOrigin) return false;
   if (!data || typeof data !== 'object' || Array.isArray(data)) return false;
-  if (Object.keys(data).sort().join('|') !== REQUEST_KEYS.join('|')) return false;
+  if (Object.keys(data).sort().join('|') !== (revision?[...REQUEST_KEYS,'projectId','revision'].sort():REQUEST_KEYS).join('|')) return false;
   return data.namespace === ASSET_PREVIEW_NAMESPACE
     && data.kind === 'status-request'
     && text(data.assetId, 128)
     && text(data.channel, 200)
     && data.assetId === assetId
-    && data.channel === channel;
+    && data.channel === channel && (!revision || data.revision===revision && data.projectId===projectId);
 }

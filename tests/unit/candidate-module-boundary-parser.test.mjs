@@ -26,5 +26,7 @@ function rawMutation(target) { fs.writeFileSync(target, 'must not execute'); }
   assert.equal(run.status, 1, run.stderr || run.stdout);
   const result = JSON.parse(run.stdout);
   assert.equal(result.ok, false);
+  fs.writeFileSync(file, source + '\nfunction recordAttempt(target) { fs.writeFileSync(target, \'must not execute\'); }\nexport function counterfeit(target) { recordAttempt(target); }\n');
+  const counterfeit = audit();assert.equal(counterfeit.status,1);assert(JSON.parse(counterfeit.stdout).unknownOrForbidden.some(item=>item.export === 'counterfeit'));
   assert.ok(result.unknownOrForbidden.some(item => item.code === 'UNGATED_EXPORTED_WRITER_PATH' && item.export === 'unsafe' && item.paths.some(route => route.join('/') === 'unsafe/rawMutation')));
 });

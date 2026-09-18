@@ -1,6 +1,6 @@
 {
   "name": "@foundation/core",
-  "version": "0.2.15",
+  "version": "0.2.16",
   "private": true,
   "type": "module",
   "exports": {
@@ -10,6 +10,11 @@
     "./human-labels": "./human-labels.mjs",
     "./identity": "./identity.mjs",
     "./git-identity": "./git-identity.mjs",
-    "./ui-policy": "./ui-policy.mjs"
+    "./ui-policy": "./ui-policy.mjs",
+    "./content-integrity": "./content-integrity.mjs"
+  },
+  "dependencies": {
+    "ts-morph": "26.0.0",
+    "ajv": "8.20.0"
   }
 }

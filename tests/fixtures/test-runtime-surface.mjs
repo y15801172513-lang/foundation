@@ -18,6 +18,7 @@ function selected(name) {
 export function operationCheckpoint(stage) {
   const faultAt = selected('faultAt');
   if (faultAt === stage) {
+    if (process.env.FOUNDATION_TEST_FAULT_ONCE === '1') delete process.env.FOUNDATION_TEST_FAULT_AT;
     const error = Object.assign(new Error(`测试故障注入：${stage}`), {name: 'LifecycleError', code: 'FAULT_INJECTED', stage, retryable: true});
     error.toJSON = () => ({schemaVersion: '1.0.0', code: error.code, stage: error.stage, retryable: error.retryable, message: error.message, recovery: null, details: {testFixture: true}});
     throw error;

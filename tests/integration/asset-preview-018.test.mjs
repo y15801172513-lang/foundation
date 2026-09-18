@@ -21,7 +21,7 @@ function installDom() {
 test('隔离资产路由渲染真实注册组件、报告状态且不执行页面业务副作用', async (t) => {
   const dom = installDom(); const messages = [];
   Object.defineProperty(dom.window, 'parent', {value: {postMessage(message) { messages.push(message); }}});
-  const vite = await createServer({root: path.join(ROOT, 'examples/foundation-events'), configFile: path.join(ROOT, 'examples/foundation-events/vite.config.js'), optimizeDeps: {noDiscovery: true}, server: {middlewareMode: true}});
+  const vite = await createServer({configLoader:'native', cacheDir:path.join(ROOT,'.tmp/046r1/vite-asset-preview-cache'), root: path.join(ROOT, 'examples/foundation-events'), configFile: path.join(ROOT, 'examples/foundation-events/vite.config.js'), optimizeDeps: {noDiscovery: true}, server: {middlewareMode: true}});
   t.after(async () => { await vite.close(); dom.window.close(); });
   const requireFromExample = createRequire(path.join(ROOT, 'examples/foundation-events/package.json'));
   const {act, createElement} = requireFromExample('react'); const {createRoot} = requireFromExample('react-dom/client');

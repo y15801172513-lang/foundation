@@ -1,11 +1,11 @@
 {
   "schemaVersion": "2.0.0",
   "exportContractSchemaVersion": "2.0.0",
-  "exportContractSha256": "739898c4ea347c2fbb92b8a67ca573059831d283dca5a82c036d8018537bd7b4",
-  "sourceCommit": "8cc72d3383d9063308763afa87fff47fbd3eee3e",
-  "approvedSourceCommit": "8cc72d3383d9063308763afa87fff47fbd3eee3e",
+  "exportContractSha256": "5e3e157e88bc2a30e3fcec967a9386f7c3883d6bf56ce3482a6ed486bf33c53a",
+  "sourceCommit": "3d4d5e4284f407e2703a125a753c585189421659",
+  "approvedSourceCommit": "3d4d5e4284f407e2703a125a753c585189421659",
   "sourceState": "clean-exact-commit-approved",
-  "productVersion": "0.2.15",
+  "productVersion": "0.2.16",
   "licenseStatus": "approved",
   "scopeReviewStatus": "approved",
   "publicRepositoryNameStatus": "approved",
@@ -14,17 +14,17 @@
   "publicationEligible": true,
   "commitBinding": {
     "schemaVersion": "2.0.0",
-    "approvedCommit": "8cc72d3383d9063308763afa87fff47fbd3eee3e",
-    "gitTree": "6d3ff795feb20529afbcaa01b3d6d749937f95e2",
-    "contractSha256": "739898c4ea347c2fbb92b8a67ca573059831d283dca5a82c036d8018537bd7b4",
-    "expectedTreeHash": "532d73b71b335594a26b5969c77ec883b223ba51cd08ac0df7f6f846a2a7981d",
-    "fileCount": 383
+    "approvedCommit": "3d4d5e4284f407e2703a125a753c585189421659",
+    "gitTree": "a017ed8a1b7d77d783304b1b0373d7be0c018b57",
+    "contractSha256": "5e3e157e88bc2a30e3fcec967a9386f7c3883d6bf56ce3482a6ed486bf33c53a",
+    "expectedTreeHash": "fc31b45b673214a9e21be79992fa8f0d48cc06eeef8eb42cbd0a712ce2830926",
+    "fileCount": 407
   },
-  "fileCount": 385,
-  "privateExportedCount": 383,
+  "fileCount": 409,
+  "privateExportedCount": 407,
   "generatedPublicCount": 2,
-  "treeHash": "532d73b71b335594a26b5969c77ec883b223ba51cd08ac0df7f6f846a2a7981d",
-  "inventoryHash": "29eeabb22b574845d1e066720895ecfbcf5713a386d2851dbbf3de35789bfd1f",
+  "treeHash": "fc31b45b673214a9e21be79992fa8f0d48cc06eeef8eb42cbd0a712ce2830926",
+  "inventoryHash": "6992b42fb3babff4aac44c3d5b606ad99b705ae97442e6a367c1ba5f8d399560",
   "files": [
     {
       "path": ".gitignore",
@@ -47,7 +47,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 1082,
-      "sha256": "08a0aecc809c033922bd0a86f7f29b67d9cb9bf6ada775955dbb82ff1deb96cc",
+      "sha256": "e6538eaf02bd81b61e71cead9d2bfc9a6b264075d20bc381f85056a82524f8ad",
       "ownership": "generated-public"
     },
     {
@@ -70,8 +70,8 @@
       "path": "apps/management-center/build.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 158,
-      "sha256": "e8e4b6a0f71601a6a8b00cb6d1255de20c7d102990a5856706d0f9d1728ddb46",
+      "bytes": 182,
+      "sha256": "613f5800d6191b8e025b302c1d1a1c9cdcccc2b4d2454b27e5f3462aef775a28",
       "ownership": "private-exported"
     },
     {
@@ -103,7 +103,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 1330,
-      "sha256": "fdd5e4d75a3d112a9c8f5eca676972837f519b70f03d3ad01b4d2f495a33d5b5",
+      "sha256": "8d9755ff7cfa6b3e8da9ca3edabf85408a513863fe45fa08f911be5aa1f99997",
       "ownership": "private-exported"
     },
     {
@@ -112,6 +112,14 @@
       "mode": 420,
       "bytes": 1298,
       "sha256": "3790a222986dd23c7d910528d813d5cd928a050ffcb3247da25dbdeeacab9697",
+      "ownership": "private-exported"
+    },
+    {
+      "path": "apps/management-center/src/components/foundation/delivery-assessment.jsx",
+      "type": "file",
+      "mode": 420,
+      "bytes": 950,
+      "sha256": "e8dac437e07ba6e62ab84b59d4758e7bf60e2da652fbdb1831f080196096ff45",
       "ownership": "private-exported"
     },
     {
@@ -278,8 +286,8 @@
       "path": "apps/management-center/src/features/context-panel/context-data-view.jsx",
       "type": "file",
       "mode": 420,
-      "bytes": 2125,
-      "sha256": "29c5ff1b95e5d2df97afeb52cf342b84c93938e0c18499f8559728c083ae5214",
+      "bytes": 2361,
+      "sha256": "23504ff609ed1743df83cca4a7ccc2300d6bfa2431aa87693d44b44f4d59d33f",
       "ownership": "private-exported"
     },
     {
@@ -302,32 +310,32 @@
       "path": "apps/management-center/src/features/context-panel/preview-sidebar.jsx",
       "type": "file",
       "mode": 420,
-      "bytes": 18043,
-      "sha256": "ebcafad109166b2fdcd684a232d634f668499975dc09c225c65cf62b2eb00633",
+      "bytes": 18563,
+      "sha256": "1ce90571de8bb2bad141968915b0ea57df6721497b9e2e3b0d0694ac6ad362f5",
       "ownership": "private-exported"
     },
     {
       "path": "apps/management-center/src/features/preview/asset-preview-policy.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 1634,
-      "sha256": "ab1eccb6bcebfecf49053b3f51ea11a6e7611d273784bdbd6b57e41621d81da6",
+      "bytes": 1898,
+      "sha256": "44a05e66669fa19581d4a421b603869387d318bd17533fe921836485e9610d5f",
       "ownership": "private-exported"
     },
     {
       "path": "apps/management-center/src/features/preview/bridge-policy.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 3879,
-      "sha256": "8cba5e206f7c67e111d7d3013d5756006cc5d77a28dd42808d2090df64e760de",
+      "bytes": 4044,
+      "sha256": "93217025af3b860b80a79ec0a1a9c39ee461c570cc41711512b7165a1929af95",
       "ownership": "private-exported"
     },
     {
       "path": "apps/management-center/src/features/preview/preview-canvas.jsx",
       "type": "file",
       "mode": 420,
-      "bytes": 2179,
-      "sha256": "3e77d85e7266492d736a3baf08016481def0e16e7d82c75d5d4f12abb489fec8",
+      "bytes": 2515,
+      "sha256": "552938e48dfd67c12e212a796bf4182c280dd16de5ab70c2d170c843bbfb96dd",
       "ownership": "private-exported"
     },
     {
@@ -382,24 +390,40 @@
       "path": "apps/management-center/src/server/center-server.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 17293,
-      "sha256": "4864627124c2d5daa1fa3fbaaef91c516586abd056a8b738e970bbafc1b3d217",
+      "bytes": 30263,
+      "sha256": "6daebadb042004a69358463d2ae1f6f2aa7d0a3e9ea7e60abe0fed88a2b950e0",
       "ownership": "private-exported"
     },
     {
       "path": "apps/management-center/src/server/index.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 288,
-      "sha256": "86fedea85a2307654552df2a212f62295ac535f609a79a33ac918fe3afc4d42f",
+      "bytes": 318,
+      "sha256": "126b527499c030c2111a62817113cb372bf446c6d099552c76b63c295a53c1eb",
       "ownership": "private-exported"
     },
     {
       "path": "apps/management-center/src/server/view-model.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 1527,
-      "sha256": "126d902b24614a3a00de70e8c7d9a20f57b781abeb4494e8a7a3f826c88c70a8",
+      "bytes": 2001,
+      "sha256": "6e2b02a7d7d627201e25744635e623c815554ca2e9a9c5d9d8a15641a30fec5f",
+      "ownership": "private-exported"
+    },
+    {
+      "path": "apps/management-center/src/server/workbench-snapshot.mjs",
+      "type": "file",
+      "mode": 420,
+      "bytes": 5943,
+      "sha256": "bf479f132b8e0b4893dde6fefc64d14138e6d85a63b3bd184c04e294c8fed1f0",
+      "ownership": "private-exported"
+    },
+    {
+      "path": "apps/management-center/src/server/workbench-validation-worker.mjs",
+      "type": "file",
+      "mode": 420,
+      "bytes": 323,
+      "sha256": "da15ff64e831024ce62c4c86c6f38c35b03040586ed1a2f453a8512201342c56",
       "ownership": "private-exported"
     },
     {
@@ -422,16 +446,16 @@
       "path": "apps/management-center/src/state/workspace-state.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 6011,
-      "sha256": "0614888c2585a800ce2af70072b59fb2b5a17040f520c6574e048cf51ddecfff",
+      "bytes": 9453,
+      "sha256": "8b9a9a8e8e7a7db3248fab3ef05cd9ea1c3fd68025a69effe07bb7fabf155b9a",
       "ownership": "private-exported"
     },
     {
       "path": "apps/management-center/src/styles.css",
       "type": "file",
       "mode": 420,
-      "bytes": 30428,
-      "sha256": "ef3c58282427e20d410e6e936aefb834239451f911a5229d79b8908629c75b96",
+      "bytes": 30452,
+      "sha256": "b478c09efdc51ec8d432484bcada39a462ce865031962383f7bc205ab622e9a0",
       "ownership": "private-exported"
     },
     {
@@ -446,24 +470,24 @@
       "path": "apps/management-center/src/workspace/asset-display.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 4790,
-      "sha256": "d34cd49b69394f53acb536cf3dc2d68ee7ad4e1f382a474accf1c1a52092dd65",
+      "bytes": 7229,
+      "sha256": "42fc857a72d1d68f9edb8495474721ac61278008e21e3fd6f1c04c31479e7c45",
       "ownership": "private-exported"
     },
     {
       "path": "apps/management-center/src/workspace/asset-management-workspace.jsx",
       "type": "file",
       "mode": 420,
-      "bytes": 7938,
-      "sha256": "c150fbb855bf571870e78e9a037dd92f217ee48c50b749665dd62c0fecbc7717",
+      "bytes": 8190,
+      "sha256": "fc85235de0bc42a8e84f2ada79f5b8ef7bbb08faaa8473ee45ab96b5ee5b6d94",
       "ownership": "private-exported"
     },
     {
       "path": "apps/management-center/src/workspace/asset-preview.jsx",
       "type": "file",
       "mode": 420,
-      "bytes": 5520,
-      "sha256": "d5d3bca4d4230d00baa11d889466da7aadf5be3f20f31eb7a23d445e38cb7d07",
+      "bytes": 11123,
+      "sha256": "32798ddd4a6398fee72fbded10354143970d30e281148152c4fa78dd81afb14b",
       "ownership": "private-exported"
     },
     {
@@ -478,8 +502,8 @@
       "path": "apps/management-center/src/workspace/information-logic-workspace.jsx",
       "type": "file",
       "mode": 420,
-      "bytes": 16670,
-      "sha256": "00619beb2ce3d723765e5d78ef351d6410c77f6c8b4bd43e04773981a9ffe2c4",
+      "bytes": 17519,
+      "sha256": "60c46b03183cadddd462db12105486b8033644dd75ba0048ed7e95fe91d7ed83",
       "ownership": "private-exported"
     },
     {
@@ -510,16 +534,16 @@
       "path": "apps/management-center/src/workspace/workspace-app.jsx",
       "type": "file",
       "mode": 420,
-      "bytes": 13391,
-      "sha256": "110123fbf7d3cb8fc97efe2f23b6b45d63bfcf2fc5a5c0266754eac600967e61",
+      "bytes": 16238,
+      "sha256": "f3cabb6602301969e9bfc865477f89243dbc20c02deedc9739630f668058a167",
       "ownership": "private-exported"
     },
     {
       "path": "apps/management-center/src/workspace/workspace-projections.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 8408,
-      "sha256": "91de06f4bfe23ac417c0eaee6cfaba14a975d8396e896aa14ab8441a1b9b90dc",
+      "bytes": 9774,
+      "sha256": "47bc5ebff4206eaf106603f47e54851c006b41296d82cb93e121731bf8d3c95b",
       "ownership": "private-exported"
     },
     {
@@ -542,8 +566,8 @@
       "path": "distribution/summon-foundation/README.md",
       "type": "file",
       "mode": 420,
-      "bytes": 3603,
-      "sha256": "120c5f25bdfaf16ef3306041e0c08c2b775a046b4e485d1daf9523a52f05c97f",
+      "bytes": 3605,
+      "sha256": "101aa5344ebea60f2b858ec362519b511963e19f56083061b416d0a2b5fae521",
       "ownership": "private-exported"
     },
     {
@@ -694,8 +718,8 @@
       "path": "distribution/summon-foundation/lib/single-page-view.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 13932,
-      "sha256": "eff0a957f7aecae5e1b3d79ca40bb904468435c16e0f5a4867ee79962708135a",
+      "bytes": 14140,
+      "sha256": "cc101ebc10ba3abdd813c569cba23c31c4c20b306cb99a6c1f82fc13c2105ab1",
       "ownership": "private-exported"
     },
     {
@@ -710,16 +734,16 @@
       "path": "distribution/summon-foundation/npm-shrinkwrap.json",
       "type": "file",
       "mode": 420,
-      "bytes": 21854,
-      "sha256": "48ecc5d2fdc4258e31c5ca14760c4c9a9b2f93f1f9c095d9ed9f95ac70b163d2",
+      "bytes": 21856,
+      "sha256": "8c5776fc9b8509ec3002c56bc3ac9a147acb32e160eaf7f2e95bf85fddda1180",
       "ownership": "private-exported"
     },
     {
       "path": "distribution/summon-foundation/package.json",
       "type": "file",
       "mode": 420,
-      "bytes": 800,
-      "sha256": "d688d3bb2d59700994238ccdd82520c717f2ddc42285b69585b5ab25d40d5949",
+      "bytes": 801,
+      "sha256": "83890d0afbc8693cf70adf23b90b0bd6d5ca673e3b061d8323773b2bbf314c87",
       "ownership": "private-exported"
     },
     {
@@ -782,8 +806,8 @@
       "path": "docs/current-mutation-handler-coverage.json",
       "type": "file",
       "mode": 420,
-      "bytes": 6589,
-      "sha256": "a76f45a1d76f03d3d3ad9780f75b5d60f55dbda6085680317e908eca7d58f220",
+      "bytes": 9904,
+      "sha256": "2a39f301587435200ed0f47ad52c69b37b7ed38e5a8019c7e379e53247ce69e6",
       "ownership": "private-exported"
     },
     {
@@ -1099,6 +1123,14 @@
       "ownership": "private-exported"
     },
     {
+      "path": "examples/foundation-events/fact-contract.mjs",
+      "type": "file",
+      "mode": 420,
+      "bytes": 716,
+      "sha256": "b5b7e85df7ba98119f4c8c4cd910805e6a42c272c198dfa45f373e7ce79d3222",
+      "ownership": "private-exported"
+    },
+    {
       "path": "examples/foundation-events/index.html",
       "type": "file",
       "mode": 420,
@@ -1118,16 +1150,16 @@
       "path": "examples/foundation-events/package.json",
       "type": "file",
       "mode": 420,
-      "bytes": 518,
-      "sha256": "0b7eb634f0c6cbabd5309b4a93c35ab212654bea82d293dcd8e8c3e6eacf019d",
+      "bytes": 540,
+      "sha256": "c35564044e682d9791e353ec15aafb55b466d52e455058bb68e3a98915a27f69",
       "ownership": "private-exported"
     },
     {
       "path": "examples/foundation-events/src/asset-preview-protocol.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 1103,
-      "sha256": "d6405b449dda5353a6736ad2c8defda673f4b0366aafd6f777b8e20cbb3f542e",
+      "bytes": 1256,
+      "sha256": "128b9e1696056e520c03cc2d026e7c7f4bcc26c66442177dcdf9e7f4ebf5e050",
       "ownership": "private-exported"
     },
     {
@@ -1142,16 +1174,16 @@
       "path": "examples/foundation-events/src/asset-preview.jsx",
       "type": "file",
       "mode": 420,
-      "bytes": 5106,
-      "sha256": "48f155ddc0bd244b73db88f6609c02da88af99e75b3e115dbd2c5afb393aa781",
+      "bytes": 5295,
+      "sha256": "12ecd23e1d278d5ace062534cdc8a229dab2149133bc61701eafedabf781b111",
       "ownership": "private-exported"
     },
     {
       "path": "examples/foundation-events/src/bridge.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 14390,
-      "sha256": "272f448dbe3afc3403e2318967a272a2c8c78dbe1e3e59b1d566224aca54bf05",
+      "bytes": 14791,
+      "sha256": "0c01ddb78fe709112af8aa2303cab4fd5b1327f00bb9f623c88ae267668d476c",
       "ownership": "private-exported"
     },
     {
@@ -1351,7 +1383,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 913,
-      "sha256": "9f417da510845972c8f61c0069eb662852640a86f8797a17397afe604876f1ef",
+      "sha256": "cbd353a8155ba9f3127d857551eda696adb28d6d36b667afb8a97ec7aaba8824",
       "ownership": "private-exported"
     },
     {
@@ -1366,8 +1398,8 @@
       "path": "package-lock.json",
       "type": "file",
       "mode": 420,
-      "bytes": 221389,
-      "sha256": "860737f1fdf988624d755e16578db83df508ae1c1dd3e4ec3f27ff9d85d2f331",
+      "bytes": 221256,
+      "sha256": "89f71cb32f377317e2629dc00501f224dd123688535d1bb500e9eb6dee453077",
       "ownership": "private-exported"
     },
     {
@@ -1375,23 +1407,23 @@
       "type": "file",
       "mode": 420,
       "bytes": 900,
-      "sha256": "2f3251470bc2f216798bab74a34bd09f864d3cffbc0486ed7f399a7b77d75146",
+      "sha256": "3b3693bbd5168a03dbd95382111a963e10dd153e44efcab37bb1630fe3e8af81",
       "ownership": "private-exported"
     },
     {
       "path": "packages/cli/command-contract.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 12513,
-      "sha256": "3398eab29c9c49daad4bd711245e322ee68746bfac810e93e4016926c03217f6",
+      "bytes": 13819,
+      "sha256": "c79b77964b9df66e0dfec029a223f1e8583a13fbe1f73d71cf5ebd91c09761bd",
       "ownership": "private-exported"
     },
     {
       "path": "packages/cli/index.mjs",
       "type": "file",
       "mode": 493,
-      "bytes": 20501,
-      "sha256": "3cb709c2322dc3bebf2878d6d9604d9b294ca1862f371fd6c6253ed4a8f9e6f8",
+      "bytes": 24002,
+      "sha256": "ef33b62539fcc2b24bac47d15827c4d3a78497ea11297e75e8dbeeaeccdcba15",
       "ownership": "private-exported"
     },
     {
@@ -1407,23 +1439,39 @@
       "type": "file",
       "mode": 420,
       "bytes": 294,
-      "sha256": "aaff031f6a8598d381e6c0750c233232a361b537358b4b255ca42e86a89a7b83",
+      "sha256": "df77137d4eebd4aaebc5fbc05cc49d87a0d59dcb8de92f806b9625704dd71aae",
       "ownership": "private-exported"
     },
     {
       "path": "packages/core/ai-bridge.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 16574,
-      "sha256": "7ebb949acd1764a47df7aa68087a537a61c918120f3ec1a0e932bca7e56062f5",
+      "bytes": 16686,
+      "sha256": "ab9b6264e3d1c728c33bb9685fb12167b0363b1986cc134c9d2009ad56d16d10",
+      "ownership": "private-exported"
+    },
+    {
+      "path": "packages/core/asset-model.mjs",
+      "type": "file",
+      "mode": 420,
+      "bytes": 8103,
+      "sha256": "df770627ed6fc48066b393c82d286a02fc329fbf81d54b5d02adb8b982307361",
       "ownership": "private-exported"
     },
     {
       "path": "packages/core/assets.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 4903,
-      "sha256": "82ae1dae59b6f5b2e5a47b1b14d75f96680516382ecc4e2419725aa44d1df33c",
+      "bytes": 9651,
+      "sha256": "3b74ef0fb50f0b5355537bb3c9042b3c98b58df71aa0e94b39f5b48b792c3cf6",
+      "ownership": "private-exported"
+    },
+    {
+      "path": "packages/core/browser-launch-contract.mjs",
+      "type": "file",
+      "mode": 420,
+      "bytes": 1992,
+      "sha256": "8020466ca9d4126a945bcb20dc2b604045223ff3303be409e8f5eb4c3fb8d93a",
       "ownership": "private-exported"
     },
     {
@@ -1432,6 +1480,14 @@
       "mode": 420,
       "bytes": 537,
       "sha256": "a5a07c202aa851d56a1a723c574ee858600cac74d9fb9ada0dbbdb2b07fc33c3",
+      "ownership": "private-exported"
+    },
+    {
+      "path": "packages/core/browser-lifecycle.mjs",
+      "type": "file",
+      "mode": 420,
+      "bytes": 8167,
+      "sha256": "84ac9af67e83f25133383d434a1245db10ee08b0cc166ac768d5ff8c97e673f8",
       "ownership": "private-exported"
     },
     {
@@ -1467,11 +1523,19 @@
       "ownership": "private-exported"
     },
     {
+      "path": "packages/core/content-integrity.mjs",
+      "type": "file",
+      "mode": 420,
+      "bytes": 5568,
+      "sha256": "67232702422a329dbec293bd3c10cde71568ef956b1a331f6f707b131734a9ce",
+      "ownership": "private-exported"
+    },
+    {
       "path": "packages/core/context.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 14194,
-      "sha256": "f636fd3ace7f38af16f41150b5b972c45c7dc4fefdbfde0bf7337f7523107231",
+      "bytes": 16740,
+      "sha256": "6c7d954912c560a8d05ce39efeb9a9aa09af872bebb9b9e8b9422ff53a618a81",
       "ownership": "private-exported"
     },
     {
@@ -1499,6 +1563,14 @@
       "ownership": "private-exported"
     },
     {
+      "path": "packages/core/evidence-impact.mjs",
+      "type": "file",
+      "mode": 420,
+      "bytes": 9935,
+      "sha256": "1ecad161c9eb1123824f929900be6d1f5bb64ad96019ebcdb3492a19a70e6cb5",
+      "ownership": "private-exported"
+    },
+    {
       "path": "packages/core/extension-adapters.mjs",
       "type": "file",
       "mode": 420,
@@ -1507,11 +1579,19 @@
       "ownership": "private-exported"
     },
     {
+      "path": "packages/core/fact-contracts.mjs",
+      "type": "file",
+      "mode": 420,
+      "bytes": 2239,
+      "sha256": "bb6b285587697852e006bd2440c4fe43d237077c9f2ebf3ec772fc4658ffbbd3",
+      "ownership": "private-exported"
+    },
+    {
       "path": "packages/core/facts.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 12424,
-      "sha256": "e03d4fab20b1619b95306cb2acfc2f1e6724080d61a581b5c375b390b1d7b1cd",
+      "bytes": 12493,
+      "sha256": "bf629203551400c157c239617ac8c769dd357bb14c04f5fd4e3dcf431b544a32",
       "ownership": "private-exported"
     },
     {
@@ -1606,32 +1686,32 @@
       "path": "packages/core/lifecycle-feedback.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 30861,
-      "sha256": "c121ddc246443b953cb3cdef1c0cc8b12eb6a718eba27f223c656bd2d2ac0a04",
+      "bytes": 31721,
+      "sha256": "74b759e67e00e77f21e74c4f02e2fe4b92d12740b45b3f0b53fc6bbafd110e67",
       "ownership": "private-exported"
     },
     {
       "path": "packages/core/lifecycle-journey.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 5222,
-      "sha256": "c0e170dd814d1aa8137631858484fffdda0c6dc9d98fee61438173bf1b0acf85",
+      "bytes": 7513,
+      "sha256": "e9dd44d919895cfcc844f61f87304399f46e4ea6482e37673367401714c09725",
       "ownership": "private-exported"
     },
     {
       "path": "packages/core/lifecycle-manager-host.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 20840,
-      "sha256": "aa591962981730304dca8fea97222d45c11651e395777ab5be93b034a4af616e",
+      "bytes": 25305,
+      "sha256": "15ed19be91c4a6588d4ca5a62f4085c8f840e098a589d78fc7afeb7ffd73d9b0",
       "ownership": "private-exported"
     },
     {
       "path": "packages/core/lifecycle-manager.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 36950,
-      "sha256": "18f7044ea5eee66826c18945dcb8d5ee16ae041901aa59a42ac3dec2fd92597f",
+      "bytes": 37722,
+      "sha256": "f9a8649ca7945898d9fd7dd92272af7482b3869ef026a44e7000dbbab8bb8118",
       "ownership": "private-exported"
     },
     {
@@ -1648,6 +1728,30 @@
       "mode": 420,
       "bytes": 2981,
       "sha256": "e7335084d1e463ee1cf9ec082e6b0f11b1ca53f2d8505578028578017aede707",
+      "ownership": "private-exported"
+    },
+    {
+      "path": "packages/core/notices/typescript-5.8.3/LICENSE.txt",
+      "type": "file",
+      "mode": 420,
+      "bytes": 9197,
+      "sha256": "a7d00bfd54525bc694b6e32f64c7ebcf5e6b7ae3657be5cc12767bce74654a47",
+      "ownership": "private-exported"
+    },
+    {
+      "path": "packages/core/notices/typescript-5.8.3/ThirdPartyNoticeText.txt",
+      "type": "file",
+      "mode": 420,
+      "bytes": 37824,
+      "sha256": "1af3c68039c57e539422da82a4faada506ce6d0ea6f90e0b699d02dbcdb7a90c",
+      "ownership": "private-exported"
+    },
+    {
+      "path": "packages/core/notices/typescript-5.8.3/provenance.json",
+      "type": "file",
+      "mode": 420,
+      "bytes": 478,
+      "sha256": "69b7be61162c287622c4e86654dda01e2879673def68e56418fb77008c21eace",
       "ownership": "private-exported"
     },
     {
@@ -1670,16 +1774,16 @@
       "path": "packages/core/package.json",
       "type": "file",
       "mode": 420,
-      "bytes": 382,
-      "sha256": "01a6abf63e5731fdbb2e5dfd4bbc82d7f8564b7ee57b06dba40dee6fd9f9a616",
+      "bytes": 507,
+      "sha256": "29705a545c3249e13f2b1731a44102cf7382c2a3cb4b867bf210fb61ca0f5603",
       "ownership": "private-exported"
     },
     {
       "path": "packages/core/path-boundary.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 2065,
-      "sha256": "70d462d84d2b2f2cf76255a406b775db5ba3018bbc526a219d820b1f62404760",
+      "bytes": 2792,
+      "sha256": "46eab4e2a204bc1b014f61a19758e2574467739dc7ea8565a247ff79c15f04ae",
       "ownership": "private-exported"
     },
     {
@@ -1710,8 +1814,8 @@
       "path": "packages/core/preview-config.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 3294,
-      "sha256": "b851f97b396b869649787b0d3327939c582c77f2c4b4792031e4b2a36ebcffb3",
+      "bytes": 3296,
+      "sha256": "16a658dc180bdee56f6861d466f78393f2dfae985508d6fd9fdd0c0765ace065",
       "ownership": "private-exported"
     },
     {
@@ -1734,16 +1838,16 @@
       "path": "packages/core/project-authority.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 73258,
-      "sha256": "4366797fdf6312ddbd687ab85db56c125c156083cb987dfc29e644d1245d65d6",
+      "bytes": 82871,
+      "sha256": "1cdc91f4e6e62c7642d89a429a2019fbfa7e2b78b0714b83f9f36d23c276fae6",
       "ownership": "private-exported"
     },
     {
       "path": "packages/core/project-delivery.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 6078,
-      "sha256": "cff8ae95d375bd71311a7e0ed46e06ae205069c8300d13ce5677a547e2a134bd",
+      "bytes": 14837,
+      "sha256": "10751683cba05669c6bc1720f5e622fdabd23dc702c9cfad527455a6dd096b2f",
       "ownership": "private-exported"
     },
     {
@@ -1758,16 +1862,32 @@
       "path": "packages/core/project-mutation-handlers.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 37970,
-      "sha256": "b6f1f000b455045d22ca863b0f5e8b04216e85b749795effdfa3bbeed390fa99",
+      "bytes": 41366,
+      "sha256": "41d8192ea3f7734f0e6e908f194eb44ba303bb1835aec129e532dcd1162875af",
+      "ownership": "private-exported"
+    },
+    {
+      "path": "packages/core/project-preparation-view.mjs",
+      "type": "file",
+      "mode": 420,
+      "bytes": 8131,
+      "sha256": "b170937f942dbb4fd46a63d65e2dc0b6ab4a639dd2cf5aec4779719aa8bcb318",
       "ownership": "private-exported"
     },
     {
       "path": "packages/core/project-rules.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 4440,
-      "sha256": "b6c85cf72a85cc40e7dadd1d6e3f339bd517cf1d614e23dfb0b051ac252d4066",
+      "bytes": 5787,
+      "sha256": "f9d66c7a01817ae2a8c65d4853189bb5e5d2210b7d1184572ce679650e6d87e9",
+      "ownership": "private-exported"
+    },
+    {
+      "path": "packages/core/project-sync.mjs",
+      "type": "file",
+      "mode": 420,
+      "bytes": 27860,
+      "sha256": "99f64627910240af41aac47d072ac23475582c267fffe1957343903ac28bd1c0",
       "ownership": "private-exported"
     },
     {
@@ -1798,16 +1918,16 @@
       "path": "packages/core/rules-delivery.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 6102,
-      "sha256": "1f4e201e4d3185cc0ba27533f4ff334e0b2fe75b8f8d5241d1a90c6a60fa91ab",
+      "bytes": 6630,
+      "sha256": "ccf93cc7864cc81488d382155f1eb018c40627192a071fa84ee52420e414f69b",
       "ownership": "private-exported"
     },
     {
       "path": "packages/core/runtime-descriptor.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 12799,
-      "sha256": "5b9e5c40e87d9503667d3b5937e79a1e86d6a5c206ff81e74abfe7b950504a24",
+      "bytes": 12864,
+      "sha256": "906f416afaa44fc09161aafdc68d54d5e27548decef064f804486bb65a7fb640",
       "ownership": "private-exported"
     },
     {
@@ -1819,11 +1939,35 @@
       "ownership": "private-exported"
     },
     {
+      "path": "packages/core/schemas/asset-model-1.json",
+      "type": "file",
+      "mode": 420,
+      "bytes": 6095,
+      "sha256": "d9707368a725e6a2014917f95d26c836f2c9d2be312f6e851c2f4c3df0ca711d",
+      "ownership": "private-exported"
+    },
+    {
       "path": "packages/core/schemas/authorization-capability-v1.json",
       "type": "file",
       "mode": 420,
       "bytes": 2519,
       "sha256": "db3259c23cdd2ed6bf5b83fc6b4008df6c116abea8dbd9f7df1061bb739f0700",
+      "ownership": "private-exported"
+    },
+    {
+      "path": "packages/core/schemas/delivery-scope-2.json",
+      "type": "file",
+      "mode": 420,
+      "bytes": 6940,
+      "sha256": "e30996d509ad8d495b9f2b00035a45bc19a2dca6114e7e206036f6c52980d647",
+      "ownership": "private-exported"
+    },
+    {
+      "path": "packages/core/schemas/evidence-1.json",
+      "type": "file",
+      "mode": 420,
+      "bytes": 3270,
+      "sha256": "3b1abd9b5e533f84dec65cd0467df6cc6ce6ba59ec850dfb125c4cd09c189022",
       "ownership": "private-exported"
     },
     {
@@ -1843,11 +1987,51 @@
       "ownership": "private-exported"
     },
     {
+      "path": "packages/core/schemas/reuse-decision-1.json",
+      "type": "file",
+      "mode": 420,
+      "bytes": 3389,
+      "sha256": "85a29014902ffeb12a49e680e68b5a912c8a0e96cc9fce66054383ff5776f1e8",
+      "ownership": "private-exported"
+    },
+    {
+      "path": "packages/core/schemas/semantic-review-1.json",
+      "type": "file",
+      "mode": 420,
+      "bytes": 2756,
+      "sha256": "0b4eafd924b9b8b8f4c63ecc5ef56e590d39829ffa9fcefc23a8ff6d0a357e14",
+      "ownership": "private-exported"
+    },
+    {
+      "path": "packages/core/source-analysis-worker.mjs",
+      "type": "file",
+      "mode": 420,
+      "bytes": 331,
+      "sha256": "f435a8d691db1ea4bd515cb35b80ad00814a8ec78dcc673d74d2f633c415cc33",
+      "ownership": "private-exported"
+    },
+    {
+      "path": "packages/core/source-analysis.mjs",
+      "type": "file",
+      "mode": 420,
+      "bytes": 16718,
+      "sha256": "50956cc5bd2b53f42ebc624a9b2f69636ccc16a80c1c783a08c29194ab8b358a",
+      "ownership": "private-exported"
+    },
+    {
+      "path": "packages/core/source-inventory.mjs",
+      "type": "file",
+      "mode": 420,
+      "bytes": 1167,
+      "sha256": "184d04b733d9027f8ccf2b414e8192c4841d00c91eb7af81ef0f30585c553b43",
+      "ownership": "private-exported"
+    },
+    {
       "path": "packages/core/transaction-engine.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 78490,
-      "sha256": "7294fbcf8723ee6fe35d8cdf16945fbdfe54a4ba97564864b3179d53ac4b7d9b",
+      "bytes": 80269,
+      "sha256": "0fbfcde896661c5804adec64693ded17a353410ec903cc1aaa34e691b11d8221",
       "ownership": "private-exported"
     },
     {
@@ -1891,35 +2075,43 @@
       "ownership": "private-exported"
     },
     {
+      "path": "packages/core/workbench-runtime.mjs",
+      "type": "file",
+      "mode": 420,
+      "bytes": 10774,
+      "sha256": "4d97d3d416439dea32737d5add5ce519e3b527cb1e6bce78f3a0614415de08f3",
+      "ownership": "private-exported"
+    },
+    {
       "path": "rules/foundation-making.md",
       "type": "file",
       "mode": 420,
-      "bytes": 8791,
-      "sha256": "e34300b001eb4f7e038d6b9931398eb0f19292b5283580f91724a08a6452d80b",
+      "bytes": 16735,
+      "sha256": "42a38ecce79e8bd50c08dd6d936125a8fa77973454f8b8b021581535145e5107",
       "ownership": "private-exported"
     },
     {
       "path": "rules/lifecycle-guide.md",
       "type": "file",
       "mode": 420,
-      "bytes": 19128,
-      "sha256": "5ef5fc9299c3c0820f69024fac88bd315e87579c0a4cc034a68b3304467c0ce1",
+      "bytes": 20077,
+      "sha256": "41ccbb378b0c75531f026aba1b4691c92936282b8eda57ae3364a6f018860a9d",
       "ownership": "private-exported"
     },
     {
       "path": "rules/manifest.json",
       "type": "file",
       "mode": 420,
-      "bytes": 260,
-      "sha256": "353f202e11888e68e4dafe6d5ed9c4a74f745ec94404041e7ddb1ed2822c4d74",
+      "bytes": 284,
+      "sha256": "7cc30a03d904c44a6bd3e6fbbf1e2cab96b37f75ffe45038f8f9a6f230bafb5d",
       "ownership": "private-exported"
     },
     {
       "path": "scripts/build-candidate.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 8107,
-      "sha256": "9a0b91420f34d31b9c0de67bf3206e97de5192317e1a402239c561c88f86b9ec",
+      "bytes": 9219,
+      "sha256": "7fc669c8c9f20fb49111eecd20e705d72d434c15358217068b8dd2d64f81f0c7",
       "ownership": "private-exported"
     },
     {
@@ -1934,8 +2126,8 @@
       "path": "scripts/candidate-module-boundary-audit.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 12720,
-      "sha256": "cdd5f89fb93f476d26834bfb8309967abaf9eed1c4041afd50d59d90372719e9",
+      "bytes": 15038,
+      "sha256": "3a582e3f5242702ee71fa35510ec2a74261384c89d99e0d91bd90038f7061557",
       "ownership": "private-exported"
     },
     {
@@ -1958,8 +2150,8 @@
       "path": "scripts/mutation-entrypoint-audit.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 6893,
-      "sha256": "8edba68a2e67ebaee25ddd8acd872f2c01e53bd9923140fec8ad0860112e018c",
+      "bytes": 7520,
+      "sha256": "aa4fe75f569c3bb0ae0e448b6d65e4e1b8b104d64eec67728c8a32004710c401",
       "ownership": "private-exported"
     },
     {
@@ -2014,8 +2206,8 @@
       "path": "scripts/third-party-notices.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 2888,
-      "sha256": "21eebd516d15acc6774b916d0b8f8a0ef5e97eb578eb764ac39ba744b1bda576",
+      "bytes": 4905,
+      "sha256": "c002748c6089d6b4d6ca707969b5b4a96cfbc5eee3f71b3620b89126b0f675e7",
       "ownership": "private-exported"
     },
     {
@@ -2038,8 +2230,8 @@
       "path": "skills/ai-product-foundation-kit/SKILL.md",
       "type": "file",
       "mode": 420,
-      "bytes": 10720,
-      "sha256": "36482d4cc7409de53082787e4f508cbdfe62f777d35f4a8cda264e469f11d4be",
+      "bytes": 13096,
+      "sha256": "9a7bc0e405382753d8aaaef95dcd98592553be42b1afc7461cac318bcdf6042e",
       "ownership": "private-exported"
     },
     {
@@ -2047,7 +2239,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 944,
-      "sha256": "93b880ceea2522248cd2dd0823da4726ea6de8d9259c620461184af0f34ad095",
+      "sha256": "1d89d6b8c155d8c0360ee85a103d96692070d21714fb55d6c6c7455db9d3e6c8",
       "ownership": "private-exported"
     },
     {
@@ -2158,8 +2350,8 @@
       "path": "tests/browser/foundation-ui-matrix-021.test.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 38955,
-      "sha256": "788d3577764d962f0eaaf06637c447fa5028c4c3750e684be16e19e615832b1c",
+      "bytes": 39969,
+      "sha256": "032cc86b8e55fb589d5f5ed6348f453e68ed7c8d999a48e12d77dbb4f8790414",
       "ownership": "private-exported"
     },
     {
@@ -2350,8 +2542,8 @@
       "path": "tests/fixtures/test-runtime-surface.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 3291,
-      "sha256": "832be69d56b50e7ad8e535b655e812709a560be3bcd4c8fa287f8e3717432894",
+      "bytes": 3392,
+      "sha256": "c1ed9273b433bee349cf2d7919c638417062589280e99e83dcd638cb9c32ce5b",
       "ownership": "private-exported"
     },
     {
@@ -2366,16 +2558,16 @@
       "path": "tests/helpers/browser-launch-contract.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 1992,
-      "sha256": "8020466ca9d4126a945bcb20dc2b604045223ff3303be409e8f5eb4c3fb8d93a",
+      "bytes": 154,
+      "sha256": "02c57e0be18413ef60e3662fa022d1cf527ac2bf8eca672cfd99304c863090f5",
       "ownership": "private-exported"
     },
     {
       "path": "tests/helpers/browser-lifecycle.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 8167,
-      "sha256": "84ac9af67e83f25133383d434a1245db10ee08b0cc166ac768d5ff8c97e673f8",
+      "bytes": 148,
+      "sha256": "b604719c7ead67869b3b29e497d9956d846636022849b280f474c3dca05b637f",
       "ownership": "private-exported"
     },
     {
@@ -2462,8 +2654,8 @@
       "path": "tests/integration/asset-preview-018.test.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 3608,
-      "sha256": "91aa9633175fd54419116dbd116cc8ee3ba597b0d126ef5c252c069c75d5ad23",
+      "bytes": 3695,
+      "sha256": "415d225793779ebe84aa7d1f6baa9f813102d2718017362b855e92829f20fae2",
       "ownership": "private-exported"
     },
     {
@@ -2558,8 +2750,8 @@
       "path": "tests/integration/inspector-bridge-017r1.test.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 9751,
-      "sha256": "787677ec938e7aa20fae7724b13cb07ef95571b5dda5a8cf018ea3c1f00634dc",
+      "bytes": 9970,
+      "sha256": "9df5a4c5dcca7d5fbf8fb62d4d81ee934fab8df2e191900cda610dddbd4685dd",
       "ownership": "private-exported"
     },
     {
@@ -2678,8 +2870,8 @@
       "path": "tests/integration/logic-flow-component-017r1.test.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 7950,
-      "sha256": "321bb7175543f7d93266b8787309fa829fb07637723e1d56c213a612567c64dc",
+      "bytes": 12375,
+      "sha256": "dc23c59b41ae2e4db2bb8f48b6003437648a70c7c37762e25927d809b16cb101",
       "ownership": "private-exported"
     },
     {
@@ -2838,8 +3030,8 @@
       "path": "tests/unit/candidate-module-boundary-parser.test.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 1791,
-      "sha256": "cfaca406b1eb44e8ffb9410c8cac69ee4461ef41fef83727ed28f10d3c26a736",
+      "bytes": 2146,
+      "sha256": "1534ccd445b7258570299572e9a88e0e55d2b56d9121258c0582de712461e5a0",
       "ownership": "private-exported"
     },
     {
@@ -3030,8 +3222,8 @@
       "path": "tests/unit/r1-structure.test.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 7093,
-      "sha256": "1e92c39e778a31093f12e2054094d3533c13af863fc265f26719aa7b378d8b93",
+      "bytes": 7969,
+      "sha256": "5dcb0c5e3bd05608d39ea1e9da28eaf689f523b862b6589362ec69b815bba588",
       "ownership": "private-exported"
     },
     {

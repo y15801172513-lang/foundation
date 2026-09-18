@@ -1,10 +1,12 @@
+import {synchronizeProject} from './project-sync.mjs';
+import {lifecycleJourney} from './lifecycle-journey.mjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 
 import {applyCapabilityPlan} from './capability-authority.mjs';
-import {applyProjectAuthorityPlan, applyProjectAuthorityRecoveryPlan, applyProjectMutationPlan, applyProjectMutationRecoveryPlan} from './project-authority.mjs';
+import {createProjectAuthorityPlan, inspectProjectAuthority, applyProjectAuthorityPlan, applyProjectAuthorityRecoveryPlan, applyProjectMutationPlan, applyProjectMutationRecoveryPlan} from './project-authority.mjs';
 import {applyLifecyclePlan} from './transaction-engine.mjs';
 import {applyNormalUninstallCompositePlan, applyNormalUninstallProjectPlan, applyProjectLayoutPlan} from './project-layout.mjs';
 import {applyOfferPreferencePlan} from './offer-consent.mjs';
@@ -114,7 +116,7 @@ function serverForRecord({plan, stateRoot, record, planRef = null}) {
     writeLocalManagerSession(activeRecord, {state, completedAt: at, terminalReason: reason, result: {ok: true, status, mutationPerformed: false}});
     finalizeBootstrapRecord(activeRecord, stateRoot);
     server.emit('foundation-operation-result', activeRecord.session);
-    closeServer();
+    if (!activeRecord.session.projectPreparation) closeServer();
     return {won: true, state};
   };
   const server = http.createServer((request, response) => {
@@ -122,6 +124,11 @@ function serverForRecord({plan, stateRoot, record, planRef = null}) {
     if (request.method === 'GET' && request.url === '/__foundation/manager/view') {
       if (!isJourneyRequest(request, journeyTransport)) return send(response,403,{code:'JOURNEY_BINDING_REJECTED'});
       return send(response,200,{session:visibleLocalManagerSession(activeRecord.session),feedback:lifecycleFeedback(visibleLocalManagerSession(activeRecord.session)),managerNonce,planRef:activePlanRef,operationId:journeyTransport.operationId,action:['normal-uninstall-project-detach','normal-uninstall'].includes(activePlan.operation)&&activePlan.residuals?.length?'continue-accessible-with-residuals':'confirm-exact-operation'});
+    }
+    if (request.method === 'GET' && request.url === '/__foundation/manager/project-state' && activeRecord.session.projectPreparation) {
+      const session=visibleLocalManagerSession(activeRecord.session);
+      const authorization=inspectProjectAuthority(activePlan.project,{installationRoot:activePlan.installationRoot}).continuousSync?.state || 'not-granted';
+      return send(response,200,{session,nonce:managerNonce,planRef:activePlanRef,journey:lifecycleJourney(session),authorization});
     }
     if (request.method === 'GET' && request.url === '/') return send(response, 200, page(activeRecord, managerNonce, activePlanRef), 'text/html; charset=utf-8');
     // Read-only events from the same durable session; no worker, queue or new state.
@@ -132,7 +139,7 @@ function serverForRecord({plan, stateRoot, record, planRef = null}) {
       response.flushHeaders();
       const publish = session => {
         if (session.sessionId !== requestedId) return;
-        response.write(`data: ${JSON.stringify(visibleLocalManagerSession(session))}\n\n`);
+        response.write(`data: ${JSON.stringify(session.projectPreparation ? {session:visibleLocalManagerSession(session),journey:lifecycleJourney(visibleLocalManagerSession(session)),nonce:managerNonce} : visibleLocalManagerSession(session))}\n\n`);
         if (!['pending','executing','consumed'].includes(session.state)) response.end();
       };
       const cleanup = () => { server.off('foundation-operation-state', publish); server.off('foundation-operation-result', publish); };
@@ -157,8 +164,34 @@ function serverForRecord({plan, stateRoot, record, planRef = null}) {
       catch { return send(response, 400, {code: 'MANAGER_REQUEST_INVALID'}); }
       if (journeyTransport && (body.operationId!==journeyTransport.operationId || body.sessionId!==activeRecord.session.sessionId || body.planHash!==activeRecord.session.planHash)) return send(response,409,{code:'JOURNEY_PLAN_BINDING_MISMATCH'});
       const expectedAction = ['normal-uninstall-project-detach', 'normal-uninstall'].includes(activePlan.operation) && activePlan.residuals?.length ? 'continue-accessible-with-residuals' : 'confirm-exact-operation';
-      const allowedActions = new Set(['cancel-no-change', expectedAction]);
+      const allowedActions = new Set(['cancel-no-change', expectedAction,...(activeRecord.session.projectPreparation ? ['recheck-project','resume-project'] : [])]);
       if (body.managerNonce !== managerNonce || !allowedActions.has(body.action)) return send(response, 403, {code: 'MANAGER_CONFIRMATION_ACTION_INVALID'});
+      if (activeRecord.session.projectPreparation && ['recheck-project','resume-project'].includes(body.action)) {
+        try {assertRecordUnchanged(activeRecord,activePlan);} catch(error){return send(response,409,{code:error.code,message:error.message});}
+        if (['executing','consumed'].includes(activeRecord.session.state)) return send(response,409,{code:'PROJECT_PREPARATION_IN_PROGRESS'});
+        const authority=inspectProjectAuthority(activePlan.project,{installationRoot:activePlan.installationRoot});
+        if (body.action==='recheck-project') {
+          if (authority.continuousSync?.state==='active' || activeRecord.session.result?.state==='enabled' || activeRecord.session.projectPreparation.initial?.enabled) return send(response,409,{code:'PROJECT_PREPARATION_RECHECK_NOT_REQUIRED',message:'请检查并继续；已撤销的授权不能由旧页面恢复。'});
+          try {
+            const nextPlan=createProjectAuthorityPlan({operation:'enable',project:activePlan.project,installationRoot:activePlan.installationRoot,continuousSync:'grant',includePreview:activePlan.includePreview,technology:activePlan.technology});
+            const nextRecord=createPendingLocalManagerSession({plan:nextPlan,stateRoot});
+            priorRecords.set(activeRecord.session.sessionId,activeRecord);activePlan=nextPlan;activeRecord=nextRecord;activePlanRef=null;managerNonce=crypto.randomBytes(32).toString('hex');claimed=false;
+            if(expiryTimer)clearTimeout(expiryTimer);scheduleExpiry();
+            return send(response,200,{state:'pending',message:'已按当前文件重新生成范围；请核对后接入。'});
+          } catch(error){return send(response,409,{code:error.code||'PROJECT_RECHECK_FAILED',message:error.message});}
+        }
+        if(authority.state!=='enabled'||authority.continuousSync?.state!=='active')return send(response,409,{code:'PROJECT_SYNC_AUTHORITY_REQUIRED',message:'持续授权未生效或已撤销；打开页面不会恢复。'});
+        managerNonce=crypto.randomBytes(32).toString('hex');claimed=true;
+        writeLocalManagerSession(activeRecord,{state:'executing'});server.emit('foundation-operation-state',activeRecord.session);
+        await new Promise(resolve=>setImmediate(resolve));
+        try {
+          const sync=synchronizeProject({project:activePlan.project,installationRoot:activePlan.installationRoot,trigger:'preparation-page'});
+          const ok=sync.prepared?.ok===true&&!['failed','conflict','stopped'].includes(sync.state);
+          const result={...activeRecord.session.result,ok,state:'enabled',preparation:sync.prepared||{ok:false,error:sync.error,steps:[]},synchronization:sync};
+          writeLocalManagerSession(activeRecord,{state:ok?'completed':'failed',result,failure:ok?null:sync.error||sync.prepared?.error||{message:'项目准备待核实'},completedAt:Date.now()});
+          server.emit('foundation-operation-result',activeRecord.session);return send(response,200,{state:activeRecord.session.state,result});
+        } catch(error){writeLocalManagerSession(activeRecord,{state:'failed',failure:{code:error.code,message:error.message}});return send(response,409,{code:error.code,message:error.message});}
+      }
       if (claimed || activeRecord.session.state !== 'pending') return send(response, 409, {code: activeRecord.session.state === 'expired' ? 'MANAGER_CONFIRMATION_EXPIRED' : 'MANAGER_CONFIRMATION_REPLAYED', state: activeRecord.session.state});
       try { assertRecordUnchanged(activeRecord, activePlan); }
       catch (error) { claimed = true; writeLocalManagerSession(activeRecord, {state: 'failed', failedAt: Date.now(), failure: {code: error.code, message: error.message}}); finalizeBootstrapRecord(activeRecord, stateRoot); response.once('finish', () => server.emit('foundation-operation-result', activeRecord.session)); if (activePlan.bootstrap) response.on('finish', () => server.close()); return send(response, 409, {ok: false, code: error.code, message: error.message}); }
@@ -185,11 +218,12 @@ function serverForRecord({plan, stateRoot, record, planRef = null}) {
           onConsume: (evidence) => { consumptions.push(evidence); writeLocalManagerSession(activeRecord, {state: 'consumed', consumption: evidence, consumptions: [...consumptions]}); },
           onFailure: (failure) => writeLocalManagerSession(activeRecord, {state: 'failed', failure}),
         }, () => dispatch(activePlan, body.action, stateRoot));
-        writeLocalManagerSession(activeRecord, {state: 'completed', completedAt: Date.now(), result});
+        const resultState = result?.preparation?.ok === false ? 'failed' : 'completed';
+        writeLocalManagerSession(activeRecord, {state: resultState, completedAt: Date.now(), result, ...(resultState === 'failed' ? {failure:result.preparation.error || {message:'项目准备未完成，前序结果保留'}} : {})});
         finalizeBootstrapRecord(activeRecord, stateRoot);
         response.once('finish', () => server.emit('foundation-operation-result', activeRecord.session));
         if (activePlan.bootstrap) response.on('finish', () => server.close());
-        return send(response, 200, {ok: true, sessionId: activeRecord.session.sessionId, state: 'completed', result});
+        return send(response, 200, {ok: resultState === 'completed', sessionId: activeRecord.session.sessionId, state: resultState, result});
       } catch (error) {
         const failedRecord = activeRecord;
         const failedPlanRef = activePlanRef;
@@ -223,7 +257,7 @@ function serverForRecord({plan, stateRoot, record, planRef = null}) {
       // using the old timer. Completed sessions may be read until that deadline.
       if (Date.now() < activeRecord.session.expiresAt) return scheduleExpiry();
       const result = terminalizeNoInstall({state: 'expired', status: 'EXPIRED_NO_INSTALL', reason: 'plan-session-deadline'});
-      if (!result.won) closeServer();
+      if (!result.won && !activeRecord.session.projectPreparation) closeServer();
     }, Math.max(0, activeRecord.session.expiresAt - Date.now()));
     expiryTimer.unref();
   };

@@ -8,7 +8,10 @@ import {PreviewToolbar} from './preview-toolbar';
 export function PreviewCanvas({model, state, dispatch, iframeRef, onPreviewLoad}) {
   const [loadedRoute, setLoadedRoute] = useState(null);
   const page = model.pages.find((item) => item.id === state.pageId) || model.pages[0];
-  const iframeRoute = state.iframeRoute || page?.route;
+  const route = state.iframeRoute || page?.route;
+  const target = route ? new URL(route,window.location.origin) : null;
+  if(target && model.revision)for(const [key,value]of Object.entries({projectId:model.project.projectId || '',revision:model.revision,channel:model.preview.channel}))target.searchParams.set(key,value);
+  const iframeRoute = target ? target.pathname+target.search : null;
   const loading = Boolean(iframeRoute && loadedRoute !== iframeRoute);
   const preset = getViewportPreset(state.viewportPresetId);
   const fixed = preset.type === 'device';

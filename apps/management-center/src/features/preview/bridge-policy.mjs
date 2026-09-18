@@ -36,6 +36,7 @@ export function isPreviewMessagePayload(data) {
 export function isAllowedPreviewMessage(event, {iframeWindow, currentOrigin, preview}) {
   if (!event || event.data?.namespace !== PREVIEW_NAMESPACE) return false;
   if (!iframeWindow || event.source !== iframeWindow) return false;
+  if(preview?.revision && (event.data.projectId!==preview.projectId || event.data.revision!==preview.revision || event.data.channel!==preview.channel))return false;
   const allowedOrigins = new Set((preview?.allowedOrigins || []).map((origin) => origin === 'self' ? currentOrigin : origin));
   return allowedOrigins.has(event.origin) && isPreviewMessagePayload(event.data);
 }

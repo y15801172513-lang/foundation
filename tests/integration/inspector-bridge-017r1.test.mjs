@@ -13,7 +13,8 @@ test('预览就绪消息把最外围预览内容作为默认检查对象', () =>
   assert.equal(ready.kind, 'preview-ready');
   assert.equal(ready.object.pageId, 'page_events_home');
   assert.equal(ready.object.role, 'div');
-  assert.equal(ready.object.inspectorId, 'dom:div#root');
+  assert.match(ready.object.inspectorId, /^dom:current-document:session:\d+$/u);
+  announcePreview({win:dom.window});assert.equal(ready.object.inspectorId,sent.at(-1).message.object.inspectorId);
   assert.equal(ready.object.tree[0].role, 'div');
   assert.ok(ready.object.tree[0].children.some((node) => node.role === 'main'));
   assert.ok(ready.object.tree[0].children.some((node) => node.role === 'header'));
@@ -27,9 +28,10 @@ test('iframe 检查 bridge 高亮、锁定、阻止业务点击并按 Escape 清
   const fakeParent = {postMessage(message, origin) { sent.push({message, origin}); }};
   Object.defineProperty(dom.window, 'parent', {value: fakeParent});
   const bridge = createInspectorBridge({win: dom.window, doc: dom.window.document});
-  dom.window.dispatchEvent(new dom.window.MessageEvent('message', {origin: dom.window.location.origin, source: fakeParent, data: {namespace: PREVIEW_NAMESPACE, kind: 'inspect-navigate', inspectorId: 'dom:main'}}));
+  announcePreview({win:dom.window});const mainId=sent.at(-1).message.object.inspectorId;
+  dom.window.dispatchEvent(new dom.window.MessageEvent('message', {origin: dom.window.location.origin, source: fakeParent, data: {namespace: PREVIEW_NAMESPACE, kind: 'inspect-navigate', inspectorId: mainId}}));
   assert.equal(sent.at(-1)?.message.kind, 'inspect-selected', '文件树节点无需预先锁定即可建立选择');
-  assert.equal(sent.at(-1)?.message.object.inspectorId, 'dom:main');
+  assert.equal(sent.at(-1)?.message.object.inspectorId, mainId);
   dom.window.dispatchEvent(new dom.window.MessageEvent('message', {origin: dom.window.location.origin, source: fakeParent, data: {namespace: PREVIEW_NAMESPACE, kind: 'inspect-mode-changed', active: true}}));
   const button = dom.window.document.querySelector('button');
   button.dispatchEvent(new dom.window.MouseEvent('mouseover', {bubbles: true}));

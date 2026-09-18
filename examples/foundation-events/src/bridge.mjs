@@ -1,4 +1,5 @@
 export const PREVIEW_NAMESPACE = 'ai-product-foundation-preview';
+const initialEnvelope = typeof window==='undefined'?{}:Object.fromEntries(['projectId','revision','channel'].map(key=>[key,new URLSearchParams(window.location.search).get(key)]));
 
 export function applyPreviewTheme(theme, doc) {
   if (theme !== 'light' && theme !== 'dark') return false;
@@ -25,11 +26,11 @@ export function pageIdFromPath(pathname) {
 
 export function announcePreview({win = window} = {}) {
   const target = [...win.document.body.children].find((element) => !element.matches('script,style,[data-foundation-inspector-overlay]')) || win.document.body;
-  win.parent.postMessage({namespace: PREVIEW_NAMESPACE, kind: 'preview-ready', pageId: pageIdFromPath(win.location.pathname), route: `${win.location.pathname}${win.location.search}`, object: inspectionObject(target, win)}, win.location.origin);
+  win.parent.postMessage({namespace: PREVIEW_NAMESPACE, ...initialEnvelope, kind: 'preview-ready', pageId: pageIdFromPath(win.location.pathname), route: `${win.location.pathname}${win.location.search}`, object: inspectionObject(target, win)}, win.location.origin);
 }
 
 export function componentSelectionMessage({componentId, instanceId, variant, eventId = null, eventState = null, pageId}) {
-  return {namespace: PREVIEW_NAMESPACE, kind: 'component-selected', componentId, instanceId, variant, eventId, eventState, pageId};
+  return {namespace: PREVIEW_NAMESPACE, ...initialEnvelope, kind: 'component-selected', componentId, instanceId, variant, eventId, eventState, pageId};
 }
 
 export function announceComponent({componentId, instanceId, variant, eventId = null, eventState = null, pageId = pageIdFromPath(window.location.pathname)}) {
@@ -38,6 +39,8 @@ export function announceComponent({componentId, instanceId, variant, eventId = n
 }
 
 const INSPECTOR_STYLE_ID = 'foundation-inspector-style';
+const ephemeralObjects = new WeakMap();
+let ephemeralSequence = 0;
 const safeText = (value, max = 120) => typeof value === 'string' ? value.trim().slice(0, max) : '';
 
 function roleOf(element) {
@@ -59,10 +62,9 @@ function structuralSegment(element) {
 function inspectorIdOf(element, doc) {
   const componentId = safeText(element.getAttribute('data-foundation-component-id'), 128);
   const instanceId = safeText(element.getAttribute('data-foundation-instance-id'), 128);
-  if (componentId) return `component:${componentId}:${instanceId || pageIdFromPath(doc.location.pathname)}`;
-  const segments = [];
-  for (let current = element; current && current !== doc.body; current = current.parentElement) segments.unshift(structuralSegment(current));
-  return `dom:${segments.join('/') || structuralSegment(element)}`;
+  if (componentId && instanceId) return `component:${componentId}:${instanceId}`;
+  if(!ephemeralObjects.has(element))ephemeralObjects.set(element,++ephemeralSequence);
+  return `dom:${initialEnvelope.revision || 'current-document'}:${initialEnvelope.channel || 'session'}:${ephemeralObjects.get(element)}`;
 }
 
 function descriptor(element, doc) {
@@ -125,7 +127,7 @@ export function createInspectorBridge({win = window, doc = document} = {}) {
     style.textContent = 'html.foundation-inspecting,html.foundation-inspecting *{cursor:crosshair!important}[data-foundation-inspector-overlay]{position:fixed;z-index:2147483647;pointer-events:none;border:2px solid #2563eb;background:rgb(37 99 235/.08)}[data-foundation-inspector-overlay]>span{position:absolute;left:-2px;top:-24px;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-radius:4px;background:#2563eb;padding:3px 6px;color:white;font:600 11px/1.4 ui-sans-serif,system-ui}';
     doc.head.append(style);
   }
-  const post = (kind, extra = {}) => win.parent.postMessage({namespace: PREVIEW_NAMESPACE, kind, ...extra}, win.location.origin);
+  const post = (kind, extra = {}) => win.parent.postMessage({namespace: PREVIEW_NAMESPACE, ...initialEnvelope, kind, ...extra}, win.location.origin);
   const ResizeObserverClass = win.ResizeObserver;
   const targetObserver = ResizeObserverClass ? new ResizeObserverClass(() => scheduleOverlayUpdate(true)) : null;
   const observeTarget = (element) => { targetObserver?.disconnect(); if (element?.isConnected) targetObserver?.observe(element); };
@@ -169,6 +171,7 @@ export function createInspectorBridge({win = window, doc = document} = {}) {
   };
   const onMessage = (event) => {
     if (event.source !== win.parent || event.origin !== win.location.origin || event.data?.namespace !== PREVIEW_NAMESPACE) return;
+    if(initialEnvelope.revision && ['projectId','revision','channel'].some(key=>event.data[key]!==initialEnvelope[key]))return;
     if (event.data.kind === 'theme-changed') { applyPreviewTheme(event.data.theme, doc); return; }
     if (event.data.kind === 'inspect-mode-changed' && typeof event.data.active === 'boolean') setActive(event.data.active);
     if (event.data.kind === 'inspect-preview') {

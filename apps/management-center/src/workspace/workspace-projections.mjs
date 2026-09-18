@@ -1,25 +1,28 @@
+import {contentFromProjection} from '@foundation/core/content-integrity';
 import {humanLabel} from '@foundation/core/human-labels';
 
 const ordered = (items = [], key = (item) => item.id || item.assetId || '') => [...items].sort((left, right) => key(left).localeCompare(key(right)));
 
-export function informationLogicModel({pages = [], relations = [], assets = [], pageId}) {
+export function informationLogicModel({pages = [], relations = [], assets = [], interactions = [], changes = [], figma = [], delivery = null, pageId}) {
   const page = pages.find((item) => item.id === pageId) || pages.find((item) => item.entry) || null;
   const pageById = new Map(pages.map((item) => [item.id, item]));
   const decorate = (relation) => ({...relation, fromName: relation.fromName || pageById.get(relation.from)?.name || relation.from, toName: relation.toName || pageById.get(relation.to)?.name || relation.to});
   const related = ordered(relations.filter((item) => item.from === page?.id || item.to === page?.id).map(decorate));
   const used = ordered(assets.filter((asset) => asset.usedByPages?.some((usage) => usage.pageId === page?.id)));
-  const changes = ordered([...new Map(used.flatMap((asset) => asset.recentChanges || []).map((change) => [change.id, change])).values()]);
+  const recentChanges = ordered([...new Map(used.flatMap((asset) => asset.recentChanges || []).map((change) => [change.id, change])).values()]);
   const gaps = ordered([...new Set([...used.flatMap((asset) => [...(asset.conflicts || []), ...(asset.missing || []), ...(asset.pending || [])]), ...used.filter((asset) => asset.verificationStatus && asset.verificationStatus !== 'verified').map((asset) => `${asset.name}：${humanLabel('verification', asset.verificationStatus)}`)])]);
-  return {page, related, incoming: related.filter((item) => item.to === page?.id), outgoing: related.filter((item) => item.from === page?.id), assets: used, changes, gaps};
+  const integrity = contentFromProjection({pages, relations, assets, interactions, changes, figma});
+  return {deliveryAssessment: delivery?.assessment || assets.find(a=>a.deliveryAssessment)?.deliveryAssessment || null, contentIntegrity: integrity, entryLabel: page?.entry ? '应用入口' : null, page, related, incoming: related.filter((item) => item.to === page?.id), outgoing: related.filter((item) => item.from === page?.id), assets: used, changes: recentChanges, gaps: [...new Set([...gaps,...integrity.issues.map(issue=>issue.message)])]};
 }
 
-export function previewSidebarModel({pages = [], relations = [], interactions = [], assets = [], pageId}) {
+export function previewSidebarModel({pages = [], relations = [], interactions = [], assets = [], changes = [], figma = [], delivery = null, pageId}) {
   const page = pages.find((item) => item.id === pageId) || pages.find((item) => item.entry) || pages[0] || null;
   const pageById = new Map(pages.map((item) => [item.id, item]));
   const decorate = (relation) => ({...relation, fromName: relation.fromName || pageById.get(relation.from)?.name || relation.from, toName: relation.toName || pageById.get(relation.to)?.name || relation.to});
   const related = ordered(relations.filter((item) => item.from === page?.id || item.to === page?.id).map(decorate));
-  const stateChanges = ordered(interactions.filter((item) => item.pageIds?.includes(page?.id)));
-  const gaps = [];
+  const stateChanges = ordered(interactions.filter((item) => item.pageIds?.includes(page?.id) || item.scope === 'cross-page'));
+  const integrity = contentFromProjection({pages, relations, interactions, assets, changes, figma});
+  const gaps = integrity.issues.map(issue => issue.message);
   const gapText = (kind, label, type, item = '') => {
     if (type === 'missing') return `${kind} ${label} 缺少：${item}；影响：当前任务依据不完整；下一步：补录并复核该事实`;
     if (type === 'pending') return `${kind} ${label} 待确认：${item}；影响：当前结论暂不能视为确定；下一步：确认后更新事实`;
@@ -41,7 +44,7 @@ export function previewSidebarModel({pages = [], relations = [], interactions = 
   for (const relation of related) addEntityGaps('关系', relation);
   for (const interaction of stateChanges) addEntityGaps('交互', interaction);
   for (const asset of assets.filter((item) => item.usedByPages?.some((usage) => usage.pageId === page?.id))) addEntityGaps('资产', asset);
-  return {page, related, incoming: related.filter((item) => item.to === page?.id), outgoing: related.filter((item) => item.from === page?.id), stateChanges, gaps: [...new Set(gaps)].sort()};
+  return {deliveryAssessment: delivery?.assessment || assets.find(a=>a.deliveryAssessment)?.deliveryAssessment || null, contentIntegrity: integrity, entryLabel: page?.entry ? '应用入口' : null, page, related, incoming: related.filter((item) => item.to === page?.id), outgoing: related.filter((item) => item.from === page?.id), stateChanges, gaps: [...new Set(gaps)].sort()};
 }
 
 export function relationPresentation(relation) {
@@ -52,7 +55,8 @@ export function relationPresentation(relation) {
   return {lifecycle, lifecycleLabel, runtimeBinding, runtimeLabel};
 }
 
-export function logicFlowModel({pages = [], relations = [], currentPageId = null}) {
+export function logicFlowModel({pages = [], relations = [], assets = [], interactions = [], changes = [], figma = [], delivery = null, currentPageId = null}) {
+  const integrity = contentFromProjection({pages,relations,assets,interactions,changes,figma});
   const sortedPages = ordered(pages);
   const pageIds = new Set(sortedPages.map((page) => page.id));
   const sortedRelations = ordered(relations.filter((relation) => pageIds.has(relation.from) && pageIds.has(relation.to)));
@@ -63,12 +67,12 @@ export function logicFlowModel({pages = [], relations = [], currentPageId = null
   const nodes = sortedPages.map((page, index) => {
     const incoming = edges.filter((edge) => edge.target === page.id);
     const outgoing = edges.filter((edge) => edge.source === page.id);
-    const gaps = [];
+    const gaps = integrity.issues.filter(issue => issue.objectId === page.id).map(issue=>issue.message);
     if (!page.verificationStatus) gaps.push('验证状态尚未登记');
     else if (page.verificationStatus !== 'verified') gaps.push(humanLabel('verification', page.verificationStatus));
     return {id: page.id, type: 'pageFlow', position: {x: (index % 3) * 390, y: Math.floor(index / 3) * 330}, data: {page, current: page.id === currentPageId, incoming: incoming.map((edge) => ({id: edge.targetHandle, relationId: edge.id})), outgoing: outgoing.map((edge) => ({id: edge.sourceHandle, relationId: edge.id})), gaps}};
   });
-  return {nodes, edges};
+  return {deliveryAssessment: delivery?.assessment || assets.find(a=>a.deliveryAssessment)?.deliveryAssessment || null, nodes, edges, gaps: integrity.issues.map(issue=>issue.message), contentIntegrity: integrity};
 }
 
 export function isValidPageConnection({connection, pages = [], relations = [], draft = null}) {

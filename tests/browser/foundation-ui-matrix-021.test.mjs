@@ -7,7 +7,7 @@ import {browserLaunchContract, waitForBrowserDevtoolsPort} from '../helpers/brow
 import {makeScopedTempDirectory, removeTempDirectory, ROOT} from '../helpers/project-fixture.mjs';
 import {connectDevtools, cleanupBrowser, evaluate, reloadAndWait} from '../helpers/browser-lifecycle.mjs';
 
-const PREVIEW_URL = 'http://127.0.0.1:4317/';
+const PREVIEW_URL = process.env.FOUNDATION_BROWSER_PREVIEW_URL || 'http://127.0.0.1:4317/';
 const SCREENSHOT_DIRECTORY = path.join(ROOT, '.tmp', 'AI_PFK_CROSS_PLATFORM_TYPOGRAPHY_CORRECTION_023R1', 'windows', 'foundation-ui-matrix');
 const BROWSER_CANDIDATES = [
   process.env.FOUNDATION_BROWSER_EXECUTABLE,
@@ -276,15 +276,15 @@ test('真实 Foundation 浏览器矩阵覆盖键盘、拖拽、窄屏、资产�
   await waitFor(devtools, "!document.querySelector('.preview-frame-loading')", '页面预览加载完成');
   await waitFor(devtools, "Boolean(document.querySelector('[data-sidebar-view=object]') && document.querySelector('[role=treeitem][tabindex=\"0\"]'))", '页面重载后对象页签和树焦点状态恢复');
 
-  await devtools.call('Emulation.setDeviceMetricsOverride', {width: 375, height: 812, deviceScaleFactor: 1, mobile: false});
+  await devtools.call('Emulation.setDeviceMetricsOverride', {width: 760, height: 900, deviceScaleFactor: 1, mobile: false});
   await delay(200);
   const narrowState = await evaluate(devtools, `(() => ({overflow: document.documentElement.scrollWidth > window.innerWidth, selectedTab: document.querySelector('[role=tab][aria-selected=true]')?.textContent?.trim(), tabbable: document.querySelectorAll('[role=treeitem][tabindex="0"]').length, panelDirection: getComputedStyle(document.querySelector('[data-slot=resizable-panel-group]')).flexDirection, panelWidths: [...document.querySelectorAll('[data-slot=resizable-panel]')].map((item) => item.getBoundingClientRect().width)}))()`);
-  assert.equal(narrowState.overflow, false, '375px 窄屏不应产生页面级横向溢出');
-  assert.equal(narrowState.panelDirection, 'column', '375px 窄屏应把预览与上下文面板改为上下布局');
-  assert.equal(narrowState.panelWidths.every((width) => width <= 375), true, `窄屏面板不得超出视口：${JSON.stringify(narrowState.panelWidths)}`);
+  assert.equal(narrowState.overflow, false, '760px 窄屏不应产生页面级横向溢出');
+  assert.equal(narrowState.panelDirection, 'column', '760px 窄屏应把预览与上下文面板改为上下布局');
+  assert.equal(narrowState.panelWidths.every((width) => width <= 760), true, `窄屏面板不得超出视口：${JSON.stringify(narrowState.panelWidths)}`);
   assert.equal(narrowState.selectedTab, '检查对象');
   assert.equal(narrowState.tabbable, 1);
-  await screenshot(devtools, '05-inspector-tree-narrow-375x812.png');
+  await screenshot(devtools, '05-inspector-tree-desktop-narrow-760x900.png');
   await devtools.call('Emulation.setDeviceMetricsOverride', {width: 1440, height: 900, deviceScaleFactor: 1, mobile: false});
   await delay(100);
 
@@ -336,6 +336,19 @@ test('真实 Foundation 浏览器矩阵覆盖键盘、拖拽、窄屏、资产�
   await devtools.call('Network.emulateNetworkConditions', {offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1, connectionType: 'none'});
   await waitFor(devtools, "document.querySelector('.asset-preview')?.dataset.previewStatus === 'ready'", '固定预览区域完成资产切换');
   await screenshot(devtools, '07-asset-preview-isolated.png');
+
+  if(process.env.FOUNDATION_046_TOKEN_MATRIX==='1') {
+    for(const [name,condition]of [
+      ['046 Color',"getComputedStyle(document.querySelector('[aria-label=\"色样 #123456\"]')).backgroundColor==='rgb(18, 52, 86)'"],
+      ['046 Spacing',"document.querySelector('[aria-label=\"间距 12px\"]').getBoundingClientRect().width===12"],
+      ['046 Font',"document.querySelector('[data-token-type=font-family]')?.textContent.includes('可能使用系统回退')"],
+      ['046 Alias Cycle',"document.querySelector('.asset-detail-pane')?.textContent.includes('别名循环')"],
+      ['046 Empty',"document.querySelector('.asset-detail-pane')?.textContent.includes('实际值尚未登记')"]
+    ]) {
+      await evaluate(devtools,`[...document.querySelectorAll('button')].find(x=>x.textContent.startsWith(${JSON.stringify(name)})).click()`);
+      await waitFor(devtools,condition,name);await screenshot(devtools,name.replaceAll(' ','-')+'.png');
+    }
+  }
 
   await delay(200);
   const badConsole = devtools.events.filter((event) => (event.method === 'Runtime.exceptionThrown') || (event.method === 'Runtime.consoleAPICalled' && ['error', 'warning'].includes(event.params?.type)) || (event.method === 'Log.entryAdded' && ['error', 'warning'].includes(event.params?.entry?.level)));

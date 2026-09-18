@@ -1,0 +1,287 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "foundation:asset-model-1",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "kind": {
+      "enum": [
+        "base",
+        "composition",
+        "business",
+        "local"
+      ]
+    },
+    "responsibility": {
+      "type": "string",
+      "minLength": 1
+    },
+    "reuseScope": {
+      "enum": [
+        "project",
+        "business",
+        "page",
+        "local"
+      ]
+    },
+    "binding": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*\\\\)[^\\u0000]+$"
+        },
+        "export": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "declarationKind": {
+          "enum": [
+            "function",
+            "class",
+            "variable",
+            "default"
+          ]
+        },
+        "anchor": {
+          "type": "string",
+          "minLength": 1
+        },
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "file",
+        "export",
+        "declarationKind",
+        "anchor"
+      ],
+      "additionalProperties": false
+    },
+    "configuration": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "key",
+          "kind"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "slots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "componentId": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          }
+        },
+        "required": [
+          "key",
+          "componentId"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "variantAxes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            }
+          }
+        },
+        "required": [
+          "key",
+          "values"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "states": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "trigger": {
+            "type": "string",
+            "minLength": 1
+          },
+          "recovery": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "trigger",
+          "recovery"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "previewScenarios": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "kind": {
+            "enum": [
+              "definition",
+              "composition",
+              "instance",
+              "token"
+            ]
+          },
+          "definitionId": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "instanceId": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "adapter": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*\\\\)[^\\u0000]+$"
+          },
+          "configurationRef": {
+            "type": "string",
+            "minLength": 1
+          },
+          "state": {
+            "type": "string",
+            "minLength": 1
+          },
+          "variantValues": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "definitionId"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "implementationInputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "enum": [
+              "source",
+              "import",
+              "style",
+              "token",
+              "composition",
+              "usage",
+              "preview-adapter",
+              "config",
+              "asset-resource",
+              "generation"
+            ]
+          },
+          "from": {
+            "type": "string",
+            "minLength": 1
+          },
+          "to": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sha256": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "discovery": {
+            "type": "string",
+            "minLength": 1
+          },
+          "coverage": {
+            "enum": [
+              "complete",
+              "partial",
+              "unknown"
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "from",
+          "to",
+          "sha256",
+          "discovery",
+          "coverage"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "kind",
+    "responsibility",
+    "reuseScope",
+    "binding"
+  ],
+  "additionalProperties": false
+}

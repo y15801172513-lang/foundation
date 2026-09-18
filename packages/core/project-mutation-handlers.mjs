@@ -1,12 +1,15 @@
+import {inspectContentIntegrity} from './content-integrity.mjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
 import {canonicalStringify, LifecycleError, sha256} from './install-contract.mjs';
-import {isWithin, realProject, normalizePublicPath} from './path-boundary.mjs';
+import {isWithin, realProject, normalizePublicPath, normalizePreviewPath} from './path-boundary.mjs';
 import {foundationUiPolicyRecord} from './ui-policy.mjs';
 import {prepareProjectRulesAdoption} from './project-rules.mjs';
 import {readFacts, validateFacts, inspectProjectPreparation} from './facts.mjs';
+import {inspectEvidenceReport,verifySourceObservation} from './evidence-impact.mjs';
+import {inspectReuseDecision,resolveAssetBinding,factMigrationImpact} from './asset-model.mjs';
 
 export const CLOSED_PROJECT_HANDLER_VERSION = '1.0.0';
 export const CLOSED_PROJECT_HANDLER_IDS = Object.freeze([
@@ -133,7 +136,8 @@ function normalize(operation, project, payload) {
     const includePreview = payload.includePreview ?? true;
     if (preparation.state === 'blocked' || preparation.preview.state === 'invalid' || (includePreview && preparation.preview.state === 'unsupported')) throw coded('PROJECT_PREPARATION_CONFLICT', [...preparation.errors, preparation.preview.message].filter(Boolean).join('；'));
     const allowedWriteSet = [...preparation.missing, ...(includePreview && preparation.preview.state === 'absent' ? ['.foundation/preview.json'] : [])].sort();
-    return {handlerId: operation, payload: {generatedAt, includePreview}, allowedWriteSet, actions: allowedWriteSet.map((entry) => `create-if-absent:${entry}`), creates: allowedWriteSet, changes: [], deletes: []};
+    const documents = skeletonDocuments(root, {generatedAt,includePreview}).filter(file=>allowedWriteSet.includes(file.path));
+    return {handlerId: operation, payload: {generatedAt, includePreview}, allowedWriteSet, actions: [...allowedWriteSet.map((entry) => `create-if-absent:${entry}`), {action:operation,files:documents.map(file=>({path:file.path,sha256:sha256(file.content),bytes:Buffer.byteLength(file.content)}))}], documents, creates: allowedWriteSet, changes: [], deletes: []};
   }
   if (operation === 'relation-facts-write') {
     const draft = payload?.draft || (payload?.semantics ? {...payload.semantics, expectedVersion: payload.expectedVersion} : null);
@@ -205,8 +209,9 @@ function writeAtomic(file, content, mode = undefined) {
 }
 
 function normalizeAssetBatch(project, payload) {
+  payload = structuredClone(payload);
   const kinds = ['pages', 'components', 'interactions', 'motions', 'changes', 'design-tokens', 'relations'];
-  if (!payload || Object.keys(payload).some(key => !['documents', 'sources', 'scope', 'generatedAt', 'preview'].includes(key)) || !Array.isArray(payload.documents) || !payload.documents.length || payload.documents.length > kinds.length || !Array.isArray(payload.sources) || typeof payload.scope !== 'string' || !payload.scope.trim() || payload.scope.length > 2000) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '资产批次需 documents、sources、精确 scope 和 generatedAt');
+  if (!payload || Object.keys(payload).some(key => !['documents', 'sources', 'scope', 'generatedAt', 'preview','analysis'].includes(key)) || !Array.isArray(payload.documents) || !payload.documents.length || payload.documents.length > kinds.length || !Array.isArray(payload.sources) || typeof payload.scope !== 'string' || !payload.scope.trim() || payload.scope.length > 2000) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '资产批次需 documents、sources、精确 scope 和 generatedAt');
   iso(payload.generatedAt, 'generatedAt');
   const seen = new Set();
   const sources = payload.sources.map(source => {
@@ -223,6 +228,7 @@ function normalizeAssetBatch(project, payload) {
     if (!fs.lstatSync(file).isFile() || fs.lstatSync(file).isSymbolicLink()) throw coded('PROJECT_HANDLER_SYMLINK_REJECTED', '事实输入必须为普通文件');
   }
   const facts = readFacts(project);
+  const migrationBefore=structuredClone(facts);
   const changedKinds = new Set();
   const documents = payload.documents.map(document => {
     if (!document || Object.keys(document).some(key => !['kind', 'expectedSha256', 'upserts', 'removes'].includes(key)) || !kinds.includes(document.kind) || changedKinds.has(document.kind) || !Array.isArray(document.upserts) || (!document.upserts.length && !document.removes?.length) || (document.removes !== undefined && !Array.isArray(document.removes))) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '资产文档类型、重复项或 upserts/removes 无效');
@@ -236,10 +242,20 @@ function normalizeAssetBatch(project, payload) {
     if (new Set(removes).size !== removes.length || removes.some(id => typeof id !== 'string' || !existing.items.some(item => item.id === id) || document.upserts.some(item => item.id === id))) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '移除项必须精确存在且不能同时 upsert；不删除源码');
     const items = existing.items.filter(item => !removes.includes(item.id));
     for (const item of document.upserts) {
+      if(item?.assetModel?.binding?.file) {
+        if(item.implementationMapping && item.implementationMapping!==item.assetModel.binding.file)throw coded('PROJECT_HANDLER_PAYLOAD_INVALID','声明绑定与实现路径冲突');
+        item.implementationMapping=item.assetModel.binding.file;
+      }
       if (!item || typeof item.id !== 'string' || !/^[a-zA-Z0-9_-]+$/u.test(item.id) || ids.has(item.id) || typeof item.implementationMapping !== 'string' || !seen.has(item.implementationMapping)) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '每项资产需唯一 ID 及绑定实际源码证据的 implementationMapping');
       ids.add(item.id);
       if (!['unverified', 'verified'].includes(item.verificationStatus)) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '资产验证状态必须明确');
       if (item.verificationStatus === 'verified' && (typeof item.verificationEvidence !== 'string' || !seen.has(item.verificationEvidence))) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '已验证资产需绑定实际验证证据文件；文件摘要不等于真人验收');
+      for (const requirement of item.deliveryScope?.items || []) if (['content','mapping','runtime'].some(field => requirement[field] === 'verified') && !seen.has(requirement.evidence)) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '任务范围已验证项需绑定实际证据文件');
+      for(const evidence of item.evidenceIndex || []) {
+        if(!seen.has(evidence.report?.path) || sources.find(s=>s.path===evidence.report.path)?.sha256!==evidence.report.sha256)throw coded('PROJECT_HANDLER_PAYLOAD_INVALID','证据报告必须绑定本次精确 sources');
+        const checked=inspectEvidenceReport({project,evidence});
+        if(checked.state==='invalid' || item.verificationStatus==='verified' && checked.state!=='verified')throw coded('PROJECT_HANDLER_PAYLOAD_INVALID',checked.reason || '未经独立核验的报告不能标记 verified');
+      }
       const index = items.findIndex(existingItem => existingItem.id === item.id);
       const next = {...(index < 0 ? {} : items[index]), ...item, implementationSha256: sources.find(source => source.path === item.implementationMapping).sha256, updatedAt: payload.generatedAt};
       if (index < 0) items.push(next); else items[index] = next;
@@ -267,39 +283,44 @@ function normalizeAssetBatch(project, payload) {
       const paths = new Set();
       for (const entry of proposal[kind]) {
         if (!entry || Object.keys(entry).some(key => !['path', 'file'].includes(key)) || !seen.has(entry.file) || paths.has(entry.path)) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '每个预览映射需唯一公开路径及绑定的实际源码文件');
-        normalizePublicPath(entry.path, '批次预览路径'); paths.add(entry.path);
+        entry.path = normalizePreviewPath(entry.path, '批次预览路径'); paths.add(entry.path);
         const index = preview[kind].findIndex(item => item.path === entry.path);
         if (index < 0) preview[kind].push({...entry}); else preview[kind][index] = {...preview[kind][index], ...entry};
       }
     }
-    const paths = [...preview.routes, ...preview.assets].map(item => item.path);
+    const paths = [...preview.routes, ...preview.assets].map(item => normalizePreviewPath(item.path, '批次预览路径'));
     if (new Set(paths).size !== paths.length) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '预览路由与资源路径重复');
     documents.push({path: '.foundation/preview.json', content: `${JSON.stringify(preview, null, 2)}\n`});
   }
   const validation = validateFacts(facts, {projectRoot: project, previewConfig: preview});
   if (validation.length) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', `资产批次引用或格式无效：${validation.join('；')}`);
+  const decisions=payload.documents.flatMap(document=>document.kind==='changes'?document.upserts.flatMap(item=>item.reuseDecisions || []):[]);
+  const reuseInspection=[];
+  if(decisions.length || payload.analysis) {
+    let before,after;
+    try{before=verifySourceObservation({project,observation:payload.analysis?.before});after=verifySourceObservation({project,observation:payload.analysis?.after,current:true});}
+    catch(error){throw coded('PROJECT_HANDLER_ANALYSIS_INVALID',error.message);}
+    for(const decision of decisions){const inspected=inspectReuseDecision(decision,before,after);reuseInspection.push(inspected);if(inspected.state==='decision-not-applied')throw coded('PROJECT_HANDLER_DECISION_NOT_APPLIED',inspected.issues.map(issue=>issue.message).join('；'));}
+    const bindings=resolveAssetBinding(facts,after);
+    if(bindings.some(binding=>binding.state==='conflict'||binding.state==='unresolved'))throw coded('PROJECT_HANDLER_DEFINITION_UNRESOLVED','当前定义绑定未能对应受控分析观察；保留候选，先解决声明身份');
+  }
   const writes = documents.map(document => document.path).sort();
-  return {handlerId: 'asset-facts-batch', payload: structuredClone(payload), allowedWriteSet: writes, actions: [{action: 'asset-facts-batch', scope: payload.scope, sources, documents: documents.map(document => ({path: document.path, sha256: sha256(document.content), bytes: Buffer.byteLength(document.content)})), semanticVerification: 'recorded-evidence-not-human-acceptance'}], creates: [], changes: writes, deletes: [], documents};
+  return {handlerId: 'asset-facts-batch', payload: structuredClone(payload), allowedWriteSet: writes, actions: [{action: 'asset-facts-batch', scope: payload.scope, sources, documents: documents.map(document => ({path: document.path, beforeSha256:sha256(fs.readFileSync(safeTarget(project,document.path))),sha256: sha256(document.content), bytes: Buffer.byteLength(document.content)})), migration:factMigrationImpact(migrationBefore,facts),recovery:'existing-exact-transaction-preimages; stop-on-drift',reuseInspection,contentIntegrity: inspectContentIntegrity(facts, {requireCoverage: true}), semanticVerification: 'recorded-evidence-not-human-acceptance'}], creates: [], changes: writes, deletes: [], documents};
 }
 
 function stableId(type, key) {
   return `${type}_${sha256(`${type}:${key}`).slice(0, 12)}`;
 }
 
+function skeletonDocuments(project, payload) {
+  const identity={schemaVersion:'1.0.0',layoutVersion:'2.0.0',projectId:stableId('project',path.basename(project)),identityScheme:'foundation-project-id-v2',name:path.basename(project),projectKind:'existing',governanceMode:'preserve-and-inventory',uiPolicy:foundationUiPolicyRecord('existing'),dataFormatVersion:'0.1.0',createdAt:payload.generatedAt,updatedAt:payload.generatedAt};
+  return [{path:'.foundation/identity/project.json',content:JSON.stringify(identity,null,2)},...FACT_FILES.map(kind=>({path:`.foundation/facts/${kind}.json`,content:JSON.stringify({schemaVersion:'0.1.0',items:[],kind},null,2)})),...(payload.includePreview?[{path:'.foundation/preview.json',content:JSON.stringify({schemaVersion:'0.1.0',mode:'local-static',routes:[],assets:[]},null,2)+'\n'}]:[])];
+}
 function executeSkeleton(project, payload) {
-  // Revalidate before touching any file; the caller also verifies the exact
-  // handler binding and journal snapshots immediately before execution.
-  normalize('foundation-skeleton-and-facts-create', project, payload);
-  const root = path.join(project, '.foundation');
-  for (const directory of ['identity', 'facts', 'generated-cache/management-center', 'backups']) fs.mkdirSync(path.join(root, directory), {recursive: true});
-  const foundationFile = path.join(root, 'identity', 'project.json');
-  if (!fs.existsSync(foundationFile)) fs.writeFileSync(foundationFile, JSON.stringify({schemaVersion: '1.0.0', layoutVersion: '2.0.0', projectId: stableId('project', path.basename(project)), identityScheme: 'foundation-project-id-v2', name: path.basename(project), projectKind: 'existing', governanceMode: 'preserve-and-inventory', uiPolicy: foundationUiPolicyRecord('existing'), dataFormatVersion: '0.1.0', createdAt: payload.generatedAt, updatedAt: payload.generatedAt}, null, 2));
-  for (const name of FACT_FILES) {
-    const file = path.join(root, 'facts', `${name}.json`);
-    if (!fs.existsSync(file)) fs.writeFileSync(file, JSON.stringify({schemaVersion: '0.1.0', items: [], kind: name}, null, 2));
-  }
-  const previewFile = path.join(root, 'preview.json');
-  if (payload.includePreview && !fs.existsSync(previewFile)) fs.writeFileSync(previewFile, `${JSON.stringify({schemaVersion: '0.1.0', mode: 'local-static', routes: [], assets: []}, null, 2)}\n`);
+  const prepared=normalize('foundation-skeleton-and-facts-create',project,payload);
+  const root=path.join(project,'.foundation');
+  for(const directory of ['identity','facts','generated-cache/management-center','backups'])fs.mkdirSync(path.join(root,directory),{recursive:true});
+  for(const file of prepared.documents)fs.writeFileSync(safeTarget(project,file.path),file.content,{flag:'wx'});
   return root;
 }
 
@@ -407,7 +428,12 @@ export function executeClosedProjectHandler(plan) {
   const binding = assertClosedHandlerBinding(plan);
   if (binding.handlerId === 'asset-facts-batch') {
     const prepared = normalizeAssetBatch(plan.project, binding.payload);
-    for (const document of prepared.documents) writeAtomic(safeTarget(plan.project, document.path), document.content);
+    for (const document of prepared.documents) {
+      const target = safeTarget(plan.project,document.path);
+      const expected = document.path === '.foundation/preview.json' ? binding.payload.preview.expectedSha256 : binding.payload.documents.find(item=>document.path === `.foundation/facts/${item.kind}.json`).expectedSha256;
+      if (sha256(fs.readFileSync(target)) !== expected) throw coded('PROJECT_HANDLER_BEFORE_STATE_CHANGED','提交时事实发生变化，保留未知修改');
+      writeAtomic(target, document.content);
+    }
     return {ok: true, changed: prepared.allowedWriteSet, scope: binding.payload.scope, preserved: ['unmentioned-records', 'project-code', 'user-data'], verification: 'evidence-linked-not-human-acceptance'};
   }
   if (binding.handlerId === 'project-rules-adopt') {

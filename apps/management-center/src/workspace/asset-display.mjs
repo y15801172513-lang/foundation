@@ -71,10 +71,43 @@ export function comparableAssetFields(asset = {}) {
   return fields.flatMap((key) => asset[key] ? [{key, label: FIELD_LABELS[key] || key, value: String(asset[key])}] : []);
 }
 
-export function assetPreviewContract(asset) {
+export function selectAssetScenario(asset,selection={},fallbackId='') {
+  const scenarios=asset?.assetModel?.previewScenarios || [];
+  if(selection?.scenarioId)return scenarios.find(s=>s.id===selection.scenarioId);
+  if(selection?.instanceId)return scenarios.find(s=>s.kind==='instance'&&s.instanceId===selection.instanceId);
+  return scenarios.find(s=>s.id===fallbackId) || scenarios.find(s=>s.kind==='definition') || scenarios[0];
+}
+
+export function assetPreviewContract(asset,{scenario}={}) {
   if (!asset) return {status: 'missing-context', reason: '尚未选择资产。'};
+  if(asset.assetType==='design-token')return {status:'token',reason:'专用设计变量样例'};
   if (asset.assetType !== 'component') return {status: 'unsupported', reason: `${ASSET_TYPE_CAPABILITIES[asset.assetType]?.label || '此类资产'}当前没有可安全运行的组件预览。`};
+  if(asset.assetModel && (!scenario || scenario.definitionId!==asset.assetId || scenario.kind==='instance' && !asset.usageLocations?.some(usage=>usage.instanceId===scenario.instanceId)))return {status:'missing-context',reason:'该定义未登记匹配的隔离预览场景；请在页面中查看实际使用。'};
   if (!asset.implementationPath) return {status: 'missing-context', reason: '组件尚未登记实现路径，无法确认真实实现。'};
-  if (typeof asset.previewRoute !== 'string' || !asset.previewRoute.startsWith('/') || asset.previewRoute.startsWith('//') || /[?#\s\\]/u.test(asset.previewRoute)) return {status: 'missing-context', reason: '尚未登记独立资产预览入口；可在页面预览核验实际使用，不套用其他项目的预览路径。'};
-  return {status: 'iframe', route: asset.previewRoute};
+  const route=asset.assetModel?asset.scenarioRoutes?.[scenario.id]:asset.previewRoute;
+  if (typeof route !== 'string' || !route.startsWith('/') || route.startsWith('//') || /[?#\s\\]/u.test(route)) return {status: 'missing-context', reason: '尚未登记匹配此场景适配器的独立预览入口；可在页面预览核验实际使用，不套用其他组件的预览路径。'};
+  return {status: 'iframe', route};
+}
+
+export function tokenDisplayContract(asset, assets = []) {
+  const visited=new Set();let current=asset;
+  while(current?.alias) {
+    if(visited.has(current.assetId || current.id))return {state:'unknown',reason:'变量别名循环，请核对来源'};
+    visited.add(current.assetId || current.id);
+    current=assets.find(a=>(a.assetId || a.id)===current.alias);
+    if(!current)return {state:'unknown',reason:'变量别名目标不存在'};
+  }
+  const type=current?.tokenType || current?.type;
+  if(!['color','font-family','spacing'].includes(type)||typeof current?.value!=='string'||!current.value.trim())return {state:'unknown',reason:'变量类型或实际值尚未登记'};
+  if(/var\(|url\(|[;{}]/u.test(current.value))return {state:'unknown',reason:'主题或资源依赖未解析，需在页面环境核验'};
+  return {state:'sample',type,value:current.value,source:current.source || '来源待核',semantic:visited.size>0};
+}
+
+export function assetScenarioVariantValues(asset,scenario,selection={}) {
+  const usage=(asset?.usageLocations || []).find(u=>scenario?.configurationRef===u.bindingId || scenario?.instanceId&&scenario.instanceId===u.instanceId);
+  const selected=selection?.scenarioId===scenario?.id?selection?.variantValues || {}:{};
+  return Object.fromEntries((asset?.assetModel?.variantAxes || []).map(axis=>{
+    const values=[selected[axis.key],scenario?.variantValues?.[axis.key],usage?.configuration?.[axis.key],axis.values[0]];
+    return [axis.key,values.find(value=>axis.values.includes(value))];
+  }));
 }

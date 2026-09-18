@@ -1,3 +1,4 @@
+import {renderProjectPreparationPage} from './project-preparation-view.mjs';
 import {lifecycleJourney} from './lifecycle-journey.mjs';
 import {journeyView} from '../../distribution/summon-foundation/lib/journey-view.mjs';
 const lifecyclePageStyle = "body{font:16px/1.6 system-ui;max-width:880px;margin:28px auto;padding:0 20px;color:#18181b;background:#fafafa}h1{font-size:28px;margin:0 0 12px}h2{font-size:20px}p{margin:10px 0}code{overflow-wrap:anywhere}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f4f4f5;padding:16px}section,details{border:1px solid #e4e4e7;border-radius:12px;padding:16px;margin:16px 0;background:white}button{padding:12px 20px;font:600 16px system-ui;border-radius:8px;border:1px solid #27272a;background:#27272a;color:white;cursor:pointer}.cancel{background:white;color:#17201d}button:disabled{opacity:.5;cursor:default}[hidden]{display:none!important}.actions{display:flex;gap:12px;flex-wrap:wrap}#status{border-left:4px solid #27272a}.important{background:#f4f4f5;padding:12px;border-radius:8px}body{overflow-wrap:anywhere}h1{font-size:1.5rem}h2{font-size:1.125rem}.actions{margin-top:16px}.danger{background:#b91c1c;border-color:#b91c1c}button:focus-visible,summary:focus-visible{outline:3px solid #2563eb;outline-offset:3px}#status[data-state=\"completed\"]{border-color:#15803d}#status[data-state=\"failed\"],#status[data-state=\"verification-required\"]{border-color:#b45309}.state-icon{display:inline-block;margin-right:8px}#status{padding:12px 16px}#status h2{margin:0}body>ul{margin:4px 0 12px}.important p{margin:6px 0}summary{cursor:pointer;font-weight:600}ul{padding-left:24px}.brand{font-size:14px;font-weight:600;letter-spacing:.02em;margin:0 0 20px}.steps{display:flex;flex-wrap:wrap;gap:8px}.steps p{margin:0!important;padding:6px 10px;border-radius:6px;background:#f4f4f5;font-size:13px!important}#operation-targets{background:#f4f4f5;border-radius:10px;padding:8px 16px}#journey{border:0;background:transparent;padding:0!important}#journey h2{font-size:16px;margin-bottom:8px!important}#journey-next{color:#52525b;font-size:14px}button{min-height:44px}@media(max-width:480px){body{margin:16px auto;padding:0 16px}section{padding:12px}.steps{gap:6px}.steps p{flex:1 1 110px}}";
@@ -45,6 +46,7 @@ export function lifecycleFeedback(session) {
   if(state==='completed'&&result.cleanup)detail+=result.cleanup.state==='completed'?' 本次升级暂存已清理，小回执保留。':' 更新成功，部分临时文件保留；清理未完成不影响更新结果。';
   if (['cancelled','expired','shutdown-no-install'].includes(state)) {detail='本次未执行目标操作；此前操作与准备缓存不因此撤销或删除。';next='需要继续时重新检查状态并请求新计划。';}
   if (['verification-required','not-found'].includes(state)) {detail='连接中断、进程结束或记录缺失不等于安装失败或成功。可能已有变更，不自动重试。';next='按下方操作标识和记录位置只读核实；需要恢复时另行确认新计划。';}
+  if (session.projectPreparation && ['pending','preview'].includes(state)) detail = '首次启用包含本项目缺项准备、规则采用，以及页面、组件、交互、关系、设计事实、源码摘要和受支持预览登记的持续同步。关闭面板、预览或结束对话不撤销；明确停用或撤销才停止。保留源码、技术栈、用户规则和例外，不授权软件安装或其他项目。技术栈：' + (session.projectPreparation.technology === 'preserve' ? '保持现有技术栈' : '适用新 React 项目采用 shadcn 规则（不安装依赖）') + '；预览准备：' + (session.projectPreparation.includePreview ? '已纳入' : '未纳入');
   if (!type) { detail='无法识别本次操作，请核实原计划与记录；不能据此宣称成功。'; next='只读核实操作类型，不从未知页面继续确认。'; }
   if (type && category !== 'installation' && state === 'completed') { detail=`已完成本次${heading}；位置以本次计划为准。${result.mutationPerformed === false ? '记录明确未改变目标。' : '逐项变更见结果记录。'}`; next=category==='capability'?'在新对话实际检查识别与调用；文件注册不证明宿主已发现。':'重新读取同项目状态与当前规则，再继续相关制作。'; }
   if (operation === 'capability-install') { detail = state === 'completed' ? 'Skill 已准备，还需你确认启用到 Codex。' : detail; next = state === 'completed' ? '下一步：在本页确认“启用对话功能”；项目以后单独接入。' : next; }
@@ -61,6 +63,7 @@ export function renderInstallDestinationPage({version, suggestion, acquisitionRo
 }
 
 export function renderLifecyclePage(session, nonce, planRef = null) {
+  if (session.projectPreparation) return renderProjectPreparationPage(session, nonce, planRef);
   const escape = value => String(value ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
   const feedback = lifecycleFeedback(session);
   const journey = lifecycleJourney(session);

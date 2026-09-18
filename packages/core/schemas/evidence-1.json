@@ -1,0 +1,160 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "foundation:evidence-1",
+  "type": "object",
+  "properties": {
+    "evidenceId": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "kind": {
+      "enum": [
+        "source-analysis",
+        "semantic-review",
+        "browser-observation",
+        "renderer-observation",
+        "human-acceptance"
+      ]
+    },
+    "subject": {
+      "type": "object",
+      "properties": {
+        "definitionId": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "scenarioId": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "instanceId": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "requirementId": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "taskId": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "scopeRevision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "inputFingerprint": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "artifactDigest": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "environment": {
+      "type": "object"
+    },
+    "runnerVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "verifierVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "checkIds": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[A-Za-z0-9_-]+$"
+      }
+    },
+    "dimensions": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "scope",
+          "content",
+          "definition",
+          "runtime",
+          "layout"
+        ]
+      }
+    },
+    "result": {
+      "enum": [
+        "passed",
+        "failed",
+        "pending",
+        "blocked"
+      ]
+    },
+    "producer": {
+      "type": "string",
+      "minLength": 1
+    },
+    "report": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*\\\\)[^\\u0000]+$"
+        },
+        "sha256": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "additionalProperties": false
+    },
+    "receiptId": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "required": [
+    "evidenceId",
+    "kind",
+    "subject",
+    "taskId",
+    "scopeRevision",
+    "inputFingerprint",
+    "artifactDigest",
+    "environment",
+    "runnerVersion",
+    "verifierVersion",
+    "checkIds",
+    "dimensions",
+    "result",
+    "report",
+    "limitations"
+  ],
+  "additionalProperties": false
+}

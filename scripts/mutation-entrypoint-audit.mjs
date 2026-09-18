@@ -12,16 +12,22 @@ const expectedEntryIds = [
   'cli-capability',
   'cli-lifecycle',
   'cli-project-authority',
+  'cli-project-sync',
   'cli-upgrade',
   'codex-user-skill',
   'extension-adapter',
   'first-install-bootstrap',
   'http-management-center-relation',
+  'http-project-preparation',
   'node-project-mutation',
   'node-relation-helper',
   'node-skeleton-helper',
   'offer-preference',
   'uninstall-finalizer',
+  'workbench-sync',
+  'project-analysis-cache',
+  'controlled-evidence',
+  'workbench-instance-record',
 ];
 const expectedHandlerIds = [
   'extension-shadcn-apply',
@@ -30,6 +36,8 @@ const expectedHandlerIds = [
   'foundation-skeleton-and-facts-create',
   'relation-facts-write',
   'page-facts-write',
+  'project-rules-adopt',
+  'asset-facts-batch',
 ];
 
 function source(relative) {
@@ -48,6 +56,8 @@ for (const entry of coverage.entrypoints) {
   if (!entry.surface || !entry.entry || (!entry.dispatcher && !denied) || (!entry.lowestWriteGate && !denied)) findings.push({code: 'ENTRYPOINT_COVERAGE_INCOMPLETE', id: entry.id});
 }
 
+requireSource('packages/core/project-sync.mjs', ['inspectProjectAuthority', 'createProjectMutationPlan', 'applyProjectMutationPlan', 'recordAttempt', 'verifyTrustedPayload'], 'continuous synchronization');
+requireSource('packages/core/project-authority.mjs', ['continuousEvidence(plan)', 'PROJECT_SYNC_AUTHORITY_REQUIRED', "source: 'project-continuous-authorization'", 'expectedOutputs'], 'continuous scope and recovery');
 requireSource('packages/core/facts.mjs', ['function ensureSkeleton', 'function registerPageRelation', 'applyProjectMutationPlan({plan: mutationPlan})'], 'facts helpers');
 requireSource('packages/core/extension-adapters.mjs', ['function applyExtension', 'function removeExtension', 'applyProjectMutationPlan({plan: mutationPlan})'], 'extension adapter');
 requireSource('packages/cli/index.mjs', ['function upgradeProject', 'function runManagerCli', 'requestLocalLifecyclePlan({operation:', 'createLocalLifecycleManagerServerForPlanRef({planRef:', 'function runProjectCli', 'function runCapabilityCli', '普通 CLI 入口已关闭'], 'CLI');

@@ -14,6 +14,21 @@ export function lifecycleJourney(session) {
   const records=[...unique.values()], program=records.filter(r=>lifecycleFeedback(r).category==='installation').at(-1);
   const context=program?.journeyContext || {};
   const id=context.id || program?.operationId || program?.sessionId || session.operationId || session.sessionId || 'unresolved';
+  if (session.projectPreparation) {
+    const preparation = session.result?.preparation, initial = session.projectPreparation.initial || {};
+    const enabled = session.result?.state === 'enabled' || initial.enabled;
+    const observed = key => preparation?.steps?.find(step => step.step === key);
+    const done = key => ['completed','verified-skipped'].includes(observed(key)?.state);
+    const running = ['executing','consumed'].includes(session.state);
+    const terminal = ['failed','cancelled','expired','verification-required'].includes(session.state);
+    const steps = [
+      {key:'enable',title:'启用 Foundation',state:enabled ? initial.enabled ? 'verified-skipped' : 'completed' : running ? 'executing' : terminal ? session.state : 'pending'},
+      {key:'preparation',title:'准备项目资料',state:done('preparation') ? observed('preparation').state : initial.factsReady ? 'verified-skipped' : enabled && running ? 'executing' : enabled && preparation && !preparation.ok && !observed('adoption') ? 'failed' : 'planned'},
+      {key:'adoption',title:'采用制作规则',state:done('adoption') ? observed('adoption').state : initial.rulesReady ? 'verified-skipped' : enabled && preparation && !preparation.ok && done('preparation') ? 'failed' : 'planned'}
+    ].map(step=>({...step,id:`${id}:${step.key}`,label:({'completed':'已完成','verified-skipped':'已核实','executing':'正在执行','failed':'待处理','cancelled':'已取消','expired':'已过期','verification-required':'待核实','pending':'等待授权','planned':'等待前序步骤'})[step.state]}));
+    const ready = preparation?.ok === true;
+    return {id,title:ready ? '项目准备就绪' : '让项目准备就绪',ended:ready,steps,summary:preparation?.error?.message || session.failure?.message || (ready ? '接入、项目资料与制作规则已核实。' : '接入项目、准备资料并采用制作规则，随后开始制作。'),next:ready ? '回到当前 Codex 对话，描述要制作的页面或功能。业务内容、真实运行和预览仍需分别核验。' : enabled ? '已完成的启用和资料保留。重新检查并继续未完成步骤，无需再次授予日常同步权限。' : '核对项目与授权范围后，一次接入并准备。',executionAuthority:false};
+  }
   if(!program) {
     const f=lifecycleFeedback(session), state=['preview'].includes(session.state)?'pending':session.state;
     const ended=state==='completed';

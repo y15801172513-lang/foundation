@@ -110,7 +110,8 @@ function probe(file) {
   delete environment.NODE_OPTIONS;
   const run = spawnSync(process.execPath, ['--input-type=module', '--eval', source], {cwd: ROOT, encoding: 'utf8', env: environment, timeout: 30_000});
   if (run.status !== 0) return {status: 'static-only', reason: run.signal || run.error?.code || `exit-${run.status}`, stderrHash: digest(run.stderr || '')};
-  return {status: 'imported-isolated-empty-path', exports: JSON.parse(run.stdout)};
+  try{return {status: 'imported-isolated-empty-path', exports: JSON.parse(run.stdout)};}
+  catch{return {status:'static-only',reason:'unexpected-module-output',stderrHash:digest(run.stdout || '')};}
 }
 
 function pathsToWriters(root, functions, writerNames) {
@@ -146,16 +147,26 @@ const writerToken = /\bfs\d*\.(?:appendFileSync|chmodSync|copyFileSync|linkSync|
 const testToken = /FOUNDATION_(?:TEST|FINALIZER)|configureRuntimeControl|issueTestHumanAuthorization|test-host-loader|test-runtime-surface|test-protected-host-adapter/iu;
 const modules = [];
 const findings = [];
+const externalInventoryFile=path.join(APP,'analysis-dependencies.json');
+const externalInventory=fs.existsSync(externalInventoryFile)?JSON.parse(fs.readFileSync(externalInventoryFile,'utf8')):[];
+const externalModules=[];
 
 for (const file of walk(APP).sort()) {
   const relative = path.relative(APP, file).replaceAll(path.sep, '/');
   const source = fs.readFileSync(file, 'utf8');
+  const external=externalInventory.find(entry=>relative.startsWith(entry.relative+'/'));
+  if(external){externalModules.push({path:relative,sha256:digest(source),package:external.name,version:external.version,classification:'third-party-production-dependency-not-a-foundation-authority-export'});continue;}
   const imported = probe(file);
   const functions = functionsIn(source);
   const keyAccessFunctions = [...functions.values()].filter((record) => /receipt-finalizer-hmac\.key|crypto\d*\.randomBytes\(32\)/u.test(record.body)).map((record) => record.name).sort();
   const conditionallyCreatingHelpers = new Set(['ensureLedgerDirectory', 'loadTrustedAuthorityKey']);
   const writerNames = new Set([...functions.values()].filter((record) => writerToken.test(record.body) && !conditionallyCreatingHelpers.has(record.name)).map((record) => record.name));
   const transactionBoundaries = [...functions.values()].flatMap((record) => {
+    if(record.name==='verifyInstalledProjectBrowser' && isOrdered(record.body,['inspectLocalLifecycle(', 'FOUNDATION_HEALTHY', 'browserChecks', 'prepareWorkbenchSnapshot(', 'evidence-runs', 'openOrReuseWorkbench(', 'connectDevtools(', 'foundation-evidence-run', 'signTrustedPayload(']))return [{function:record.name,kind:'controlled-scope-browser-checks-and-owned-profile-only'}];
+    if(record.name==='analyzeProjectSources' && isOrdered(record.body,['inspectProjectAuthority(', 'readCurrentFoundationRules(', 'PROJECT_ANALYSIS_AUTHORITY_REQUIRED', 'analysis-cache', 'inspectSourceInputIdentity(', 'signTrustedPayload(', '.renameSync(']))return [{function:record.name,kind:'validated-project-read-only-analysis-and-owned-bounded-cache'}];
+    if(record.name==='verifyProjectDefinition' && isOrdered(record.body,['analyzeProjectSources(', 'resolveAssetBinding(', 'inspectProjectAuthority(', 'inspectSourceInputIdentity(', 'foundation-evidence-run', 'signTrustedPayload(']))return [{function:record.name,kind:'controlled-definition-check-receipt-without-user-commands'}];
+    if(record.name==='openOrReuseWorkbench' && isOrdered(record.body,['inspectLocalLifecycle(', 'FOUNDATION_HEALTHY', 'state/workbench-instances', 'observeProcessFingerprint(', '.openSync(']))return [{function:record.name,kind:'validated-installation-owned-workbench-instance-record-only'}];
+    if (record.name === 'recordAttempt' && isOrdered(record.body, ['inspectProjectAuthority(', 'PROJECT_SYNC_AUTHORITY_REQUIRED', 'attemptDirectory(', 'signTrustedPayload(', '.renameSync('])) return [{function:record.name,kind:'signed-project-bound-sync-attempt-only'}];
     if (isOrdered(record.body, ['reserveExactManagerConfirmationAtBoundary(', 'writeTrustedPreIntent(', 'acquireTrustedTargetGuard(', 'consumeExactManagerConfirmationAtBoundary('])) return [{function: record.name, kind: 'manager-reserve-preintent-guard-consume'}];
     if (isOrdered(record.body, ['verifyTrustedPayload(', 'verifyManagerConfirmedContinuationAtBoundary('])) return [{function: record.name, kind: 'signed-manager-confirmed-continuation'}];
     if (isOrdered(record.body, ['runWithLocalManagerConfirmation(', 'dispatch('])) return [{function: record.name, kind: 'local-manager-ui-confirm-and-dispatch'}];
@@ -209,6 +220,8 @@ const resultSeed = {
   moduleCount: modules.length,
   moduleInventoryHash: digest(modules.map((entry) => `${entry.path}:${entry.sha256}`).join('\n')),
   modules,
+  externalInventory,
+  externalModules,
   requiredRawModuleAbsences: requiredAbsences,
   unknownOrForbidden: findings,
 };
