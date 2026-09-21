@@ -66,7 +66,7 @@ export async function startProgressPage(readRecord, {control = null} = {}) {
   const current=()=>JSON.stringify(acquisitionProgress(readRecord()));
   const server=http.createServer(async(req,res)=>{
     if(req.headers.host!==origin||req.headers.origin&&req.headers.origin!==`http://${origin}`){res.writeHead(403).end();return;}
-    if(control&&req.method==='GET'&&req.url===base+'/state'){const record=readRecord();if(record.terminal)res.once('finish',()=>{terminalObserved=true;terminalRead?.();});res.writeHead(200,{'content-type':'application/json','cache-control':'no-store'}).end(JSON.stringify({record,progress:acquisitionProgress(record),view:control.view()}));return;}
+    if(control&&req.method==='GET'&&req.url===base+'/state'){let reconciled=false;try{reconciled=await control.reconcile?.()===true;}catch{/* The child may exit between steps; retain the operation snapshot without claiming reconciliation. */}const record=readRecord();if(record.terminal)res.once('finish',()=>{terminalObserved=true;terminalRead?.();});res.writeHead(200,{'content-type':'application/json','cache-control':'no-store'}).end(JSON.stringify({record,progress:acquisitionProgress(record),view:control.view(),reconciled,submissionPending:control.pending?.()===true}));return;}
     if(control&&req.method==='POST'&&req.url===base+'/action'){
       if(req.headers.origin!==`http://${origin}`||req.headers['content-type']!=='application/json'){res.writeHead(403).end();return;}
       try{let body='',size=0;for await(const chunk of req){size+=chunk.length;if(size>16384)throw Error('请求过大');body+=chunk;}const input=JSON.parse(body);if(input.csrf!==token)throw Error('页面确认身份不符');const result=await control.submit(input);res.writeHead(result.status,{'content-type':'application/json','cache-control':'no-store'}).end(JSON.stringify(result.body));}catch(error){res.writeHead(409,{'content-type':'application/json','cache-control':'no-store'}).end(JSON.stringify({message:error.message}));}return;
@@ -84,6 +84,13 @@ export async function startProgressPage(readRecord, {control = null} = {}) {
     // Allow the same page to receive the terminal snapshot before this bounded
     // service exits. No polling or page acknowledgement authorizes a mutation.
     if(control&&readRecord().terminal&&!terminalObserved)await new Promise(resolve=>{const timer=setTimeout(resolve,15000);terminalRead=()=>{clearTimeout(timer);resolve();};});
-    for(const res of clients)res.end();clients.clear();return new Promise(resolve=>server.close(resolve));
+    for(const res of clients)res.end();clients.clear();return new Promise(resolve=>{
+      // A browser may retain an unread/aborted response after the terminal
+      // snapshot. Stop accepting work, then bound connection draining so the
+      // completed CLI does not remain a live owner that blocks later recovery.
+      const drain=setTimeout(()=>server.closeAllConnections(),2000);
+      server.close(()=>{clearTimeout(drain);resolve();});
+      server.closeIdleConnections();
+    });
   }};
 }

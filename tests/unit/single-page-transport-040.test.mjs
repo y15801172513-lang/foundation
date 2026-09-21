@@ -93,3 +93,44 @@ test('C7 fresh selection rejects project intent instead of silently downgrading;
     assert.deepEqual(bodies,[{nonce:'nonce',action:'select',destination:'/fixture',skillChoice:'skipped'},{nonce:'nonce',action:'cancel'}]);
   }finally{await new Promise(resolve=>server.close(resolve));}
 });
+
+test('051 child handoff gap keeps the operation packet and does not claim authoritative reconciliation',async()=>{
+ const {startProgressPage}=await import('../../distribution/summon-foundation/lib/progress-page.mjs');
+ const record={operationId:'handoff-gap',kind:'uninstall',state:'running',terminal:false,phase:'awaiting-confirmation'};
+ const page=await startProgressPage(()=>record,{control:{setOrigin(){},view:()=>null,pending:()=>false,reconcile:async()=>{throw Error('previous child ended')}}});
+ try{const response=await fetch(page.url+'/state');assert.equal(response.status,200);const state=await response.json();assert.equal(state.record.operationId,record.operationId);assert.equal(state.reconciled,false);assert.equal(state.view,null);}finally{await page.close();}
+});
+
+test('051R1 child exit interrupts an in-flight read instead of blocking the next confirmation', {timeout:5000}, async()=>{
+ let reads=0,received;
+ const waiting=new Promise(resolve=>received=resolve);
+ const server=http.createServer((req,res)=>{
+  if(++reads===1)res.end(JSON.stringify({operationId:'one',session:{sessionId:'session-a',state:'pending'}}));
+  else received(); // Deliberately retain the old child response during handoff.
+ });
+ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+ const child=new EventEmitter();child.exitCode=null;child.signalCode=null;child.send=()=>{};
+ const control=createJourneyControl(()=>({operationId:'one'}),()=>{});
+ try {
+  control.setOrigin('http://127.0.0.1:43123');control.attach(child);
+  await control.observe(child,{status:'AWAITING_FOUNDATION_UI_CONFIRMATION',url:`http://127.0.0.1:${server.address().port}/`,sessionId:'session-a'});
+  const rejected=assert.rejects(control.reconcile(),/确认服务已退出/);
+  await waiting;child.exitCode=0;child.emit('close');await rejected;
+  assert.equal(control.view(),null);assert.equal(child.listenerCount('close'),0);assert.equal(reads,2);
+ } finally {server.closeAllConnections();await new Promise(resolve=>server.close(resolve));}
+});
+
+test('051R1 terminal result delivery drains a retained HTTP connection within a bounded close', {timeout:5000}, async()=>{
+ const {connect}=await import('node:net');
+ const {startProgressPage}=await import('../../distribution/summon-foundation/lib/progress-page.mjs');
+ const record={operationId:'terminal-drain',kind:'uninstall',state:'partial',terminal:true,phase:'finished'};
+ const page=await startProgressPage(()=>record,{control:{setOrigin(){},view:()=>null,pending:()=>false,reconcile:async()=>true}});
+ const url=new URL(page.url);const socket=connect(Number(url.port),'127.0.0.1');
+ try {
+  await new Promise(resolve=>socket.once('connect',resolve));
+  socket.write('GET /retained HTTP/1.1\r\nHost: '+url.host+'\r\n');
+  assert.equal((await(await fetch(page.url+'/state')).json()).record.state,'partial');
+  const started=Date.now();await page.close();assert(Date.now()-started<3500);
+  await assert.rejects(fetch(page.url+'/state'));
+ } finally {socket.destroy();}
+});

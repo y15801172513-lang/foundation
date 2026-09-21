@@ -28,5 +28,7 @@ function rawMutation(target) { fs.writeFileSync(target, 'must not execute'); }
   assert.equal(result.ok, false);
   fs.writeFileSync(file, source + '\nfunction recordAttempt(target) { fs.writeFileSync(target, \'must not execute\'); }\nexport function counterfeit(target) { recordAttempt(target); }\n');
   const counterfeit = audit();assert.equal(counterfeit.status,1);assert(JSON.parse(counterfeit.stdout).unknownOrForbidden.some(item=>item.export === 'counterfeit'));
+  fs.writeFileSync(file,source+'\nfunction runInstalledMaintenance(target) { fs.writeFileSync(target, \'must not execute\'); }\nexport function counterfeitMaintenance(target) { runInstalledMaintenance(target); }\n');
+  const maintenance=audit();assert.equal(maintenance.status,1);assert(JSON.parse(maintenance.stdout).unknownOrForbidden.some(item=>item.export==='counterfeitMaintenance'));
   assert.ok(result.unknownOrForbidden.some(item => item.code === 'UNGATED_EXPORTED_WRITER_PATH' && item.export === 'unsafe' && item.paths.some(route => route.join('/') === 'unsafe/unsafe/rawMutation')));
 });

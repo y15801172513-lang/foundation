@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import {plainPath} from './local-path.mjs';
 
 export function createOperation() {
   return {schemaVersion:'1.0.0',operationId:crypto.randomUUID(),pid:process.pid,startedAt:new Date().toISOString(),phase:'discovering',state:'running',terminal:false,installationWrites:'none',skillRegistered:false};
@@ -46,4 +47,47 @@ export function readOperation(file) {
   const s=fs.lstatSync(file);if(!s.isFile()||s.size>1_000_000||s.uid!==process.getuid()||(s.mode&511)!==384)throw Error('结果文件类型、大小或归属无效');
   const r=JSON.parse(fs.readFileSync(file));if(r.schemaVersion!=='1.0.0'||typeof r.operationId!=='string'||typeof r.terminal!=='boolean')throw Error('结果记录无效');
   return {...r,...(!r.terminal?{state:'verification-required',note:'这是最后一次记录，不证明原进程仍活着。先查原工具句柄和同次记录；不自动重试。'}:{}),readOnly:true,executionAuthority:false};
+}
+
+// Bounded discovery only: these are the two product-owned account locations.
+// Records are observations, never installation or execution authority.
+export function discoverOperations({home,installationRoot,installId}) {
+  plainPath(home);plainPath(installationRoot);
+  if(!/^[a-zA-Z0-9-]+$/.test(installId||''))throw Error('安装身份格式无效');
+  const locations=[
+    [path.join(home,'Library','Application Support','Foundation Maintenance',installId),/^operation-[a-f0-9-]+$/],
+    [path.join(home,'Library','Caches','ai-product-foundation-kit-acquisition'),/^acquisition\.[a-zA-Z0-9]+$/]
+  ];
+  const operations=[],unavailable=[];
+  for(const [directory,pattern] of locations){
+    plainPath(directory);if(!fs.existsSync(directory))continue;
+    const stat=fs.lstatSync(directory);
+    if(!stat.isDirectory()||stat.uid!==process.getuid()||(stat.mode&511)!==448)throw Error('操作记录目录归属或权限无效');
+    for(const name of fs.readdirSync(directory).filter(n=>pattern.test(n)).sort()){
+      const file=path.join(directory,name,'operation-result.json');
+      try{
+        plainPath(file);
+        const folder=fs.lstatSync(path.dirname(file));
+        if(!folder.isDirectory()||folder.uid!==process.getuid()||(folder.mode&511)!==448)throw Error('操作目录权限无效');
+        if(!fs.existsSync(file))continue;
+        const record=readOperation(file);
+        if(record.installationRoot!==installationRoot||record.installId!==installId)continue;
+        const kind=record.kind||(record.programState==='completed'?'install':null);
+        const completed=record.state==='completed'||kind==='uninstall'&&record.programState==='completed';
+        const remaining=completed?[]:kind==='uninstall'?[
+          ...(record.maintenanceSteps?.remove?.state==='completed'?[]:['核对当前 Skill 归属；仅存在时另行确认移除']),
+          '重新确认程序卸载'
+        ]:record.programState==='completed'&&record.journeyContext?.skillChoice==='selected'&&!record.skillRegistered&&record.skillSteps?.register?.state!=='completed'?['核对当前 Skill 材料和注册，仅为缺项请求新确认']:[];
+        operations.push({...record,kind,resultFile:file,completedActions:[...(record.programState==='completed'?['程序'+(kind==='uninstall'?'卸载':'安装或更新')]:[]),...(record.maintenanceSteps?.remove?.state==='completed'?['移除 Skill']:[])],remainingActions:remaining,resumable:remaining.length>0});
+      }catch(error){unavailable.push({file,reason:error.message});}
+    }
+  }
+  const superseded=new Set(operations.map(o=>o.resumes).filter(Boolean));
+  return {operations:operations.map(o=>({...o,resumable:o.resumable&&!superseded.has(o.operationId),superseded:superseded.has(o.operationId)})),unavailable,mutationPerformed:false,executionAuthority:false};
+}
+
+export function selectResumableOperation(discovery,operationId=null){
+  const choices=discovery.operations.filter(o=>o.resumable&&(!operationId||o.operationId===operationId));
+  if(choices.length!==1)throw Error(choices.length?'有多个未完成操作，请从只读查询结果选择 --operation-id；不要猜测或重放批准':'未找到可续接操作；先只读核对当前状态');
+  return choices[0];
 }

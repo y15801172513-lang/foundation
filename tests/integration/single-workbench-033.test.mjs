@@ -48,8 +48,8 @@ test('033 installed empty workspace uses original content and no help bundle; re
   const current=path.join(installationRoot,'state/current.json');fs.renameSync(current,current+'.fixture-moved');
   assert.equal((await fetch(url)).status,409);
 });
-test('033 help remains a six-intent conversation catalog, not a frontend dependency',()=>{
-  assert.equal(conversationCommands.length,6);
+test('033 help remains a maintenance-inclusive conversation catalog, not a frontend dependency',()=>{
+  assert.equal(conversationCommands.length,9);
   assert.match(conversationCommands[0].purpose,/仅在对话/);
   assert.deepEqual(parseCliInvocation(['workbench','open','--root','/安装','--project','/项目']).route,['workbench','open']);
   const app=fs.readFileSync(path.join(ROOT,'apps/management-center/src/workspace/workspace-app.jsx'),'utf8');

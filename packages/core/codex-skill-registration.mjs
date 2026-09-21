@@ -49,7 +49,7 @@ export function prepareCodexSkillRegistration({installationRoot, installId, mani
     refresh = {receiptSha256: sha256(fs.readFileSync(receiptFile)), files: receipt.files, preserves: '未知文件不更改；仅刷新本安装完整归属的两文件，仍需独立精确确认'};
   }
   const skill = fs.readFileSync(path.join(path.dirname(manifestFile), 'SKILL.md'), 'utf8');
-  const binding = `${JSON.stringify({schemaVersion: '1.0.0', installationRoot, installId, resolver: 'installed-current', authority: 'discovery-hint-only',...(scoped.scope.kind==='project'?{usageScope:scoped.scope}:{})}, null, 2)}\n`;
+  const binding = `${JSON.stringify({schemaVersion: '1.0.0', installationRoot, installId, resolver: 'installed-current', maintenance: {protocol:'installed-maintenance/1',discovery:'manager-inspect',identityRequired:true}, authority: 'discovery-hint-only',...(scoped.scope.kind==='project'?{usageScope:scoped.scope}:{})}, null, 2)}\n`;
   const files = [{path: 'SKILL.md', content: skill}, {path: 'foundation-installation.json', content: binding}].map((entry) => ({...entry, sha256: sha256(entry.content), bytes: Buffer.byteLength(entry.content)}));
   const directories = [];
   let cursor = snapshot.ancestors.at(-1).path;

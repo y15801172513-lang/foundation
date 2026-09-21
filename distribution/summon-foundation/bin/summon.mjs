@@ -20,7 +20,7 @@ summon foundation --inspect [--version x.y.z]
 summon foundation --prepare --version x.y.z --destination /absolute/folder
 summon foundation --acquire --version x.y.z
 summon foundation --status /absolute/acquisition/operation-result.json
-summon foundation --update --root /absolute/installed-folder --version x.y.z
+summon foundation --update --root /absolute/installed-folder [--version x.y.z]
 summon foundation --uninstall --root /absolute/installed-folder
 summon foundation --resume /absolute/acquisition/operation-result.json
 默认命令下载并验证正式发行，进入安装准备；未给目录时在安装页选择。不会静默安装或注册 Skill。
@@ -89,8 +89,15 @@ try{
     if(environment.state!=='ready')fail('环境复检未通过：'+environment.state+'；缺少 '+environment.missing.join('、')+'；保留当前安装，不修改系统工具');
     let candidate;
     if(args.update){
-      assertUpdateEngineSupport(inspection,{root:args.root,stage});
+      if(args.version&&args.version!==current.version)assertUpdateEngineSupport(inspection,{root:args.root,stage});
       updateOperation({phase:'discovering'});
+      const target=inspectRelease(args.version);args.version=target.version;
+      updateOperation({version:target.version,sourceCommit:target.sourceCommit});
+      if(target.version===current.version){
+        updateOperation({state:'completed',terminal:true,phase:'finished',programState:'unchanged',installationWrites:'none',next:'当前已是所选正式版本；未下载、更新或重新注册 Skill。'});
+        await progressPage.close();progressPage=null;process.exit(0);
+      }
+      assertUpdateEngineSupport(inspection,{root:args.root,stage});
       const {context,receipt}=await acquireInWorker({version:args.version,stage,operationId:operation.operationId,onContext:context=>updateOperation({version:context.version,sourceCommit:context.sourceCommit}),onProgress:download=>updateOperation({download}),onPhase:phase=>updateOperation({phase,...(phase==='fetching-and-verifying-runtime'?{download:null}:{})})});
       const directory=plainPath(path.dirname(receipt.launcher)),manifest=JSON.parse(fs.readFileSync(plainPath(path.join(directory,'manifest.json'))));
       if(manifest.productVersion!==context.version)fail('获取版本与候选不一致');

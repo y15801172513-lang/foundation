@@ -1,6 +1,7 @@
 import {spawn,spawnSync} from 'node:child_process';
 import path from 'node:path';
-import {plainPath} from './acquire.mjs';
+import fs from 'node:fs';
+import {plainPath} from './local-path.mjs';
 
 import {operationFailure,installedCommandFailure} from './operation-failure.mjs';
 export {operationFailure,installedCommandFailure} from './operation-failure.mjs';
@@ -71,4 +72,18 @@ export async function observePlan(client,requested,onChange) {
       }
     });
   });
+}
+
+// Resolve only the explicitly registered hint; never search for an executable.
+export function discoverRegisteredInstallation(bindingFile,env){
+  const file=plainPath(bindingFile),stat=fs.lstatSync(file);
+  if(!stat.isFile()||stat.uid!==process.getuid()||stat.nlink!==1||stat.size>65536)throw Error('安装定位记录类型或归属无效');
+  const binding=JSON.parse(fs.readFileSync(file,'utf8'));
+  if(binding.schemaVersion!=='1.0.0'||binding.resolver!=='installed-current'||binding.authority!=='discovery-hint-only'||typeof binding.installId!=='string')throw Error('安装定位记录无效，不授予维护权限');
+  const client=installedClient(binding.installationRoot,env);
+  const inspection=client.call(['manager','inspect','--root',client.root]);
+  const current=inspection.installation?.current;
+  if(current?.identity?.installId!==binding.installId||inspection.bridge?.currentVersion!==current.version)throw Error('注册位置与当前安装身份或健康不一致');
+  if(inspection.supportedLifecycleOptions?.maintenance?.protocol!=='installed-maintenance/1')throw Error('当前安装缺少随包维护能力；请按该版本正式恢复说明处理，不替换旧引擎');
+  return {installationRoot:client.root,installId:binding.installId,launcher:client.launcher,currentVersion:current.version,candidateHash:current.candidateHash,inspection,executionAuthority:false};
 }

@@ -47,6 +47,7 @@ test('020R1 example owns build-only tooling as exact devDependencies', async () 
   const expected = {
     '@tailwindcss/vite': '4.3.3',
     '@vitejs/plugin-react': '6.1.1',
+    esbuild: '0.28.0',
     tailwindcss: '4.3.3',
     vite: '8.2.2',
   };

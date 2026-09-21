@@ -5,6 +5,9 @@ export const conversationCommands = Object.freeze([
   {id:'status', chinese:'Foundation 状态', alias:'fd status', purpose:'读取真实版本、位置、健康及 Skill/项目状态；未知不猜', prerequisite:'已验证安装身份；项目只检查明确选定的目录', confirmation:'不需要', route:'manager inspect --root'},
   {id:'update', chinese:'更新 Foundation', alias:'fd update', purpose:'核验发行后准备手动更新计划，保留用户数据', prerequisite:'已验证当前安装与目标发行；先解释获取缓存及写入权限', confirmation:'必须本人确认精确更新计划', route:'manager request-plan --operation update'},
   {id:'connect', chinese:'接入当前项目', alias:'fd connect', purpose:'先确认实际项目及支持条件，再准备独立接入计划', prerequisite:'已验证安装及精确项目；既有事实不覆盖，未确认默认不接入', confirmation:'必须本人单独确认项目接入计划', route:'manager request-plan --operation enable'},
+  {id:'disable',chinese:'停用当前项目的 Foundation',alias:'fd disable',purpose:'停止本项目管理与持续同步，保留源码、规则、事实和备份',prerequisite:'明确项目并核验其当前接入身份',confirmation:'必须本人确认项目停用计划',route:'manager request-plan --operation disable'},
+  {id:'revoke',chinese:'撤销项目持续同步',alias:'fd revoke',purpose:'仅撤销持续同步；关闭页面不会撤销，打开也不自动恢复',prerequisite:'明确项目并核验当前持续授权',confirmation:'必须本人确认撤销计划',route:'manager request-plan --operation enable'},
+  {id:'maintenance-status',chinese:'查看或继续 Foundation 维护',alias:'fd maintenance',purpose:'查询独立维护记录；明确继续时只为剩余动作创建新计划',prerequisite:'核验安装位置与 installId；原进程已结束',confirmation:'查询无需确认；剩余写入需新精确确认',route:'maintenance status'},
   {id:'uninstall', chinese:'卸载 Foundation', alias:'fd uninstall', purpose:'展示属于 Foundation 的删除范围、保留项及残留，不清空目录', prerequisite:'重新核验安装身份；已注册 Skill 先单独核对文件后解除', confirmation:'必须本人确认精确卸载计划', route:'manager request-plan --operation uninstall'},
 ]);
 

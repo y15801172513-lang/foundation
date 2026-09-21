@@ -1,3 +1,4 @@
+import {plainPath} from './local-path.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -55,16 +56,7 @@ async function downloadLarge(url,total,onProgress) {
   }
 }
 function regular(file) { const s=fs.lstatSync(file); if(!s.isFile()||s.isSymbolicLink())fail('不是普通文件');return s; }
-export function plainPath(file) {
-  if(!path.isAbsolute(file)||path.normalize(file)!==file)fail('路径必须是规范化绝对路径');
-  for(let cursor=file;cursor!==path.dirname(cursor);cursor=path.dirname(cursor)){
-    if(fs.existsSync(cursor)||fs.lstatSync(cursor,{throwIfNoEntry:false})){
-      const s=fs.lstatSync(cursor);if(s.isSymbolicLink())fail('路径包含符号链接');
-      if(fs.realpathSync(cursor)!==cursor)fail('路径真实位置不一致');
-    }
-  }
-  return file;
-}
+export {plainPath} from './local-path.mjs';
 export function inspectRelease(version) {
   if(!Number.isSafeInteger(policy.repositoryId)||policy.repositoryId<=0)fail('公共仓库身份尚未绑定；此源码不是可用发行入口');
   if(version!==undefined&&!semver.test(version))fail('版本必须是明确的 x.y.z');

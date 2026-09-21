@@ -7,11 +7,13 @@
 
 支持边界遵守公共安装说明引用的《安装与生命周期合同》现行支持策略；不要推荐已退出维护的旧 npm 入口，也不自动迁移或删除旧安装。
 
-本载荷需要已核验且声明单页能力的 summon 与运行程序；源码实现不代表 npm 已发布，执行前按公共安装说明核验实际可获取版本。不支持单页的旧引擎不降级接续，说明需另行安装受支持版本；不得自动删除旧安装。
+首装需要已核验且声明单页能力的 summon 与运行程序；源码实现不代表 npm 已发布，执行前按公共安装说明核验实际可获取版本。不支持单页的旧引擎不降级接续，说明需另行安装受支持版本；不得自动删除旧安装。
 
 首装在同一页面选择目录和 Skill 意向。选中 Codex 后，由启动器在程序健康通过后准备 Skill 及注册的精确确认；已有效的材料复用。保持同一工具句柄等待，只打开首次返回的真实单页 URL；后续确认在原页展开，不另发 capability 命令、不另开 manager 页面。用户拒绝或取消时程序结果保留，明确 Skill 待续，不重复询问。
 
-用户明确要求更新时，核验当前稳定入口、目标发行及任务权限后使用 `summon foundation --update --root <已核验安装根> --version <固定目标版本>`；卸载使用 `summon foundation --uninstall --root <已核验安装根>`。更新保留已注册副本，由新 current 准备完整归属的精确刷新；卸载才先准备解除确认并接续程序移除。每项仍需本人在同页独立确认。无 Skill 不新增；解除拒绝/失败不继续程序删除。用户修改或未知 Skill 保留，不能承诺刷新成功。
+安装后优先从 manager inspect 的 supportedLifecycleOptions.maintenance 发现能力。声明 installed-maintenance/1 的稳定入口使用随包运行时：maintenance status --install-id <身份> 查询当前与独立维护记录；maintenance uninstall --install-id <身份> 离线准备卸载；maintenance update --install-id <身份> --candidate <已核验候选目录> 使用已获取并核验的更新材料；没有候选时省略 --candidate，读取可信获取交接并按下文自然更新流程继续；maintenance resume --install-id <身份> 在用户明确继续后核验旧进程及计划，仅创建剩余动作的新确认。记录位于当前账户 Application Support/Foundation Maintenance/<installId>，不会随 Skill 移除；只沿明确安装身份定位，不扫描全盘。路径不是信任或执行授权。安装身份缺失、入口损坏时保留文件，使用已核验维护工具对明确根只读 inspect 后另建恢复计划，不重装来取得卸载权。
+
+旧引擎尚未声明该能力时，用户明确要求更新时，核验当前稳定入口、目标发行及任务权限后使用 `summon foundation --update --root <已核验安装根> --version <固定目标版本>`；卸载使用 `summon foundation --uninstall --root <已核验安装根>`。更新保留已注册副本，由新 current 准备完整归属的精确刷新；卸载才先准备解除确认并接续程序移除。每项仍需本人在同页独立确认。无 Skill 不新增；解除拒绝/失败不继续程序删除。用户修改或未知 Skill 保留，不能承诺刷新成功。
 
 程序完成、Skill 未完成时，先只读 `summon foundation --status <本次结果文件>`。用户明确继续后，`summon foundation --resume <同次结果文件>` 核验原进程已退出、当前安装身份和旧计划；复用已完成材料，仅生成未完成注册的新确认。记录不匹配、执行中状态或恢复日志不完整时停止，不自动重装程序。程序自身失败仍按原管理器恢复计划处理，不把此选项当通用修复权限。
 
@@ -51,6 +53,9 @@ AI 只能检查、请求 exact 计划、打开 Foundation 本地管理器和读�
 | Foundation 状态 | fd status | 读取真实版本、位置、健康及 Skill/项目状态；未知不猜 | 已验证安装身份；项目只检查明确选定的目录 | 不需要 |
 | 更新 Foundation | fd update | 核验发行后准备手动更新计划，保留用户数据 | 已验证当前安装与目标发行；先解释获取缓存及写入权限 | 必须本人确认精确更新计划 |
 | 接入当前项目 | fd connect | 先确认实际项目及支持条件，再准备独立接入计划 | 已验证安装及精确项目；既有事实不覆盖，未确认默认不接入 | 必须本人单独确认项目接入计划 |
+| 停用当前项目的 Foundation | fd disable | 停止本项目管理与持续同步，保留源码、规则、事实和备份 | 明确项目并核验其当前接入身份 | 必须本人确认项目停用计划 |
+| 撤销项目持续同步 | fd revoke | 仅撤销持续同步；关闭页面不会撤销，打开也不自动恢复 | 明确项目并核验当前持续授权 | 必须本人确认撤销计划 |
+| 查看或继续 Foundation 维护 | fd maintenance | 查询独立维护记录；明确继续时只为剩余动作创建新计划 | 核验安装位置与 installId；原进程已结束 | 查询无需确认；剩余写入需新精确确认 |
 | 卸载 Foundation | fd uninstall | 展示属于 Foundation 的删除范围、保留项及残留，不清空目录 | 重新核验安装身份；已注册 Skill 先单独核对文件后解除 | 必须本人确认精确卸载计划 |
 <!-- foundation-command-catalog:end -->
 
@@ -112,3 +117,8 @@ Foundation-global decline/uninstalled suppression 只能由用户在 Foundation 
 使用 manager request-plan --operation enable 的 parameters-json 指定 project、installationRoot、continuousSync:grant、technology:preserve 及 includePreview（明确布尔值）。同一页面说明范围、由本人首次确认，并自动完成缺项准备与规则采用；失败保留已完成项，下一次 project sync 重读后接续。旧 enabled 不继承持续权限。
 
 project sync --root <安装根> --project <精确项目> 在任务开始、代码修改后及打开时执行；--payload <项目内文件> 提交需求生成的精确封闭批次。持续授权内不弹逐批确认；不授予源码、软件、其他项目或任意 shell 权限。sync-status 是只读核对。只有显式 disable 或 enable 的 continuousSync:revoke 才停止后续同步；仅打开不恢复。程序只会在有触发进程时运行，未知语义保留待核。
+
+
+0.2.19 维护入口：稳定 `bin/foundation-kit maintenance status --binding <注册生成的 foundation-installation.json>` 只读核验注册线索与当前安装身份，再汇合本账户固定获取缓存和独立维护目录。记录不是批准；明确继续时调用 `maintenance resume --install-id <核验身份>`，有歧义才选择 `--operation-id`。原进程仍活跃、原计划 pending/executing/consumed、安装身份变化均拒绝并发恢复。卸载后直接只读保存的操作记录和独立卸载回执，不启动已删程序，不自动重装 Skill。
+
+自然更新使用经正式说明核验的 npm 获取入口 `summon foundation --update --root <已核验安装根>`；可选 `--version` 固定目标，否则先查询正式发行并固定版本。获取器负责可信下载与同页更新/Skill 接续，不要求用户预先提供 candidate。安装内 `maintenance update` 无 candidate 时返回获取环境交接说明；离线或无可信获取环境时明确停在获取条件，不能宣称更新完成，不能裸运行不核验的 npx。旧正式入口的参数以其自身帮助为准。新版离线卸载不依赖 npm 获取器。上述能力要求 Foundation 0.2.19 与 npm 0.1.13；旧正式载荷不因说明变化获得这些能力。

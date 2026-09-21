@@ -1,7 +1,7 @@
 import path from 'node:path';
 import fs from 'node:fs';
 import {installedClient,observePlan} from './manager-step.mjs';
-import {plainPath} from './acquire.mjs';
+import {plainPath} from './local-path.mjs';
 
 // Coordinates existing exact-plan APIs. It never sends a confirmation request.
 // The installed launcher resolves current on every call; downloaded code is not

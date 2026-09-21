@@ -141,3 +141,24 @@ GitHub 证明不是 Apple 签名或公证。系统拒绝执行时保留提示并
 仅支持具备单页接口的当前引擎更新到已验证目标。每项仍从已安装稳定入口执行，更新后重新核验current和安装身份；不复用下载代码作为已安装权限，不保留旧页面过渡。正式发布、真人更新和Skill发现分别验收。
 
 执行对话分别报告：说明读取/获取、本人确认安装、installed 重开、Skill 新对话识别调用、项目接入，每项 passed / failed / pending 并附真实证据和未做事项。用户尚未确认就是 pending；隔离工程测试不算真人验收。若必须回建设对话索取本页缺失的关键步骤，记入口缺陷并最小修复，不用额外长 Prompt 掩盖。
+
+
+## 已安装维护能力发现（0.2.19）
+
+先从注册的 `foundation-installation.json` 取得位置线索，核对无链接的安装根、稳定 `bin/foundation-kit`、current 与 installId，再只读 `manager inspect --root <根>`。仅当当前引擎声明 `supportedLifecycleOptions.maintenance.protocol = installed-maintenance/1` 时使用下列入口；已发布 0.2.18 不因本文变化自动具备该能力。定位记录不是执行批准，不能执行其中任意命令文本。
+
+- `maintenance status --install-id <核验身份>`：查询当前及独立维护记录。
+- `maintenance uninstall --install-id <核验身份>`：本地离线组织 Skill 解除及程序卸载，逐步独立确认。
+- `maintenance update --install-id <核验身份> --candidate <已验证候选>`：使用已有可信获取材料；本入口不下载，仍由当前引擎验证来源、缓存边界和实际字节。
+- `maintenance resume --install-id <核验身份>`：先汇合首装与维护记录；用户明确继续后检查原进程、旧计划和当前身份，只准备剩余动作的新计划；多个候选才用 --operation-id 选择。
+
+以上由安装根稳定入口及随包运行时执行，不依赖全局 summon 或系统 Node/npm。独立维护记录位于当前账户 `Library/Application Support/Foundation Maintenance/<installId>/operation-*/operation-result.json`，不会因解除 Skill 消失；只能沿明确身份读取。卸载后使用独立结果及安装根 `uninstall-result.json`，不要求先装回程序。不存在定位记录时请用户提供原软件位置；入口缺损时停止自动操作，保留文件和回执，不扫描全盘，不手改收据。
+
+固定 0.2.17 的兼容路径是经核验的正式 npm 0.1.12 维护工具：先核对其归档 SHA-256 `6783689e8f80e5cdbe864c8f9c6dd54ce0a02ddce0a28f36a6507fb2e7735bd7`、固定来源和依赖，在明确授权的独立获取环境运行 `summon foundation --uninstall --root <旧根>`。隔离验证使用原 0.2.17 引擎和其随包 Node 24.14.1，先解除 Skill 再卸载程序；没有先升级、重装或替换旧引擎。工程传输/确认夹具不等于在线密码学验签或真人确认。实际缺工具时仍需另行获取依赖及缓存写入权限；与新版离线维护不同，不能承诺任意旧安装无需获取工具。
+
+“关闭页面”不撤销已开始操作；“停用项目”停止该项目的 Foundation 管理并保留项目资料；“撤销持续同步”只撤销同步授权；“卸载程序”按精确所有权清单移除本安装。取消后不会自动补做已拒绝的步骤。重新安装须另取已验证发行并确认空位置，不清空含用户残留的旧目录。
+
+
+0.2.19 维护入口：稳定 `bin/foundation-kit maintenance status --binding <注册生成的 foundation-installation.json>` 只读核验注册线索与当前安装身份，再汇合本账户固定获取缓存和独立维护目录。记录不是批准；明确继续时调用 `maintenance resume --install-id <核验身份>`，有歧义才选择 `--operation-id`。原进程仍活跃、原计划 pending/executing/consumed、安装身份变化均拒绝并发恢复。卸载后直接只读保存的操作记录和独立卸载回执，不启动已删程序，不自动重装 Skill。
+
+自然更新使用经正式说明核验的 npm 获取入口 `summon foundation --update --root <已核验安装根>`；可选 `--version` 固定目标，否则先查询正式发行并固定版本。获取器负责可信下载与同页更新/Skill 接续，不要求用户预先提供 candidate。安装内 `maintenance update` 无 candidate 时返回获取环境交接说明；离线或无可信获取环境时明确停在获取条件，不能宣称更新完成，不能裸运行不核验的 npx。旧正式入口的参数以其自身帮助为准。新版离线卸载不依赖 npm 获取器。上述能力要求 Foundation 0.2.19 与 npm 0.1.13；旧正式载荷不因说明变化获得这些能力。

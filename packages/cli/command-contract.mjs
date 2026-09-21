@@ -26,6 +26,7 @@ const lifecycleOptions = {
 };
 
 const routes = [
+  ...['status','uninstall','update','resume'].map(command=>({path:['maintenance',command],options:{'--install-id':value(),'--binding':value(),...(command==='update'?{'--candidate':value()}:{}),...(command==='resume'?{'--record':value(),'--operation-id':value()}:{})},positionals:{min:0,max:0}})),
   {path: [], options: {}, positionals: {min: 0, max: 0}},
   {path: ['--foundation-health'], options: {}, positionals: {min: 0, max: 0}},
   {path: ['--help'], options: {}, positionals: {min: 0, max: 0}},

@@ -7,8 +7,9 @@ import {runtimeObservation} from '../../distribution/summon-foundation/lib/opera
 
 test('health failure shows unfinished install, verified rollback, no Skill and folded diagnostics after disconnect',async()=>{
  const record={operationId:'health-failure',kind:'install',skillRegistered:false,...runtimeObservation({status:'BOOTSTRAP_OPERATION_ENDED',state:'failed',journeyContext:{skillChoice:'selected'},failure:{code:'EXECUTABLE_HEALTH_FAILED',stage:'health-check',details:{rollback:'completed',healthCheck:{phase:'staged-payload',exitCode:17,signal:null,timedOut:false,stderr:{text:'intentional health failure'}}}}})};
+ record.phase='executing'; // The terminal record can retain its last execution phase.
  const page=await livePage(record);try{
-  const document=page.dom.window.document;assert.equal(document.querySelector('#flow-title').textContent,'安装未完成');
+  const document=page.dom.window.document;assert.equal(document.querySelector('#flow-title').textContent,'安装未完成');assert.equal(document.querySelector('#flow-status').textContent,'查看未完成项');
   assert.match(document.querySelector('#flow-result').textContent,/已回退/);assert.match(document.querySelector('#flow-result').textContent,/未安装或启用 Skill/);assert.match(document.querySelector('#flow-result').textContent,/不要重放旧确认/);
   assert.equal(document.querySelector('#current-form'),null);assert.equal(document.querySelector('#raw').closest('details').open,false);assert.match(document.querySelector('#raw').textContent,/staged-payload/);
   const before=document.querySelector('#flow-result').textContent;await page.refresh({},true);assert.equal(document.querySelector('#flow-result').textContent,before);
@@ -124,4 +125,24 @@ test('040 partial result labels cancelled Skill and retains verified program res
     assert.match(dom.window.document.querySelector('#flow-result').textContent,/程序安装已完成/);
     assert.equal(dom.window.document.querySelectorAll('iframe').length,0);
   }finally{dom.window.close();}
+});
+
+for (const failure of ['response-lost','invalid-json']) test('051 '+failure+' reconciles next session on original page without replay',async()=>{
+ let tick,posts=0;
+ let record={operationId:'reconcile',kind:'uninstall',state:'running',terminal:false,phase:'skill-confirmation',hadSkill:true,maintenanceSteps:{remove:{state:'pending'}}};
+ const feedback={detail:'核对范围',namedTargets:[],preserves:['项目'],notDone:'不改变其他安装'};
+ let view={session:{sessionId:'remove',planHash:'one',state:'pending',operation:'uninstall',capabilityId:'skill'},feedback,action:'confirm-exact-operation'};
+ const dom=new JSDOM(singlePageDocument('test'),{url:'http://127.0.0.1:43123/test',runScripts:'dangerously',beforeParse(w){w.setTimeout=fn=>{tick=fn};w.fetch=async(url,opts)=>{
+  if(opts?.method==='POST'){posts++;record={...record,phase:'awaiting-confirmation',maintenanceSteps:{remove:{state:'completed'},program:{state:'pending'}}};view={session:{sessionId:'program',planHash:'two',state:'pending',operation:'uninstall'},feedback,action:'confirm-exact-operation'};if(failure==='response-lost')throw Error('lost');return {ok:true,json:async()=>{throw Error('json')}};}
+  return {ok:true,json:async()=>({record,view,progress:acquisitionProgress(record)})};
+ };}});
+ try{await new Promise(r=>setTimeout(r,10));const form=dom.window.document.querySelector('#current-form');form.dispatchEvent(new dom.window.SubmitEvent('submit',{bubbles:true,cancelable:true,submitter:form.querySelector('button')}));await new Promise(r=>setTimeout(r,10));await tick();assert.equal(dom.window.document.querySelector('.current').dataset.step,'program');assert.equal(dom.window.document.querySelector('#current-form button').disabled,false);assert.equal(posts,1);assert.equal(dom.window.location.pathname,'/test');assert(dom.window.document.querySelector('#read-status'));}finally{dom.window.close();}
+});
+
+test('051 uncertain same-session pending stays disabled until authoritative recheck confirms no submission in flight',async()=>{
+ let tick,posts=0,reconciled=false;
+ const record={operationId:'pending-recheck',kind:'uninstall',state:'running',terminal:false,phase:'awaiting-confirmation'};
+ const view={session:{sessionId:'pending',planHash:'h',state:'pending',operation:'uninstall'},action:'confirm-exact-operation',feedback:{detail:'卸载',namedTargets:[],preserves:['项目'],notDone:'保留项目'}};
+ const dom=new JSDOM(singlePageDocument('test'),{url:'http://127.0.0.1:43123/test',runScripts:'dangerously',beforeParse(w){w.setTimeout=fn=>{tick=fn};w.fetch=async(url,opts)=>{if(opts?.method==='POST'){posts++;throw Error('before-send failure')}return {ok:true,json:async()=>({record,view,progress:acquisitionProgress(record),reconciled,submissionPending:!reconciled})}};}});
+ try{await new Promise(r=>setTimeout(r,10));const form=dom.window.document.querySelector('#current-form');form.dispatchEvent(new dom.window.SubmitEvent('submit',{bubbles:true,cancelable:true,submitter:form.querySelector('button')}));await new Promise(r=>setTimeout(r,10));await tick();assert.equal(form.querySelector('button').disabled,true);reconciled=true;await tick();assert.equal(dom.window.document.querySelector('#current-form button').disabled,false);assert.equal(posts,1);}finally{dom.window.close();}
 });

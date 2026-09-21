@@ -11,12 +11,17 @@ function scopeFields(value){
 // Only the exact child created by this invocation may supply an active view.
 // Browser input cannot name a URL, route, transport token or future plan.
 export function createJourneyControl(readRecord, changed) {
-  const children=new Map();let active=null,origin=null,choice=null,resolveChoice,rejectChoice,choiceTimer,viewRevision=0;
+  const children=new Map();let active=null,origin=null,choice=null,resolveChoice,rejectChoice,choiceTimer,viewRevision=0,submitting=0;
   const headers=owner=>({origin,'content-type':'application/json','x-foundation-journey':owner.token,'x-foundation-operation':readRecord().operationId});
   const request=async(owner,route,body)=>{
     if(owner.child.exitCode!==null||owner.child.signalCode)throw Error('确认服务已退出，结果待核实');
-    const response=await fetch(owner.url+route,{method:body?'POST':'GET',headers:headers(owner),...(body?{body:JSON.stringify(body)}:{}),redirect:'error',signal:AbortSignal.timeout(120000)});
-    return {status:response.status,body:await response.json()};
+    const ended=new AbortController();
+    const onClose=()=>ended.abort(Error('确认服务已退出，结果待核实'));
+    owner.child.once('close',onClose);
+    try {
+      const response=await fetch(owner.url+route,{method:body?'POST':'GET',headers:headers(owner),...(body?{body:JSON.stringify(body)}:{}),redirect:'error',signal:AbortSignal.any([ended.signal,AbortSignal.timeout(body?120000:5000)])});
+      return {status:response.status,body:await response.json()};
+    } finally { owner.child.removeListener('close',onClose); }
   };
   return {
     setOrigin(value){if(origin)throw Error('单页来源不能重绑定');origin=value;},
@@ -43,6 +48,14 @@ export function createJourneyControl(readRecord, changed) {
         if(selected.status!==200){active.error=selected.body.message;choice=null;changed();}
       }
     },
+    pending(){return submitting>0;},
+    async reconcile(){
+      const a=active;if(!a)return Boolean(readRecord().terminal||readRecord().phase==='choosing-intent');
+      const result=await request(a.owner,a.type==='selection'?'__foundation/install/view':'__foundation/manager/view');
+      if(active!==a)return false;
+      if(result.status!==200||result.body.operationId!==readRecord().operationId||a.type==='manager'&&result.body.session?.sessionId!==a.view.session?.sessionId)throw Error('状态核对身份不符');
+      a.view=result.body;return true;
+    },
     view(){return active?{type:active.type,...active.view,error:active.error||null}:null;},
     waitChoice({timeoutMs=600000}={}){return new Promise((resolve,reject)=>{
       if(resolveChoice)throw Error('目录选择已在等待');
@@ -51,6 +64,7 @@ export function createJourneyControl(readRecord, changed) {
       changed();
     });},
     async submit(body){
+      submitting++;try{
       if(body.operationId!==readRecord().operationId)throw Error('流程身份不匹配');
       if(body.action==='cancel-intent'&&rejectChoice){
         clearTimeout(choiceTimer);const reject=rejectChoice;resolveChoice=null;rejectChoice=null;
@@ -80,6 +94,7 @@ export function createJourneyControl(readRecord, changed) {
       }
       const result=await request(a.owner,'__foundation/manager/confirm',{operationId:body.operationId,sessionId:s.sessionId,planHash:s.planHash,managerNonce:body.managerNonce,action:body.action});
       if(active===a&&result.body.state)a.view.session={...s,...result.body};changed();return result;
+      }finally{submitting--;}
     }
   };
 }

@@ -15,7 +15,7 @@ function projectPreparationClient(initial) {
  const options=document.createElement('p');options.id='project-scope-options';disclosure.append(options);
  q('.overview').insertBefore(disclosure,q('.progress-label'));
  const form=document.createElement('form');form.id='project-action';form.innerHTML='<div class="actions"></div><p id="project-error" class="error" role="alert"></p>';q('#flow-steps').after(form);form.className='result';
- const read=document.createElement('button');read.type='button';read.textContent='刷新状态';read.addEventListener('click',()=>refresh());q('footer').prepend(read);
+ const read=document.createElement('button');read.type='button';read.id='read-status';read.textContent='重新核对状态';read.addEventListener('click',()=>refresh());q('footer').prepend(read);
  function show(packet){
   current=packet;const s=packet.session,j=packet.journey,ready=j.ended;
   const running=['executing','consumed'].includes(s.state),enabled=s.result?.state==='enabled'||s.projectPreparation.initial?.enabled;
@@ -41,8 +41,8 @@ function projectPreparationClient(initial) {
   }
   const safe={...packet};delete safe.nonce;q('#raw').textContent=JSON.stringify(safe,null,2);
  }
- async function refresh(){try{const response=await fetch('/__foundation/manager/project-state',{cache:'no-store'});if(!response.ok)throw Error();uncertain=false;show(await response.json());q('#connection').textContent='';}catch{q('#connection').textContent='连接中断，保留最后核实结果；不会自动重复提交。恢复连接后刷新状态。';}}
- form.addEventListener('submit',async e=>{e.preventDefault();if(busy)return;busy=true;form.querySelectorAll('button').forEach(b=>b.disabled=true);q('#flow-status').textContent='正在提交请求';
+ async function refresh(){try{const response=await fetch('/__foundation/manager/project-state',{cache:'no-store'});if(!response.ok)throw Error();const packet=await response.json();if(packet.session?.operationTargets?.project!==current.session.operationTargets?.project||packet.session?.installationRoot!==current.session.installationRoot)throw Error('项目身份不符');uncertain=false;show(packet);q('#connection').textContent='';}catch{q('#connection').textContent='连接中断，保留最后核实结果；不会自动重复提交。恢复连接后刷新状态。';}}
+ form.addEventListener('submit',async e=>{e.preventDefault();if(busy||uncertain)return;busy=true;form.querySelectorAll('button').forEach(b=>b.disabled=true);q('#flow-status').textContent='正在提交请求';
   try{const response=await fetch('/__foundation/manager/confirm',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({managerNonce:current.nonce,action:e.submitter.value})});const result=await response.json();if(!response.ok)q('#project-error').textContent=result.message||result.code;await refresh();}catch{uncertain=true;q('#connection').textContent='提交结果待核实。请刷新状态，不要重复提交。';}finally{busy=false;show(current);form.querySelectorAll('button').forEach(b=>b.disabled=uncertain);}});
  show(initial);if(typeof EventSource!=='undefined'){const events=new EventSource('/__foundation/manager/events?session-id='+encodeURIComponent(initial.session.sessionId));events.onmessage=event=>{try{const packet=JSON.parse(event.data);if(packet.session?.sessionId===current.session.sessionId)show(packet);}catch{q('#connection').textContent='实时状态待核实，请刷新状态。';}};window.addEventListener('pagehide',()=>events.close(),{once:true});}
  async function poll(){if(stopped)return;await refresh();if(!stopped)setTimeout(poll,750);}poll();window.addEventListener('pagehide',()=>stopped=true,{once:true});

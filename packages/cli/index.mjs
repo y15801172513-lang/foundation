@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import {runInstalledMaintenance} from './installed-maintenance.mjs';
 import {synchronizeProject, inspectProjectSync, analyzeProjectSources, verifyProjectDefinition, prepareProjectSemanticReview, submitProjectSemanticReview} from '../core/workspace-host.mjs';
 import {analyzeSources} from '../core/workspace-host.mjs';
 import {openOrReuseWorkbench} from '../core/workspace-host.mjs';
@@ -225,8 +226,9 @@ export function runCli(args = process.argv.slice(2), output = console) {
   if (authority.mode === 'platform-installed-runtime' && command !== '--help' && command !== '--foundation-health') {
     readInstallationScope(authority.installRoot, {cwd: process.cwd(), project: option(args, '--project')});
   }
+  if (command === 'maintenance') return runInstalledMaintenance({authority,args,output});
   if (command === 'rules') return output.log(JSON.stringify(readCurrentFoundationRules({installationRoot: option(args, '--root'), project: option(args, '--project')}), null, 2));
-  if (command === '--help') output.log(conversationHelp());
+  if (command === '--help') output.log(conversationHelp()+'\n随包维护：maintenance status|uninstall --install-id <身份>；maintenance update --install-id <身份> --candidate <核验材料>；maintenance resume --install-id <身份> [--operation-id <查询列出的操作>]；可用 --binding <注册记录> 核验身份。');
   if (command === '--help') output.log('单页内部通道：--journey-channel（仅 install 或 manager open-manager；需要私有 IPC 绑定，不提供确认命令）');
   if (command === 'workbench') {
     return openOrReuseWorkbench({installationRoot:option(args,'--root'),project:option(args,'--project'),createServer:createInstalledWorkbenchServer}).then(record=>output.log(JSON.stringify(record)),error=>{output.error(`错误：工作台启动失败（${error.message}）`);process.exitCode=1;});
@@ -269,5 +271,5 @@ export function runCli(args = process.argv.slice(2), output = console) {
 
 const invokedPath = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : '';
 if (import.meta.url === invokedPath || fileURLToPath(import.meta.url) === path.resolve(process.argv[1] || '')) {
-  try { if(process.argv.includes('--journey-channel')) await receiveJourneyTransport(); runCli(); } catch (error) { console.error(error?.toJSON ? JSON.stringify(error.toJSON(), null, 2) : `错误：${error.message}`); process.exitCode = 1; }
+  try { if(process.argv.includes('--journey-channel')) await receiveJourneyTransport(); await runCli(); } catch (error) { console.error(error?.toJSON ? JSON.stringify(error.toJSON(), null, 2) : `错误：${error.message}`); process.exitCode = 1; }
 }

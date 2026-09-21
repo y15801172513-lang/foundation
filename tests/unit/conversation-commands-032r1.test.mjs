@@ -7,8 +7,8 @@ import {parseCliInvocation} from '../../packages/cli/command-contract.mjs';
 import {createInstalledWorkbenchServer} from '../../apps/management-center/src/server/center-server.mjs';
 
 test('032R1 one catalog, six conversation-only intents, help independent of installation', () => {
-  assert.deepEqual(conversationCommands.map(c=>c.id), ['help','open','status','update','connect','uninstall']);
-  assert.equal(new Set(conversationCommands.map(c=>c.alias)).size,6);
+  assert.deepEqual(conversationCommands.map(c=>c.id), ['help','open','status','update','connect','disable','revoke','maintenance-status','uninstall']);
+  assert.equal(new Set(conversationCommands.map(c=>c.alias)).size,9);
   for(const c of conversationCommands) for(const key of ['chinese','alias','purpose','prerequisite','confirmation','route']) assert.ok(c[key]);
   assert.match(conversationHelp(),/不是终端 fd/);
   assert.equal(conversationCommands.find(c=>c.id==='open').route,'workbench open --root');

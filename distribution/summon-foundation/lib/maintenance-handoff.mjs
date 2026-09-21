@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {isDeepStrictEqual} from 'node:util';
-import {plainPath} from './acquire.mjs';
+import {plainPath} from './local-path.mjs';
 import {installedClient,observePlan} from './manager-step.mjs';
 import {followSelectedSkill} from './skill-handoff.mjs';
 

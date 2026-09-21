@@ -47,6 +47,9 @@ Foundation 帮助直接在对话输出，不打开 HTML。正常同义表达可�
 | Foundation 状态 | fd status | 读取真实版本、位置、健康及 Skill/项目状态；未知不猜 | 已验证安装身份；项目只检查明确选定的目录 | 不需要 |
 | 更新 Foundation | fd update | 核验发行后准备手动更新计划，保留用户数据 | 已验证当前安装与目标发行；先解释获取缓存及写入权限 | 必须本人确认精确更新计划 |
 | 接入当前项目 | fd connect | 先确认实际项目及支持条件，再准备独立接入计划 | 已验证安装及精确项目；既有事实不覆盖，未确认默认不接入 | 必须本人单独确认项目接入计划 |
+| 停用当前项目的 Foundation | fd disable | 停止本项目管理与持续同步，保留源码、规则、事实和备份 | 明确项目并核验其当前接入身份 | 必须本人确认项目停用计划 |
+| 撤销项目持续同步 | fd revoke | 仅撤销持续同步；关闭页面不会撤销，打开也不自动恢复 | 明确项目并核验当前持续授权 | 必须本人确认撤销计划 |
+| 查看或继续 Foundation 维护 | fd maintenance | 查询独立维护记录；明确继续时只为剩余动作创建新计划 | 核验安装位置与 installId；原进程已结束 | 查询无需确认；剩余写入需新精确确认 |
 | 卸载 Foundation | fd uninstall | 展示属于 Foundation 的删除范围、保留项及残留，不清空目录 | 重新核验安装身份；已注册 Skill 先单独核对文件后解除 | 必须本人确认精确卸载计划 |
 <!-- foundation-command-catalog:end -->
 
@@ -54,7 +57,7 @@ Foundation 本地管理器：AI 不能 durable decline、accept 或 reopen。AI 
 
 打开 Foundation 用当前稳定入口 workbench open --root <已核验根>，可附加用户选定且已启用项目的 --project；这是唯一原工作台，不是生命周期临时页或开发预览。完整维护、可选 Skill 接入/刷新和安全卸载按当前 lifecycle-guide.md，不根据旧副本猜内部参数。
 
-更新和卸载由已核验的 summon 维护入口组织必要接续；具体版本与参数从当前 lifecycle-guide.md 读取。不要额外发起同一 Skill 的材料/注册命令替产品续接。程序完成但所选 Skill 待确认不是整体完成；跟进同次 npm 结果直到明确终态。恢复必须由用户明确发起，只核实并准备未完成项的新确认，不重放旧批准。
+先用注册位置线索核验 installed current 与 installId，再读取 manager inspect 的 supportedLifecycleOptions.maintenance。声明 installed-maintenance/1 时，用该安装 bin/foundation-kit 的 maintenance status / uninstall / update / resume，始终传 --install-id <已核验身份>；更新没有现成候选时按下文交接到可信获取入口，有现成材料才传 --candidate <已核验候选>；恢复先查询汇合首装获取与独立维护记录；仅一个未完成操作时直接 resume，多个时用 --operation-id <查询列出的操作> 选择，不要求用户找 --record 路径。随包运行时不依赖系统 Node/npm/summon，卸载不下载材料。具体获取和旧版兼容边界从当前 lifecycle-guide.md 读取。不要额外发起同一 Skill 的材料/注册命令替产品续接。程序完成但所选 Skill 待确认不是整体完成；跟进同次 npm 结果直到明确终态。恢复必须由用户明确发起，只核实并准备未完成项的新确认，不重放旧批准。
 
 若获取入口的基础环境不能安全启动页面，先按固定发行的安装说明在对话披露专用环境位置、来源与保留方式，另取批准后准备；不安装全局依赖、不改用户 PATH、不尝试旧 Node 前置页面。已安装程序仍用随包运行时，缺下载工具不应阻断卸载或已验证计划的确认。页面启动后所有生命周期确认留在同一页面；环境批准不授权安装、注册或项目启用。
 
@@ -77,3 +80,8 @@ HTML、心跳或 npm 不能唤醒已结束的 Codex 任务。平台/用户中断
 047 接续按当前规则的自动结构整理与身份核对章节执行；sync 的 coverage/semanticPending/nextStep 未闭环不能作为制作成功。标准 preview-bridge 只从当前受校验产品载荷取得，不猜协议；普通结构预览与独立资产能力分别验收。
 
 047R3：制作入口按已绑定用户规则调用普通 project sync，跨轮未验收变化由程序保留；需要身份连续性时在编辑前登记 begin/finish 意图。能力缺失保持只读待更新，不回退到手填通过。
+
+
+0.2.19 维护入口：稳定 `bin/foundation-kit maintenance status --binding <注册生成的 foundation-installation.json>` 只读核验注册线索与当前安装身份，再汇合本账户固定获取缓存和独立维护目录。记录不是批准；明确继续时调用 `maintenance resume --install-id <核验身份>`，有歧义才选择 `--operation-id`。原进程仍活跃、原计划 pending/executing/consumed、安装身份变化均拒绝并发恢复。卸载后直接只读保存的操作记录和独立卸载回执，不启动已删程序，不自动重装 Skill。
+
+自然更新使用经正式说明核验的 npm 获取入口 `summon foundation --update --root <已核验安装根>`；可选 `--version` 固定目标，否则先查询正式发行并固定版本。获取器负责可信下载与同页更新/Skill 接续，不要求用户预先提供 candidate。安装内 `maintenance update` 无 candidate 时返回获取环境交接说明；离线或无可信获取环境时明确停在获取条件，不能宣称更新完成，不能裸运行不核验的 npx。旧正式入口的参数以其自身帮助为准。新版离线卸载不依赖 npm 获取器。上述能力要求 Foundation 0.2.19 与 npm 0.1.13；旧正式载荷不因说明变化获得这些能力。

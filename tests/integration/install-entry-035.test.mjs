@@ -59,7 +59,13 @@ for (const scenario of ['skipped','selected','reject-registration','unknown-skil
       if(scenario==='reject-registration'){
         assert(installed.sessions.some(s=>s.operation==='register'&&s.action==='cancel-no-change'));
         const before=fs.readFileSync(destination+'/state/current.json');
-        const resumed=spawn(process.execPath,['--import',work+'/register.mjs',new URL(entry).pathname,'foundation','--resume',last.resultFile],{cwd:work,env:{...process.env,PATH:'',NODE_OPTIONS:'',TMPDIR:work}});
+        const installedCurrent=JSON.parse(before);
+        fs.writeFileSync(work+'/skill-child.mjs',fs.readFileSync(work+'/skill-child.mjs','utf8').replace("throw Error('fixture rejects non-installed launcher')","return[c,a]"));
+        fs.writeFileSync(work+'/account-loader.mjs',fs.readFileSync(work+'/account-loader.mjs','utf8').replace('const r=await n(s,c);',"if(c.parentURL?.endsWith('/packages/cli/index.mjs')&&s==='node:child_process')return{url:new URL('./skill-child.mjs',import.meta.url).href,shortCircuit:true};const r=await n(s,c);"));
+        const installedArgs=['--import',work+'/account-register.mjs',destination+'/'+installedCurrent.entrypoint];
+        const discovered=spawnSync(destination+'/'+installedCurrent.runtimePath,[...installedArgs,'maintenance','status','--install-id',installedCurrent.identity.installId],{cwd:work,env:{...process.env,PATH:'',NODE_OPTIONS:'',TMPDIR:work},encoding:'utf8'});
+        assert.equal(discovered.status,0,discovered.stderr);assert.equal(JSON.parse(discovered.stdout).operations[0].operationId,last.operationId);assert.match(JSON.parse(discovered.stdout).operations[0].remainingActions.join(' '),/Skill/);
+        const resumed=spawn(destination+'/'+installedCurrent.runtimePath,[...installedArgs,'maintenance','resume','--install-id',installedCurrent.identity.installId],{cwd:work,env:{...process.env,PATH:'',NODE_OPTIONS:'',TMPDIR:work}});
         let text='',errors='';resumed.stdout.on('data',b=>{text+=b;fs.writeFileSync(work+'/resume.stdout.log',text)});resumed.stderr.on('data',b=>{errors+=b;fs.writeFileSync(work+'/resume.stderr.log',errors)});
         const ended=new Promise(r=>resumed.once('close',code=>r(code)));
         try{const page=await waitPage(()=>text,resumed,'FOUNDATION_SINGLE_PAGE'),recovered=await drive(page.url);assert.equal(await ended,0,text+errors);assert.equal(recovered.record.state,'completed');assert.equal(recovered.sessions.length,1);assert.equal(recovered.sessions[0].operation,'register');assert(!installed.sessions.some(s=>s.sessionId===recovered.sessions[0].sessionId));assert.deepEqual(fs.readFileSync(destination+'/state/current.json'),before);assert(fs.existsSync(home+'/.agents/skills/ai-product-foundation-kit/SKILL.md'));}finally{if(resumed.exitCode===null)resumed.kill('SIGTERM');await ended;}

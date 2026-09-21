@@ -16,7 +16,7 @@ export function parseSummonArgs(args){
   if(seen.has('--status')){if(!result.status||seen.size!==1)fail('结果查询需要非空路径且不能与其他操作组合');return result;}
   if(seen.has('--resume')){if(!result.resume||seen.size!==1)fail('恢复需要单一结果路径，不接受新目标或额外操作');return result;}
   if(result.update||result.uninstall){
-    if(result.update&&result.uninstall||!result.root||result.inspect||result.acquire||result.prepare||result.destination||result.uninstall&&result.version||result.update&&!result.version)fail('维护需要单一动作、明确 --root；更新还需要固定 --version');
+    if(result.update&&result.uninstall||!result.root||result.inspect||result.acquire||result.prepare||result.destination||result.uninstall&&result.version)fail('维护需要单一动作、明确 --root；更新可用 --version 指定目标，否则查询并固定最新正式版本');
     return result;
   }
   if(result.root)fail('--root 仅用于明确的更新或卸载');

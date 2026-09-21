@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import {plainPath} from './acquire.mjs';
+import {plainPath} from './local-path.mjs';
 
 export function classifyEntryEnvironment({platform,arch,nodeVersion,tools}){
   const [major,minor]=String(nodeVersion||'').split('.').map(Number);

@@ -40,9 +40,10 @@ test('C10 completed alone never proves program success or starts selected Skill'
 
 test('039 maintenance arguments are exclusive and preserve required explicit targets',()=>{
   assert.equal(parseSummonArgs(['foundation','--update','--root','/example/Folder','--version','0.2.11']).prepare,false);
+  assert.equal(parseSummonArgs(['foundation','--update','--root','/example/Folder']).update,true);
   assert.equal(parseSummonArgs(['foundation','--uninstall','--root','/example/Folder']).uninstall,true);
   assert.equal(parseSummonArgs(['foundation','--resume','/example/result.json']).resume,'/example/result.json');
-  for(const args of [['--update'],['--uninstall'],['--root','/a'],['--update','--root','/a'],['--uninstall','--root','/a','--version','0.2.11'],['--resume','/a','--uninstall'],['--update','--uninstall','--root','/a','--version','0.2.11']])assert.throws(()=>parseSummonArgs(['foundation',...args]));
+  for(const args of [['--update'],['--uninstall'],['--root','/a'],['--uninstall','--root','/a','--version','0.2.11'],['--resume','/a','--uninstall'],['--update','--uninstall','--root','/a','--version','0.2.11']])assert.throws(()=>parseSummonArgs(['foundation',...args]));
 });
 
 test('039 download reports binary units and only proven denominators',()=>{
