@@ -32,7 +32,7 @@ test('038 source only is not delivery; confirmed batch materialization binds dig
   assert.deepEqual(read(root,'.foundation/facts/pages.json'),before);assert.equal(check().state,'sync-pending');
   const document=materialized(batch(root));assert.equal(derived.actions[0].documents[0].sha256,sha256(document.content));assert.equal(JSON.parse(document.content).items[0].implementationSha256,changes(root)[0].sha256);
   fs.writeFileSync(path.join(root,document.path),document.content); // unit materialization, not production apply
-  assert.equal(check().state,'consistent');
+  assert.equal(check().state,'sync-pending');assert.equal(check().deliveryReady,false);assert(!check().issues.some(issue=>['SOURCE_NOT_REGISTERED','SOURCE_STALE'].includes(issue.code)));
   assert.equal(inspectProjectDeliveryFiles({project:root,changes:changes(root),requirePreview:true}).state,'sync-pending');
   fs.appendFileSync(path.join(root,'home.html'),'edited');assert(check().issues.some(x=>x.code==='SOURCE_STALE'));assert.equal(check().state,'sync-pending');
   const old=changes(root);fs.appendFileSync(path.join(root,'home.html'),'again');assert(inspectProjectDeliveryFiles({project:root,changes:old}).issues.some(x=>x.code==='CHANGE_INPUT_STALE'));
@@ -46,7 +46,7 @@ test('038 rename removes only exact records, preserves source, rejects dangling 
   payload.documents[0].removes=['page_home'];payload.documents[0].upserts[0].id='page_renamed';payload.documents[0].upserts[0].implementationMapping='renamed.html';
   const fixed=deriveClosedHandlerBinding({operation:'asset-facts-batch',project:root,handlerPayload:payload});
   const final=materialized(payload);assert.equal(fixed.actions[0].documents[0].sha256,sha256(final.content));assert.deepEqual(fixed.deletes,[]);fs.writeFileSync(path.join(root,final.path),final.content);
-  assert.equal(inspectProjectDeliveryFiles({project:root,changes:[{path:'home.html',sha256:null},...payload.sources]}).state,'consistent');assert(fs.existsSync(path.join(root,'renamed.html')));
+  const renamed=inspectProjectDeliveryFiles({project:root,changes:[{path:'home.html',sha256:null},...payload.sources]});assert.equal(renamed.state,'sync-pending');assert.equal(renamed.deliveryReady,false);assert(!renamed.issues.some(issue=>issue.code==='SOURCE_STALE'));assert(fs.existsSync(path.join(root,'renamed.html')));
   assert.throws(()=>inspectProjectDeliveryFiles({project:root,changes:[{path:'../outside',sha256:null}]}));
   payload.documents[0].expectedSha256=sha256(read(root,'.foundation/facts/pages.json'));payload.documents[0].removes=['missing'];assert.throws(()=>deriveClosedHandlerBinding({operation:'asset-facts-batch',project:root,handlerPayload:payload}));
 });

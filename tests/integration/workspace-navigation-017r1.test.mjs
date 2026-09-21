@@ -64,14 +64,14 @@ test('顶栏左侧显示当前项目名称，右侧统一导航在三种工作�
   const outbound = [];
   iframeWindow.postMessage = (message, origin) => outbound.push({message, origin});
   await act(async () => window.dispatchEvent(new dom.window.MessageEvent('message', {origin: window.location.origin, source: iframeWindow, data: {namespace: 'ai-product-foundation-preview', kind: 'preview-ready', pageId: 'page_events_home', route: '/events', object: inspected}})));
-  assert.deepEqual(outbound.at(-1)?.message, {namespace: 'ai-product-foundation-preview', kind: 'theme-changed', theme: 'light'});
+  assert.deepEqual(outbound.at(-1)?.message, {namespace: 'ai-product-foundation-preview', projectId:facts.foundation.projectId, revision:undefined, channel:outbound.at(-1).message.channel, identityHistory:[], kind:'theme-changed', theme:'light'});
   await act(async () => themeButton.dispatchEvent(new MouseEvent('click', {bubbles: true})));
   assert.equal(document.documentElement.classList.contains('dark'), true);
   assert.equal(document.documentElement.dataset.theme, 'dark');
   assert.equal(window.localStorage.getItem('ai-product-foundation-theme'), 'dark');
   assert.equal(themeButton.getAttribute('aria-label'), '切换到亮模式');
   assert.equal(themeButton.getAttribute('aria-pressed'), 'true');
-  assert.deepEqual(outbound.at(-1)?.message, {namespace: 'ai-product-foundation-preview', kind: 'theme-changed', theme: 'dark'});
+  assert.deepEqual(outbound.at(-1)?.message, {namespace: 'ai-product-foundation-preview', projectId:facts.foundation.projectId, revision:undefined, channel:outbound.at(-1).message.channel, identityHistory:[], kind:'theme-changed', theme:'dark'});
   const objectContextTab = [...container.querySelectorAll('[role="tab"]')].find((tab) => tab.textContent === '检查对象');
   await act(async () => objectContextTab.dispatchEvent(new MouseEvent('click', {bubbles: true})));
   const mainTreeItem = [...container.querySelectorAll('[data-inspector-tree-item]')].find((item) => item.textContent.includes('main'));

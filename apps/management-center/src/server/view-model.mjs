@@ -1,3 +1,4 @@
+import {projectObjectRelations} from '@foundation/core';
 import {previewPublicConfig, productVersion, projectAssets, projectGovernance, relationsVersion} from '@foundation/core';
 
 export function buildViewModel(data, previewConfig) {
@@ -12,5 +13,5 @@ export function buildViewModel(data, previewConfig) {
     const route=routes.find(route=>route.path===asset.previewRoute) || routes[0];
     return route?[[scenario.id,route.path]]:[];
   }))}));
-  return {synchronization: data.synchronization || null,foundationKit: {productVersion: productVersion(), versionAuthority: 'foundation-kit.json#/product/version'}, project: {...data.foundation,deliveryAssessment:data.delivery?.assessment || null}, delivery: data.delivery || null, pages, relations, relationsVersion: relationsVersion(data.relations), components, assets, governance: projectGovernance(data.foundation), changes: data.changes.items, interactions: data.interactions.items, motions: data.motions.items, tokens: data['design-tokens'].items, figma: data.figma.items, entryPage, preview: previewPublicConfig(previewConfig)};
+  return {synchronization: data.synchronization || null,foundationKit: {productVersion: productVersion(), versionAuthority: 'foundation-kit.json#/product/version'}, project: {...data.foundation,deliveryAssessment:data.delivery?.assessment || null}, delivery: data.delivery || null, pages, relations, objectRelations:projectObjectRelations(data),objectIdentities:data.delivery?.objectIdentities || [], relationsVersion: relationsVersion(data.relations), components, assets, governance: projectGovernance(data.foundation), changes: data.changes.items, interactions: data.interactions.items, motions: data.motions.items, tokens: data['design-tokens'].items, figma: data.figma.items, entryPage, preview: previewPublicConfig(previewConfig)};
 }

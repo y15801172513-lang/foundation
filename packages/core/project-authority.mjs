@@ -700,7 +700,7 @@ export function createProjectMutationPlan({operation, project, installationRoot,
   const authority = assertProjectMutationAuthority(target, {installationRoot: context.root, capability: operation});
   if (operation === 'project-rules-adopt' && handlerPayload?.installationRoot !== context.root) throw new LifecycleError('PROJECT_HANDLER_BINDING_MISMATCH', '规则采用必须绑定同一安装', {stage: 'project-mutation-plan'});
   if(operation==='asset-facts-batch'){
-    const proposed={};for(const kind of ['components','changes']){const file=path.join(target,'.foundation/facts',kind+'.json');const existing=fs.existsSync(file)?readJson(file):{items:[]};proposed[kind]={items:[...existing.items,...(handlerPayload?.documents?.find(d=>d.kind===kind)?.upserts || [])]};}
+    const proposed={project:handlerPayload?.roundTransition?.content};for(const kind of ['pages','components','changes']){const file=path.join(target,'.foundation/facts',kind+'.json');const existing=fs.existsSync(file)?readJson(file):{items:[]};proposed[kind]={items:[...existing.items,...(handlerPayload?.documents?.find(d=>d.kind===kind)?.upserts || [])]};}
     const required=requiredFactCapabilities(proposed);if(required.length){const rules=readCurrentFoundationRules({installationRoot:context.root,project:target});if(required.some(capability=>!rules.factCapabilities.includes(capability)))throw new LifecycleError('FACT_CAPABILITY_REQUIRED','当前运行时不支持新事实合同；保持只读，禁止旧运行时写入',{stage:'project-mutation-plan'});}
   }
   const handler = deriveClosedHandlerBinding({operation, project: target, handlerPayload});

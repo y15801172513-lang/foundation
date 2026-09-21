@@ -42,8 +42,9 @@ test('资产详情顺序、真实预览、能力筛选和 selection 暂停策略
   const container = document.createElement('div'); document.body.append(container); const root = createRoot(container);
   await act(async () => root.render(createElement(AssetManagementWorkspace, {model, selectedAsset, assetRecord, assetRawText: contextPlainText(assetRecord), onSelectAsset() {}, onCopyAsset() {}})));
   const detail = container.querySelector('.asset-detail-pane');
-  const ordered = ['.mode-heading', '.asset-preview', '.context-data-view', '.asset-technical'].map((selector) => [...detail.children].indexOf(detail.querySelector(selector)));
-  assert.deepEqual(ordered, [0, 1, 2, 3]);
+  const ordered = ['.mode-heading', '[data-delivery-assessment]', '.asset-preview', '.context-data-view', '.asset-technical'].map((selector) => [...detail.children].indexOf(detail.querySelector(selector)));
+  assert.deepEqual(ordered, [0, 1, 2, 3, 4]);
+  assert.equal(detail.querySelector('[data-delivery-assessment]').getAttribute('data-delivery-assessment'), 'pending');
   assert.equal(detail.querySelector('[data-slot="tabs-list"]').getAttribute('data-variant'), 'default');
   assert.equal(detail.querySelector('details'), null);
   assert.equal(detail.querySelector('.asset-usage'), null);

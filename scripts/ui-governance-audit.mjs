@@ -1,4 +1,4 @@
-import {readdir, readFile, writeFile, mkdir} from 'node:fs/promises';
+import {readdir, readFile, writeFile, mkdir, stat} from 'node:fs/promises';
 import {extname, relative, resolve, dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -6,7 +6,7 @@ import {FOUNDATION_UI_POLICY} from '../packages/core/ui-policy.mjs';
 import {MANAGEMENT_CENTER_UI_PROFILE} from '../apps/management-center/src/foundation-ui-profile.mjs';
 
 const repositoryRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const sourceRoots = ['apps/management-center/src', 'examples/foundation-events/src'];
+const sourceRoots = ['apps/management-center/src', 'examples/foundation-events/src', 'packages/core/preview-bridge.mjs'];
 const sourceExtensions = new Set(['.css', '.js', '.jsx', '.mjs', '.ts', '.tsx']);
 const uiPrimitiveSegment = '/components/ui/';
 const contentRoles = ['PageTitle', 'PanelTitle', 'SectionTitle', 'ImportantText', 'ContentDescription', 'MetadataText', 'CodeText'];
@@ -41,6 +41,7 @@ for (const exception of MANAGEMENT_CENTER_UI_PROFILE.approvedExceptions) {
 
 async function collectFiles(root) {
   const absoluteRoot = resolve(repositoryRoot, root);
+  if ((await stat(absoluteRoot)).isFile()) return [absoluteRoot];
   const result = [];
   async function visit(directory) {
     for (const entry of await readdir(directory, {withFileTypes: true})) {

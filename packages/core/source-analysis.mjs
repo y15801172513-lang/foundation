@@ -4,12 +4,12 @@ import crypto from 'node:crypto';
 import {createRequire} from 'node:module';
 import {Worker} from 'node:worker_threads';
 
-export const analyzerVersion = 'foundation-source/1.1.0;ts-morph/26.0.0;typescript/5.8.3';
+export const analyzerVersion = 'foundation-source/1.2.0;ts-morph/26.0.0;typescript/5.8.3';
 const hash = value => crypto.createHash('sha256').update(value).digest('hex');
 const jobs = new Map();
 const caches = new Map();
 const skipped = new Set(['node_modules', '.git', '.tmp', '.foundation', 'dist', 'build']);
-const sourcePattern = /\.[cm]?[jt]sx?$/u;
+const sourcePattern = /\.(?:[cm]?[jt]sx?|html)$/u;
 
 function safeFile(root, relative) {
   if (typeof relative !== 'string' || path.isAbsolute(relative) || relative.includes('\\') || relative.split('/').some(p => !p || p === '..' || p === '.')) throw new Error('源码分析路径必须为精确项目相对路径');
@@ -89,6 +89,7 @@ export function analyzeSourcesInWorker(options) {
   const present = new Set(input.files.map(x=>`/project/${x.path}`));
   for (const source of graph.getSourceFiles()) if (!present.has(source.getFilePath())) graph.removeSourceFile(source);
   for (const file of input.files) {
+    if(file.path.endsWith('.html'))continue; // HTML bytes participate in identity, not the TS declaration graph.
     const existing = graph.getSourceFile(`/project/${file.path}`);
     if (!existing) graph.createSourceFile(`/project/${file.path}`, file.text);
     else if (existing.getFullText() !== file.text) existing.replaceWithText(file.text);

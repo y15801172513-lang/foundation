@@ -17,7 +17,7 @@ import {projectGovernance} from '../../packages/core/assets.mjs';
 import {sha256} from '../../packages/core/install-contract.mjs';
 
 test('037 actual candidate rules consumer, confirmed adoption, rollback, overrides, tamper and disabled refusal', () => {
-  const root=makeTempDirectory('037-rules-delivery-'),built=buildRepositoryCandidateForTest();
+  const root=makeTempDirectory('037-rules-delivery-'),built=process.env.FOUNDATION_047_CANDIDATE?{candidate:fs.realpathSync(process.env.FOUNDATION_047_CANDIDATE)}:buildRepositoryCandidateForTest();
   const manifest=JSON.parse(fs.readFileSync(path.join(built.candidate,'manifest.json')));
   const installationRoot=path.join(root,'installed');
   const candidate={path:built.candidate,manifestHash:manifest.candidateHash,runtimeHash:manifest.files.find(file=>file.path===manifest.runtime.path).sha256,bytes:manifest.totalBytes,version:manifest.productVersion};

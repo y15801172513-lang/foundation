@@ -32,7 +32,7 @@ export const MANAGEMENT_CENTER_UI_PROFILE = Object.freeze({
     {
       id: 'preview-inspector-overlay-color',
       scope: 'preview inspection overlay',
-      locations: ['examples/foundation-events/src/bridge.mjs'],
+      locations: ['packages/core/preview-bridge.mjs'],
       values: ['#2563eb', 'rgb(37 99 235/.08)', 'padding:3px 6px', 'font-size:11px'],
       reason: 'The isolated iframe inspection overlay must match the existing selection blue without importing the Management Center stylesheet.',
       evidence: ['browser inspector selection and hover contract'],

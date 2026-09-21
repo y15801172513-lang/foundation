@@ -44,7 +44,7 @@ class WorkspaceChunkBoundary extends Component {
 
 export function WorkspaceApp() {
   const [model,setModel]=useState(initialModel);
-  const channel=useMemo(()=>globalThis.crypto.randomUUID(),[model.revision]);
+  const channel=useMemo(()=>globalThis.crypto.randomUUID(),[model.resourceRevision || model.revision]);
   const [updateMessage,setUpdateMessage]=useState('');
   useEffect(()=>{
     if(!model.revision)return undefined;
@@ -79,6 +79,7 @@ export function WorkspaceApp() {
   const [inspector, setInspector] = useState({active: false, phase: 'inactive', object: null});
   const [defaultInspectedObject, setDefaultInspectedObject] = useState(null);
   const iframeRef = useRef(null);
+  const boundRevision=useRef(model.revision);
   const themeRef = useRef(theme);
   const inspectorRef = useRef(inspector);
   const workspaceModelRef = useRef(workspaceModel);
@@ -94,9 +95,10 @@ export function WorkspaceApp() {
   const pageContext = contextPlainText(pageContextRecord);
   const componentContext = contextPlainText(componentContextRecord);
   const assetContext = contextPlainText(assetContextRecord);
-  const postToPreview = (message) => iframeRef.current?.contentWindow?.postMessage({namespace: 'ai-product-foundation-preview', projectId:workspaceModelRef.current.preview.projectId,revision:workspaceModelRef.current.preview.revision,channel:workspaceModelRef.current.preview.channel,...message}, window.location.origin);
+  const postToPreview = (message) => iframeRef.current?.contentWindow?.postMessage({namespace: 'ai-product-foundation-preview', projectId:workspaceModelRef.current.preview.projectId,revision:workspaceModelRef.current.preview.revision,channel:workspaceModelRef.current.preview.channel,identityHistory:(workspaceModelRef.current.objectIdentities || []).map(identity=>({...identity,persistentId:identity.objectId,generation:identity.incarnation})),...message}, window.location.origin);
 
   useEffect(() => { inspectorRef.current = inspector; workspaceModelRef.current = workspaceModel; }, [inspector, workspaceModel]);
+  useEffect(()=>{const previous=boundRevision.current;boundRevision.current=model.revision;if(previous&&previous!==model.revision){setDefaultInspectedObject(null);postToPreview({kind:'snapshot-rebound',fromRevision:previous,nextRevision:model.revision});postToPreview({kind:'preview-status-request'});const selected=inspectorRef.current.object;if(selected?.locator){setInspector(current=>({...current,phase:current.active?'hover':'inactive',object:null}));postToPreview({kind:'inspect-navigate',locator:selected.locator});}}},[model.revision]);
 
   useEffect(() => {
     themeRef.current = theme;
@@ -150,6 +152,7 @@ export function WorkspaceApp() {
     postToPreview({kind: 'inspect-navigate', ...navigation});
   };
   const onPreviewLoad = (route) => {
+    postToPreview({kind:'preview-status-request'});
     setBridge({label: `已加载 · ${route}`, route, connected: false});
     setDefaultInspectedObject(null);
     setInspector((current) => ({...current, phase: current.active ? 'hover' : 'inactive', object: null}));

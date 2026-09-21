@@ -12,6 +12,7 @@ import {classifyProcessOwner, observeProcessFingerprint} from './process-owner.m
 import {finishConfirmedUpdateInputs} from './update-input-inventory.mjs';
 import {verifyInstallationScope} from './installation-scope.mjs';
 import {requiredFactCapabilities} from './asset-model.mjs';
+import {FACT_FILES} from './facts.mjs';
 import {
   acquisitionNetworkDisconnected,
   currentRuntimeIdentity,
@@ -397,8 +398,9 @@ function assertRetainedProjectCapabilities(root,appRoot) {
     const stat=fs.statSync(project);
     if(fs.realpathSync(project)!==project||record.projectIdentity?.device!==String(stat.dev)||record.projectIdentity?.inode!==String(stat.ino))throw new LifecycleError('PROJECT_COMPATIBILITY_UNKNOWN','保留项目身份已变化；不能证明降级兼容');
     const facts={};
-    for(const kind of ['components','changes']){const file=path.join(project,'.foundation/facts',kind+'.json');if(fs.existsSync(file)){if(fs.realpathSync(file)!==file)throw new LifecycleError('PROJECT_COMPATIBILITY_UNKNOWN','保留事实路径不安全');facts[kind]=readJson(file);}}
-    if(requiredFactCapabilities(facts).some(required=>!descriptor.factCapabilities?.includes(required)))throw new LifecycleError('PROJECT_DOWNGRADE_INCOMPATIBLE','保留项目使用 component-delivery/1；目标运行时缺少该能力，拒绝受管降级',{stage:'compatibility'});
+    for(const kind of FACT_FILES){const file=path.join(project,'.foundation/facts',kind+'.json');if(fs.existsSync(file)){if(fs.realpathSync(file)!==file)throw new LifecycleError('PROJECT_COMPATIBILITY_UNKNOWN','保留事实路径不安全');facts[kind]=readJson(file);}}
+    const missing=requiredFactCapabilities(facts).filter(required=>!descriptor.factCapabilities?.includes(required));
+    if(missing.length)throw new LifecycleError('PROJECT_DOWNGRADE_INCOMPATIBLE',`目标运行时缺少保留项目所需能力 ${missing.join('、')}，拒绝受管降级`,{stage:'compatibility'});
   }
 }
 

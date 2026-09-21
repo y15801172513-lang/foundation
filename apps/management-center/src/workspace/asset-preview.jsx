@@ -50,9 +50,12 @@ export function AssetPreview({asset,assets=[],selection=null,onSelectionChange=n
   const [variant, setVariant] = useState(defaultVariant);
   const activeVariant = variants.includes(variant) ? variant : defaultVariant;
   const [attempt, setAttempt] = useState(0);
-  const channel = useMemo(channelToken, [asset?.assetId, activeVariant, revision, scenario?.id, stateName, variantKey, attempt]);
+  const displayRevision=useMemo(()=>revision,[asset?.resourceRevision || revision,asset?.assetId]);
+  const boundRevision=useRef(revision);
+  const channel = useMemo(channelToken, [asset?.assetId, activeVariant, asset?.resourceRevision || revision, scenario?.id, stateName, variantKey, attempt]);
   const [previewState, setPreviewState] = useState({assetId: asset?.assetId, variant: activeVariant, channel, status: 'pending', message: ''});
   const iframeRef = useRef(null);
+  useEffect(()=>{const previous=boundRevision.current;boundRevision.current=revision;if(previous!==revision)iframeRef.current?.contentWindow?.postMessage({namespace:'ai-product-foundation-asset-preview',kind:'snapshot-rebound',projectId,assetId:asset?.assetId,channel,fromRevision:previous,nextRevision:revision},'*');},[revision,channel]);
   useEffect(() => { setVariant(defaultVariant); }, [asset?.assetId, defaultVariant]);
   useEffect(() => {
     if (contract.status !== 'iframe') return undefined;
@@ -66,10 +69,10 @@ export function AssetPreview({asset,assets=[],selection=null,onSelectionChange=n
     window.addEventListener('message', onMessage);
     iframeRef.current?.contentWindow?.postMessage(assetPreviewStatusRequest({assetId: asset.assetId, channel,projectId,revision}), '*');
     return () => { clearTimeout(timeout); window.removeEventListener('message', onMessage); };
-  }, [asset?.assetId, activeVariant, channel, contract.status]);
+  }, [asset?.assetId, activeVariant, channel, contract.status,revision]);
   const currentState = previewState.assetId === asset?.assetId && previewState.variant === activeVariant && previewState.channel === channel ? previewState : {status: 'pending', message: ''};
   const status = contract.status === 'iframe' ? currentState.status : contract.status;
-  const src = contract.status === 'iframe' ? `${contract.route}?${new URLSearchParams({foundationAssetPreview: '1', assetId: asset.assetId, variant: activeVariant, channel,scenarioId:scenario?.id || '',instanceId:scenario?.instanceId || selection?.instanceId || '',state:stateName,variantValues:variantKey,...(revision?{projectId,revision}:{})})}` : '';
+  const src = contract.status === 'iframe' ? `${contract.route}?${new URLSearchParams({foundationAssetPreview: '1', assetId: asset.assetId, variant: activeVariant, channel,scenarioId:scenario?.id || '',instanceId:scenario?.instanceId || selection?.instanceId || '',state:stateName,variantValues:variantKey,...(displayRevision?{projectId,revision:displayRevision}:{})})}` : '';
   const requestStatus = () => iframeRef.current?.contentWindow?.postMessage(assetPreviewStatusRequest({assetId: asset.assetId, channel,projectId,revision}), '*');
   const variantItems = variants.map((value) => ({value, label: value === defaultVariant ? `${value}（默认）` : value}));
   if(contract.status==='token')return <TokenSample asset={asset} assets={assets}/>;

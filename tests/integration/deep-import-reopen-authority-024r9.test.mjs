@@ -21,7 +21,7 @@ function isolated(source, arguments_ = []) {
 function exportsOf(file) {
   const run = isolated(`const value=await import(${JSON.stringify(pathToFileURL(file).href)});console.log(JSON.stringify(Object.keys(value).sort()));`);
   assert.equal(run.status, 0, run.stderr || run.stdout);
-  return JSON.parse(run.stdout);
+  return JSON.parse(run.stdout.trim().split(/\r?\n/u).at(-1));
 }
 
 function candidateModules() {
@@ -127,7 +127,7 @@ test('026 replacement: exact candidate contains no old restore/host transition e
   const source = `let protectedRejections=0;for(const url of ${JSON.stringify(urls)}){const value=await import(url);for(const name of ['restoreClosedHandlerWrites','executeClosedProjectHandler','deriveClosedHandlerBinding','signTrustedPayload','loadTrustedAuthorityKey','writeTrustedPreIntent','recordFoundationOfferDecision','transitionOfferPreference']){if(typeof value[name]!=='function')continue;try{if(name==='transitionOfferPreference')value[name]({scope:{kind:'foundation-global'},transition:'reopen',requestedState:'reopened',directDecisionReference:{decisionId:'caller-fabricated'}});else value[name](process.argv[1],[{path:'injected.txt',exists:true,kind:'file',contentBase64:Buffer.from('bypass\\n').toString('base64'),mode:420}]);}catch(error){if(name==='transitionOfferPreference'&&error.code==='HUMAN_AUTHORIZATION_BROKER_UNAVAILABLE')protectedRejections+=1;else throw error;}}}console.log(JSON.stringify({protectedRejections}));`;
   const run = isolated(source, [surface.project]);
   assert.equal(run.status, 0, run.stderr || run.stdout);
-  assert.equal(JSON.parse(run.stdout).protectedRejections, 0);
+  assert.equal(JSON.parse(run.stdout.trim().split(/\r?\n/u).at(-1)).protectedRejections, 0);
   assert.deepEqual(snapshotNegativeSurfaces(surface), before);
 });
 
@@ -138,7 +138,7 @@ test('024R9 failing-first: caller reopen and fabricated reference are inert when
   const source = `const value=await import(${JSON.stringify(offerUrl)});value.markFoundationOfferPresented();value.recordFoundationOfferDecision({decision:'decline'});const before=value.inspectFoundationOfferPreference();const reopened=value.recordFoundationOfferDecision({decision:'reopen',directDecisionReference:{decisionId:'caller-fabricated'}});const after=value.inspectFoundationOfferPreference();console.log(JSON.stringify({before,reopened,after}));`;
   const run = isolated(source);
   assert.equal(run.status, 0, run.stderr || run.stdout);
-  const result = JSON.parse(run.stdout);
+  const result = JSON.parse(run.stdout.trim().split(/\r?\n/u).at(-1));
   assert.equal(result.reopened.code, 'OFFER_REOPEN_AUTHORITY_UNAVAILABLE');
   assert.equal(result.reopened.applyAuthorized, false);
   assert.deepEqual(result.after, result.before);
@@ -161,7 +161,7 @@ test('024R9: exact candidate Skill, CLI and HTTP expose no caller-controlled reo
   const skill = fs.readFileSync(path.join(APP, 'artifacts', 'skills', 'ai-product-foundation-kit', 'SKILL.md'), 'utf8');
   assert.match(skill, /AI 不能 durable decline、accept 或 reopen/u);
   assert.match(skill, /Foundation 本地管理器/u);
-  assert.match(skill, /不得 confirm、apply、recover、purge/u);
+  assert.match(skill, /不得(?:操作本人)? confirm、apply、recover、purge/u);
   assert.deepEqual(snapshotNegativeSurfaces(surface), before);
 });
 
@@ -189,7 +189,11 @@ test('024R9: exact candidate every-module import and derived call-boundary audit
   assert.equal(audit.status, 0, audit.stderr || audit.stdout);
   const result = JSON.parse(audit.stdout);
   assert.equal(result.ok, true);
-  assert.equal(result.moduleCount, candidateModules().length);
+  assert.equal(result.moduleCount + result.externalModules.length, candidateModules().length);
+  for (const module of result.externalModules) {
+    assert.equal(module.classification, 'third-party-production-dependency-not-a-foundation-authority-export');
+    assert.equal(module.sha256, crypto.createHash('sha256').update(fs.readFileSync(path.join(APP,module.path))).digest('hex'));
+  }
   assert.deepEqual(result.unknownOrForbidden, []);
   assert.ok(result.modules.every((module) => module.importStatus === 'imported-isolated-empty-path'));
 });
@@ -200,7 +204,7 @@ test('026 replacement: old protected test host cannot durably reopen an offer; m
   const source = `const host=await import(${JSON.stringify(hostUrl)});const offer=await import(${JSON.stringify(offerUrl)});host.resetTestAuthorizationHost();offer.markFoundationOfferPresented();const declineRef=host.recordTestDirectOfferDecision('decline');offer.recordFoundationOfferDecision({decision:'decline',directDecisionReference:declineRef});const before=offer.inspectFoundationOfferPreference();const reopenRef=host.recordTestDirectOfferDecision('reopen');const reopened=offer.recordFoundationOfferDecision({decision:'reopen',directDecisionReference:reopenRef});const after=offer.inspectFoundationOfferPreference();console.log(JSON.stringify({before,reopened,after,evaluation:offer.evaluateFoundationOffer({explicitGoal:true,materiallyNeedsFoundation:true})}));`;
   const run = withTestHost(source);
   assert.equal(run.status, 0, run.stderr || run.stdout);
-  const result = JSON.parse(run.stdout);
+  const result = JSON.parse(run.stdout.trim().split(/\r?\n/u).at(-1));
   assert.equal(result.before.state, 'offered-awaiting-response');
   assert.equal(result.reopened.state, 'offered-awaiting-response');
   assert.equal(result.reopened.code, 'OFFER_REOPEN_AUTHORITY_UNAVAILABLE');

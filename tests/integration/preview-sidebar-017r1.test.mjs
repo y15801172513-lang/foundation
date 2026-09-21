@@ -115,7 +115,11 @@ test('预览侧栏无旧内容 Tabs、Select 和原始 Textarea，连续展示�
   assert.deepEqual(menuItems.map((item) => item.textContent), ['完整对象上下文', '身份与层级', '相关逻辑', '布局与样式', '使用、影响与缺口']);
   await act(async () => menuItems[1].dispatchEvent(new MouseEvent('click', {bubbles: true})));
   assert.match(copied, /Foundation 检查对象上下文 · 身份与层级/);
-  assert.match(copied, /object stable identity/);
+  assert.match(copied, /object identity/);
+  const locator=JSON.parse(copied.split('\n').find(line=>line.startsWith('object identity: ')).slice('object identity: '.length));
+  assert.equal(locator.kind,'temporary');
+  assert.equal(locator.persistentId,null);
+  assert.match(locator.scope,/cannot resolve after reload/);
   assert.doesNotMatch(copied, /outerHTML|computedStyle/i);
   await act(async () => root.unmount());
 });

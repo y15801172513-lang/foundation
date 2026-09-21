@@ -1,3 +1,7 @@
+import {planStaticPreview} from './static-preview-plan.mjs';
+import {prepareSourceScene} from './source-scene.mjs';
+import {captureProjectRoundInputs,inspectProjectRound,prepareRoundTransition} from './project-context-round.mjs';
+import {inspectProjectStructure,inspectStructureCoverage,attachObservedStructure} from './project-coverage.mjs';
 import {inspectSyncSources} from './source-inventory.mjs';
 export {inspectSyncSources} from './source-inventory.mjs';
 import crypto from 'node:crypto';
@@ -5,16 +9,25 @@ import {signTrustedPayload,verifyTrustedPayload} from './trusted-authority.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import {sha256, canonicalStringify, LifecycleError} from './install-contract.mjs';
-import {analyzeSources,inspectSourceInputIdentity} from './source-analysis.mjs';
+import {analyzeSources,analyzeSourcesInWorker,inspectSourceInputIdentity} from './source-analysis.mjs';
 import {realProject} from './path-boundary.mjs';
 import {readFacts, inspectProjectPreparation} from './facts.mjs';
 import {inspectProjectAuthority, createProjectMutationPlan, applyProjectMutationPlan, inspectProjectMutationRecovery, createProjectMutationRecoveryPlan, applyProjectMutationRecoveryPlan} from './project-authority.mjs';
 import {PROJECT_RULE_GUIDE} from './project-rules.mjs';
 import {readCurrentFoundationRules} from './rules-delivery.mjs';
-import {inspectProjectDeliveryFiles} from './project-delivery.mjs';
+import {inspectScopedRemovals,inspectProjectDeliveryFiles} from './project-delivery.mjs';
 import {resolveAssetBinding} from './asset-model.mjs';
 import {resolveProjectFile} from './path-boundary.mjs';
-import {evidenceInputFingerprint,evidenceSubjectFingerprint} from './evidence-impact.mjs';
+import {evidenceInputFingerprint,evidenceSubjectFingerprint,factImplementationInputs} from './evidence-impact.mjs';
+
+// Shared dependencies invalidate every registered consumer, while local inputs
+// affect only their owner. Unknown/unregistered usage still remains a coverage gap.
+export function inspectFactSourceImpact(record,sources) {
+  const current=new Map(sources.map(source=>[source.path,source.sha256]));
+  const edges=[{to:record.implementationMapping,sha256:record.implementationSha256},...factImplementationInputs(record)].filter(edge=>edge.to);
+  const changed=[...new Map(edges.filter(edge=>(current.get(edge.to) || null)!==(edge.sha256 || null)).map(edge=>[edge.to,{path:edge.to,previous:edge.sha256 || null,current:current.get(edge.to) || null}])).values()].sort((a,b)=>a.path.localeCompare(b.path));
+  return {state:changed.length?'pending':'unchanged',changed,fingerprint:sha256(canonicalStringify(changed))};
+}
 
 // Only built-in checks can obtain an execution receipt. Callers supply targets,
 // never callbacks, executable commands, claimed results or verifier identities.
@@ -22,11 +35,12 @@ export async function verifyProjectDefinition({project,installationRoot,entryRoo
   const observation=await analyzeProjectSources({project,installationRoot,entryRoots});
   const facts=readFacts(project),task=facts.changes.items.find(item=>item.id===taskId);
   const scope=task?.deliveryScope,requirement=scope?.items?.find(item=>item.requirementId===requirementId);
-  const asset=facts.components.items.find(item=>item.id===assetId);
-  if(scope?.schemaVersion!=='2.0.0'||!requirement?.factIds?.includes(assetId)||!asset?.assetModel)throw new Error('验证目标必须属于当前任务范围且具有定义绑定');
-  const inputs=(asset.assetModel.implementationInputs || []).map(edge=>({kind:edge.kind,path:edge.to,sha256:sha256(fs.readFileSync(resolveProjectFile(project,edge.to,'验证输入')))}));
-  const binding=resolveAssetBinding(facts,observation).find(item=>item.assetId===assetId);
-  const complete=binding?.definition?.coverage?.state==='proven-static'&&inputs.length>0&&(asset.assetModel.implementationInputs || []).every(edge=>edge.coverage==='complete');
+  const asset=[...facts.components.items,...facts.pages.items].find(item=>item.id===assetId);
+  if(scope?.schemaVersion!=='2.0.0'||!requirement?.factIds?.includes(assetId)||(!asset?.assetModel&&!asset?.sourceStructure))throw new Error('验证目标必须属于当前任务范围且具有定义绑定');
+  const inputs=factImplementationInputs(asset).map(edge=>({kind:edge.kind,path:edge.to,sha256:sha256(fs.readFileSync(resolveProjectFile(project,edge.to,'验证输入')))}));
+  const pageBound=!asset.assetModel && observation.inputs?.some(input=>input.path===asset.implementationMapping && input.sha256===asset.implementationSha256);
+  const binding=pageBound?{state:'bound',definition:{coverage:{state:'proven-static',scope:'exact-page-source-file-only',limitations:['HTML 结构与语义不由声明绑定证明']}}}:resolveAssetBinding(facts,observation).find(item=>item.assetId===assetId);
+  const complete=binding?.definition?.coverage?.state==='proven-static'&&inputs.length>0&&factImplementationInputs(asset).every(edge=>edge.coverage==='complete');
   const result=binding?.state!=='bound'?'failed':complete?'passed':'pending';
   const report={kind:'source-analysis',taskId,scopeRevision:scope.revision,scopeDigest:sha256(canonicalStringify(scope)),subjectDigest:evidenceSubjectFingerprint(asset),subject:{requirementId,definitionId:assetId},inputFingerprint:evidenceInputFingerprint(inputs),artifactDigest:observation.inputDigest,environment:{platform:process.platform,architecture:process.arch,node:process.versions.node},runnerVersion:observation.analyzerVersion,verifierVersion:'foundation-definition/1.1.0',checkIds:['definition-binding'],dimensions:['definition'],result,checks:[{id:'definition-binding',result,bindingState:binding?.state || 'unresolved'}],limitations:['只证明受控静态定义绑定，不证明语义、运行、布局或真人接受'],analysis:{inputDigest:observation.inputDigest,entryRoots,coverage:observation.coverage,subjectCoverage:binding?.definition?.coverage || null}};
   const current=inspectProjectAuthority(project,{installationRoot});
@@ -103,17 +117,26 @@ function recordAttempt(installationRoot, record) {
 }
 
 
+function currentMappedSources(project,facts){
+  const sources=inspectSyncSources(project),known=new Set(sources.map(input=>input.path));
+  for(const item of Object.values(facts).flatMap(document=>document?.items || []))for(const file of [item.implementationMapping,...factImplementationInputs(item).map(edge=>edge.to)])if(file&&!known.has(file))try{const bytes=fs.readFileSync(resolveProjectFile(project,file));sources.push({path:file,sha256:sha256(bytes)});known.add(file);}catch{}
+  return sources.sort((a,b)=>a.path.localeCompare(b.path));
+}
+
 export function inspectProjectSync({project, installationRoot}) {
   const authority = inspectProjectAuthority(project, {installationRoot});
   const authorization = authority.state === 'disabled' ? 'revoked' : authority.continuousSync?.state || 'not-granted';
   const preparation = inspectProjectPreparation(project);
   if (!preparation.factsReady) return {authorization, state:'pending', preparation, pending:preparation.errors, mutationPerformed:false};
-  const facts = readFacts(project), sources = inspectSyncSources(project);
+  const facts = readFacts(project), sources = currentMappedSources(project,facts);
   const records = Object.values(facts).flatMap(document => document?.items || []);
-  const pending = sources.filter(source => !records.some(item => item.implementationMapping === source.path && item.implementationSha256 === source.sha256));
+  const coverage=inspectStructureCoverage(facts,inspectProjectStructure(project));
+  const semanticPending=records.filter(item=>item.synchronization?.state==='pending');
+  const coveragePending=coverage.state!=='structurally-recorded'||semanticPending.length>0;
+  const pending = sources.filter(source => !records.some(item => item.implementationMapping === source.path && item.implementationSha256 === source.sha256 || item.sourceStructure?.inputs?.some(input=>input.path===source.path&&input.sha256===source.sha256)));
   const delivery = inspectProjectDeliveryFiles({project,installationRoot});
   const last = authority.projectId ? latestAttempt(installationRoot,authority.projectId) : null;
-  return {authorization, revision:authority.continuousSync?.revision || null, lastAttempt: last ? {attemptId:last.attemptId,state:last.state,error:last.error || null} : null, state: last && ['failed','conflict','executing'].includes(last.state) ? (last.state === 'executing' ? 'pending' : last.state) : last?.unresolvedAttempts?.length || pending.length || delivery.state !== 'consistent' ? 'pending' : 'latest', syncState: pending.length || delivery.state !== 'consistent' ? 'pending' : 'latest', acceptanceState:delivery.assessment?.aggregate || 'pending', pending, unresolvedAttempts:last?.unresolvedAttempts || [], delivery, mutationPerformed:false};
+  return {authorization, revision:authority.continuousSync?.revision || null, lastAttempt: last ? {attemptId:last.attemptId,state:last.state,error:last.error || null} : null, state: last && ['failed','conflict','executing'].includes(last.state) ? (last.state === 'executing' ? 'pending' : last.state) : last?.unresolvedAttempts?.length || pending.length || coveragePending || delivery.state !== 'consistent' ? 'pending' : 'latest', syncState: pending.length || coveragePending || delivery.state !== 'consistent' ? 'pending' : 'latest', coverage, semanticPending:semanticPending.map(item=>item.id), nextStep:coveragePending?'核对需求和实现结构，生成精确语义批次；文件候选不是制作完成':null, acceptanceState:delivery.assessment?.aggregate || 'pending', pending, unresolvedAttempts:last?.unresolvedAttempts || [], delivery, mutationPerformed:false};
 }
 
 export function continueProjectPreparation({project, installationRoot}) {
@@ -139,7 +162,16 @@ export function continueProjectPreparation({project, installationRoot}) {
   } catch (error) { return {ok:false,state:'failed',steps,error:{code:error.code || 'PROJECT_PREPARATION_FAILED',message:error.message},preserved:'前序已完成步骤与源码；下一次触发重读后接续'}; }
 }
 
-export function synchronizeProject({project, installationRoot, handlerPayload = null, trigger = 'task', now = Date.now()} = {}) {
+function settleProjectObservation({project,installationRoot,now}) {
+  const facts=readFacts(project),taskId=facts.project.contextLifecycle?.rounds?.find(round=>round.id===facts.project.contextLifecycle.currentRoundId)?.taskId || 'automatic';
+  const roundTransition=prepareRoundTransition({project,facts,taskId,action:'observe',installationRoot,now});
+  if(canonicalStringify(roundTransition.content)===canonicalStringify(facts.project))return false;
+  const plan=createProjectMutationPlan({operation:'asset-facts-batch',project,installationRoot,handlerPayload:{documents:[],sources:[],scope:'自动观察与精确验收归属；不是将同步当成接受',generatedAt:new Date(now).toISOString(),roundTransition},now});
+  if(!plan.continuousSyncRevision)throw new Error('观察提交前持续授权失效');
+  applyProjectMutationPlan({plan,now});return true;
+}
+
+export function synchronizeProject({project, installationRoot, handlerPayload = null, roundAction = null, taskId = null, identityActions = [], trigger = 'task', now = Date.now()} = {}) {
   const authority = inspectProjectAuthority(project,{installationRoot});
   if (authority.state === 'enabled' && authority.continuousSync?.state === 'active') {
     const recovery = inspectProjectMutationRecovery(project);
@@ -166,42 +198,76 @@ export function synchronizeProject({project, installationRoot, handlerPayload = 
   if (initial.authorization !== 'active') return {...initial, state:'stopped', summary:'持续同步未授予或已撤销；打开不恢复', mutationPerformed:false};
   const prepared = handlerPayload && fs.existsSync(path.join(project,'.foundation/identity/rules-adoption.json')) ? {ok:true,steps:[],state:'verified-existing-adoption'} : continueProjectPreparation({project,installationRoot});
   if (!prepared.ok) return {authorization:'active',state:'failed',prepared,mutationPerformed:prepared.steps.some(step => step.state === 'completed')};
-  let attempt = null;
+  let attempt = null,committed=false;
   try {
     let payload = handlerPayload;
+    if(roundAction==='begin')payload={documents:[],sources:[],scope:'程序保存任务开始基线',generatedAt:new Date(now).toISOString()};
     if (!payload) {
-      const facts = readFacts(project), sources = inspectSyncSources(project);
+      const facts = readFacts(project), sources = currentMappedSources(project,facts);
       const documents = [], generatedAt = new Date(now).toISOString();
+      const inventory=inspectProjectStructure(project),discovered=new Map(),previewPlans=[],discoveryProblems=new Map();
+      const previewFile=path.join(project,'.foundation/preview.json'),preview=fs.existsSync(previewFile)?JSON.parse(fs.readFileSync(previewFile)):{};
+      for(const source of sources){
+        const objects=inventory.objects.filter(object=>object.file===source.path);
+        const existingPage=facts.pages.items.find(item=>item.implementationMapping===source.path);
+        if(!objects.length||facts.components.items.some(item=>item.implementationMapping===source.path)||existingPage&&existingPage.source!=='source-analysis')continue;
+        const id='source_'+sha256(source.path).slice(0,20),common={id,name:objects[0].name || source.path,status:'draft',source:'source-analysis',verificationStatus:'unverified',implementationMapping:source.path,updatedAt:generatedAt};
+        if(source.path.endsWith('.html'))try{
+          if(!authority.continuousSync.includePreview||preview.mode!=='local-static')throw new Error('本项目尚未授权或配置静态预览');
+          const plan=planStaticPreview({project,file:source.path,id:existingPage?.id || id,config:{...preview,routes:[...(preview.routes || []),...previewPlans.flatMap(item=>item.routes)],assets:[...(preview.assets || []),...previewPlans.flatMap(item=>item.assets)]}});
+          for(const input of plan.inputs){const index=sources.findIndex(source=>source.path===input.path);if(index<0)sources.push(input);else sources[index]=input;}
+          const navigationUnknown=plan.inputs.some(input=>/\.(?:html|[cm]?js)$/u.test(input.path)&&/(?:\bhref\s*=|\blocation\b|\b(?:navigate|router|history)\b|\bwindow\s*\.\s*open\s*\()/iu.test(fs.readFileSync(resolveProjectFile(project,input.path),'utf8')));
+          const navigationApplicability=existingPage?.navigationApplicability?.producer!=='foundation-static-preview/1'&&existingPage?.navigationApplicability?existingPage.navigationApplicability:navigationUnknown?{state:'unknown',source:source.path,reason:'存在导航或动态路由线索，需核实',producer:'foundation-static-preview/1'}:{state:'not-applicable',source:source.path+'#L1-L1',reason:'当前受支持静态资源闭包未声明链接或路由操作；仍需当前语义核验',producer:'foundation-static-preview/1'};
+          const record={...common,...existingPage,navigationApplicability,entry:existingPage?.entry??(!facts.pages.items.length&&![...discovered.values()].some(item=>item.kind==='pages')),preview:plan.route,previewBinding:{producer:'foundation-static-preview/1',inputs:plan.inputs},states:existingPage?.states || ['default'],synchronization:{state:'source-derived',reason:'自动提取结构、确定路由与标准桥接；需求意义与运行仍待核'}};
+          const changed=!existingPage||existingPage.implementationSha256!==source.sha256||canonicalStringify(existingPage.previewBinding)!==canonicalStringify(record.previewBinding)||existingPage.preview!==record.preview;
+          if(changed){discovered.set(source.path,{kind:'pages',record});previewPlans.push(plan);}
+        }catch(error){discoveryProblems.set(source.path,error.message);}
+        else if(/\.[jt]sx$/u.test(source.path)){
+          const observation=analyzeSourcesInWorker({project,entryRoots:[source.path]}),definitions=observation.definitions.filter(d=>d.file===source.path&&d.exports.length&&['function','variable'].includes(d.declarationKind));
+          // Multiple exported owners require explicit source ownership, never guess.
+          if(definitions.length===1){const d=definitions[0];discovered.set(source.path,{kind:'components',record:{...common,name:d.name,family:id,assetModel:{schemaVersion:'1.0.0',kind:'local',responsibility:'源码导出 '+d.name+'；业务职责待核',reuseScope:'local',binding:{file:d.file,export:d.exports[0],declarationKind:d.declarationKind,anchor:d.anchor,line:d.line},configuration:[],slots:[],variantAxes:[],states:[],previewScenarios:[{id:'definition',kind:'definition',definitionId:id}],implementationInputs:observation.inputs.map(input=>({kind:'source',from:id,to:input.path,sha256:input.sha256,discovery:'source-analysis',coverage:observation.coverage.state==='complete'?'complete':'partial'}))},synchronization:{state:'source-derived',reason:'自动提取当前导出及结构；业务意义与运行待核'}}});}
+        }
+      }
+      for(const item of discovered.values())if(item.record.assetModel)try{const asset=item.record,scene=prepareSourceScene({project,facts:{...facts,components:{items:[...facts.components.items,...[...discovered.values()].filter(item=>item.kind==='components').map(item=>item.record)]}},asset,scenario:asset.assetModel.previewScenarios[0]});asset.assetModel.implementationInputs=scene.plan.inputs.map(input=>({kind:'source',from:asset.id,to:input.path,sha256:input.sha256,discovery:'source-scene-closure',coverage:'complete'}));}catch{}
       for (const kind of ['pages','components','interactions','motions','changes','design-tokens','relations']) {
-        const upserts = [];
+        const upserts = [...discovered.values()].filter(item=>item.kind===kind).map(item=>item.record);
         for (const item of facts[kind].items) {
+          if(discovered.get(item.implementationMapping)?.kind===kind)continue;
           const source = sources.find(source => source.path === item.implementationMapping);
-          if (source && source.sha256 !== item.implementationSha256) upserts.push({...item,verificationStatus:'unverified',synchronization:{state:'pending',reason:'外部源码变化，语义与运行待核',trigger}});
+          const impact=inspectFactSourceImpact(item,sources);
+          if(item.implementationMapping&&!source)continue; // Missing bytes stay readable and pending; never fabricate a source claim.
+          if (item.implementationMapping && impact.changed.length && !(item.synchronization?.state==='pending' && item.synchronization.impactFingerprint===impact.fingerprint || item.synchronization?.state==='pending' && impact.changed.every(change=>item.synchronization.changedInputs?.some(old=>old.path===change.path&&old.current===change.current)))) {
+            const derivable=source&&['pages','components'].includes(kind)&&(!item.sourceStructure?.semantics||item.sourceStructure.semantics.producer==='foundation-source-semantics/1');
+            upserts.push({...item,...(derivable&&item.assetModel?{assetModel:{...item.assetModel,implementationInputs:item.assetModel.implementationInputs.map(edge=>({...edge,sha256:sources.find(source=>source.path===edge.to)?.sha256 || edge.sha256}))}}:{}),verificationStatus:'unverified',synchronization:{state:derivable?'source-derived':'pending',observedSha256:source?.sha256 || null,impactFingerprint:impact.fingerprint,changedInputs:impact.changed,reason:derivable?'已按当前源码重新整理；语义接受与运行待核':source?'源码或共享依赖变化，语义与运行待核':'源码已删除，映射失效；保留原事实待核',trigger}});
+          }
         }
         if (kind === 'changes') for (const source of sources) {
-          const mapped = Object.values(facts).some(document => document?.items?.some(item => item.implementationMapping === source.path));
-          if (!mapped) upserts.push({id:`sync_candidate_${sha256(source.path).slice(0,20)}`,name:source.path,status:'draft',source:'source-discovery',verificationStatus:'unverified',implementationMapping:source.path,updatedAt:generatedAt,synchronization:{state:'pending',reason:'发现未登记源码；业务用途与任务范围待核',trigger}});
+          const mapped = Object.values(facts).some(document => document?.items?.some(item => item.implementationMapping === source.path || item.sourceStructure?.inputs?.some(input=>input.path===source.path)));
+          if (!mapped && !discovered.has(source.path) && ![...discovered.values()].some(item=>item.record.assetModel?.implementationInputs?.some(input=>input.to===source.path))) upserts.push({id:`sync_candidate_${sha256(source.path).slice(0,20)}`,name:source.path,status:'draft',source:'source-discovery',verificationStatus:'unverified',implementationMapping:source.path,updatedAt:generatedAt,synchronization:{state:'pending',reason:discoveryProblems.get(source.path) || '发现未登记源码；业务用途与任务范围待核',trigger}});
         }
         if (upserts.length) documents.push({kind,expectedSha256:sha256(fs.readFileSync(path.join(project,`.foundation/facts/${kind}.json`))),upserts});
       }
-      if (!documents.length) {
+      if (!documents.length && !roundAction) {
         if (previousAttempt && !interruptedCompleted && ['failed','conflict','executing'].includes(previousAttempt.state)) recordAttempt(installationRoot,{attemptId:`${Date.now()}-${crypto.randomUUID()}`,projectId:authority.projectId,project,revision:authority.continuousSync.revision,trigger,state:'completed',unresolvedAttempts,discovery:'current-inputs-no-change',completedAt:Date.now()});
-        return {...inspectProjectSync({project,installationRoot}),prepared,mutationPerformed:false};
+        const observed=settleProjectObservation({project,installationRoot,now});return {...inspectProjectSync({project,installationRoot}),prepared,mutationPerformed:observed};
       }
-      payload = {documents,sources,scope:'自动发现并登记源码变化；未知内容保留待核，不声明运行通过',generatedAt};
+      payload = {documents,sources,scope:'自动发现并登记源码变化；未知内容保留待核，不声明运行通过',generatedAt,...(previewPlans.length?{preview:{expectedSha256:sha256(fs.readFileSync(previewFile)),routes:previewPlans.flatMap(item=>item.routes),assets:[...new Map(previewPlans.flatMap(item=>item.assets).map(entry=>[entry.path,entry])).values()]}}:{})};
     }
+    payload=JSON.parse(JSON.stringify(attachObservedStructure(payload,inspectProjectStructure(project),readFacts(project))));
+    if(roundAction)payload.roundTransition=prepareRoundTransition({project,facts:readFacts(project),taskId,action:roundAction,identityActions,installationRoot,now});
     attempt = {attemptId:`${Date.now()}-${crypto.randomUUID()}`,projectId:authority.projectId,project,revision:authority.continuousSync.revision,unresolvedAttempts,payload,trigger,state:'executing',createdAt:Date.now()};
     recordAttempt(installationRoot,attempt);
     const plan = createProjectMutationPlan({operation:'asset-facts-batch',project,installationRoot,handlerPayload:payload,now});
     if (!plan.continuousSyncRevision) throw new LifecycleError('PROJECT_SYNC_AUTHORITY_REQUIRED','提交前持续授权失效');
     attempt = {...attempt,plan};
     recordAttempt(installationRoot,attempt);
-    const result = applyProjectMutationPlan({plan,now});
+    const result = applyProjectMutationPlan({plan,now});committed=true;
     recordAttempt(installationRoot,{...attempt,state:'completed',planId:plan.planId,planHash:plan.integrity.hash,completedAt:Date.now()});
+    settleProjectObservation({project,installationRoot,now});
     return {...inspectProjectSync({project,installationRoot}),planId:plan.planId,planHash:plan.integrity.hash,result,prepared,mutationPerformed:true};
   } catch (error) {
     if (attempt) recordAttempt(installationRoot,{...attempt,state:'failed',error:{code:error.code || 'PROJECT_SYNC_FAILED',message:error.message},failedAt:Date.now()});
-    return {authorization:inspectProjectAuthority(project,{installationRoot}).continuousSync?.state || 'not-granted',state:/CHANGED|CONFLICT|LOCK|DRIFT/u.test(error.code || '') ? 'conflict' : 'failed',pending:initial.pending, error:{code:error.code || 'PROJECT_SYNC_FAILED',message:error.message},summary:'源码保留；下次任务或打开时重新核对，不能视为同步最新',mutationPerformed:false};
+    return {authorization:inspectProjectAuthority(project,{installationRoot}).continuousSync?.state || 'not-granted',state:/CHANGED|CONFLICT|LOCK|DRIFT/u.test(error.code || '') ? 'conflict' : 'failed',pending:initial.pending, error:{code:error.code || 'PROJECT_SYNC_FAILED',message:error.message},summary:committed?'完整事实代已提交，但同步回读失败；保留待核':'源码保留；下次任务或打开时重新核对，不能视为同步最新',mutationPerformed:committed};
   }
 }
 
@@ -212,8 +278,9 @@ export function prepareProjectSemanticReview({project,installationRoot,taskId,as
   const rules=readCurrentFoundationRules({project,installationRoot});
   if(authority.state!=='enabled'||!authority.agreement||!rules.currentIdentityHash||!rules.factCapabilities?.includes('semantic-review/1'))throw new Error('语义核验需要当前已启用的项目权限与 semantic-review/1 能力');
   const facts=readFacts(project),task=facts.changes.items.find(t=>t.id===taskId),scope=task?.deliveryScope;
-  const requirement=scope?.items?.find(item=>item.requirementId===requirementId),asset=facts.components.items.find(a=>a.id===assetId);
-  if(scope?.schemaVersion!=='2.0.0'||!requirement?.factIds?.includes(assetId)||!asset?.assetModel)throw new Error('语义核验目标必须属于当前范围');
+  const requirement=scope?.items?.find(item=>item.requirementId===requirementId),asset=[...facts.components.items,...facts.pages.items].find(a=>a.id===assetId);
+  if(scope?.schemaVersion!=='2.0.0'||!requirement?.factIds?.includes(assetId)||(!asset?.assetModel&&!asset?.sourceStructure))throw new Error('语义核验目标必须属于当前范围');
+  if(requirement.removedInputs?.length&&!rules.factCapabilities.includes('deletion-review/1'))throw new Error('当前运行时缺少 deletion-review/1 能力');
   const sources=(scope.sourceRefs || []).map(source=>{
     if(source.kind==='unconfirmed-assumption')throw new Error('需求来源未确认，不能准备可信语义核验');
     const match=source.ref.match(/^(.+)#L([1-9][0-9]*)-L([1-9][0-9]*)$/u);
@@ -228,6 +295,10 @@ export function prepareProjectSemanticReview({project,installationRoot,taskId,as
   const delivery=inspectProjectDeliveryFiles({project,installationRoot});
   for(const entry of evidence)if(delivery.evidenceResults?.[entry.evidenceId]?.state!=='verified'||delivery.evidenceResults[entry.evidenceId].result!=='passed')throw new Error('语义核验的实现或运行证据未通过当前输入核验');
   const covered=[...new Set(requirement.factIds)].sort();
+  const inventory=inspectProjectStructure(project);
+  const structureCoverage=inspectStructureCoverage(facts,inventory);
+  if(structureCoverage.state!=='structurally-recorded')throw new Error('语义审阅前存在实现对象未登记或旧定位；先同步当前结构');
+  if(structureCoverage.semanticCoverage?.state==='pending')throw new Error('语义审阅前仍缺结构化事件、状态分支或关系；先同步有来源的语义模型');
   const checks=[
     {id:'requirements-implemented',dimension:'scope',expected:requirement.description,factIds:covered},
     {id:'changes-justified',dimension:'scope',expected:'实际变化逐项有当前需求依据；未增加范围外功能',factIds:[...new Set([...(task.affectedAssets || []),...(task.affectedPages || [])])].sort()},
@@ -235,11 +306,16 @@ export function prepareProjectSemanticReview({project,installationRoot,taskId,as
     {id:'failure-recovery',dimension:'content',expected:'核对需求要求的失败、空态与恢复；不适用须以需求和运行证据说明',factIds:covered},
     {id:'preserved-content',dimension:'content',expected:'核对局部修改不应改变的既有内容、二级页面与数据',factIds:covered},
   ];
+  for(const object of inventory.objects)checks.push({id:`structure_${sha256(object.key).slice(0,16)}`,dimension:'content',expected:`核对实现对象及需求依据：${JSON.stringify(object)}；说明名称、用途、状态与数据影响；静态推断未知不得填通过`,factIds:covered});
+  for(const obligation of inventory.obligations || [])checks.push({id:`semantic_${sha256(obligation.key).slice(0,16)}`,dimension:'content',expected:`核对实现分支及其结构化关系：${JSON.stringify(obligation)}`,factIds:covered});
+  const observation=captureProjectRoundInputs(project);
+  const removals=inspectScopedRemovals({project,facts,requirement,observation,round:inspectProjectRound(facts,observation)});
+  for(const removal of removals)checks.push({id:`removed_${sha256(removal.path).slice(0,16)}`,dimension:'scope',expected:`核对精确删除及当前需求依据：${JSON.stringify(removal)}；确认替代或保留能力、当前引用和运行证据`,factIds:covered,sourceRefIds:removal.sourceRefIds});
   const scoped=new Set(scope.items.flatMap(item=>item.factIds));
   if(checks.some(check=>!check.factIds.length)||checks[1].factIds.some(id=>!scoped.has(id)))throw new Error('实际变化存在范围外或未说明的对象');
-  const inputs=(asset.assetModel.implementationInputs || []).map(edge=>({kind:edge.kind,path:edge.to,sha256:sha256(fs.readFileSync(resolveProjectFile(project,edge.to,'语义实现输入')))}));
+  const inputs=factImplementationInputs(asset).map(edge=>({kind:edge.kind,path:edge.to,sha256:sha256(fs.readFileSync(resolveProjectFile(project,edge.to,'语义实现输入')))}));
   if(!inputs.length)throw new Error('语义核验缺实现输入');
-  const plan={schemaVersion:'1.0.0',purpose:'foundation-semantic-review',project:realProject(project),taskId,assetId,requirementId,scopeRevision:scope.revision,scopeDigest:sha256(canonicalStringify(scope)),subjectDigest:evidenceSubjectFingerprint(asset),sourceDigest:sha256(canonicalStringify(inspectSyncSources(project))),currentIdentityHash:rules.currentIdentityHash,authorityRevision:authority.continuousSync?.revision || null,inputs,sources,evidence,checks,implementation:covered.map(id=>Object.values(facts).flatMap(doc=>doc?.items || []).find(item=>item.id===id)).filter(Boolean)};
+  const plan={schemaVersion:'1.0.0',purpose:'foundation-semantic-review',project:realProject(project),taskId,assetId,requirementId,scopeRevision:scope.revision,scopeDigest:sha256(canonicalStringify(scope)),subjectDigest:evidenceSubjectFingerprint(asset),sourceDigest:sha256(canonicalStringify(inspectSyncSources(project))),currentIdentityHash:rules.currentIdentityHash,authorityRevision:authority.continuousSync?.revision || null,inputs,sources,evidence,checks,...(removals.length?{removals}:{}),structureInventory:inventory,implementation:covered.map(id=>Object.values(facts).flatMap(doc=>doc?.items || []).find(item=>item.id===id)).filter(Boolean)};
   // Exclude review evidence from the semantic input so persisting its own receipt
   // cannot invalidate it. Scope and the actual implementation remain bound.
   const planDigest=sha256(canonicalStringify(plan));
@@ -258,12 +334,12 @@ export async function submitProjectSemanticReview({project,installationRoot,prep
   if(new Set(review.checks.map(c=>c.id)).size!==plan.checks.length||review.checks.length!==plan.checks.length)throw new Error('语义检查遗漏或重复');
   const checks=plan.checks.map(expected=>{
     const check=review.checks.find(c=>c.id===expected.id);
-    if(!check||check.expected!==expected.expected||canonicalStringify([...check.coveredFactIds].sort())!==canonicalStringify(expected.factIds)||check.evidenceIds.some(id=>!knownEvidence.has(id))||check.sourceRefIds.some(id=>!knownSources.has(id)))throw new Error('语义审阅缺准确期望、引用或覆盖');
+    if(!check||check.expected!==expected.expected||canonicalStringify([...check.coveredFactIds].sort())!==canonicalStringify(expected.factIds)||check.evidenceIds.some(id=>!knownEvidence.has(id))||check.sourceRefIds.some(id=>!knownSources.has(id))||(expected.sourceRefIds || []).some(id=>!check.sourceRefIds.includes(id)))throw new Error('语义审阅缺准确期望、引用或覆盖');
     if(!check.evidenceIds.some(id=>plan.evidence.find(e=>e.evidenceId===id)?.kind==='browser-observation'))throw new Error('语义检查必须引用实际运行观察');
     return {...check,dimension:expected.dimension,result:check.judgment};
   });
   const result=checks.some(c=>c.result==='failed')?'failed':checks.some(c=>c.result==='pending')?'pending':'passed';
-  const report={kind:'semantic-review',taskId:plan.taskId,scopeRevision:plan.scopeRevision,scopeDigest:plan.scopeDigest,subjectDigest:plan.subjectDigest,sourceDigest:plan.sourceDigest,subject:{requirementId:plan.requirementId,definitionId:plan.assetId},inputFingerprint:evidenceInputFingerprint(plan.inputs),artifactDigest:plan.planDigest || fresh.planDigest,environment:{reviewKind:review.reviewer.kind,identityAuthentication:'self-reported-not-authenticated'},runnerVersion:'foundation-semantic-review/1.0.0',verifierVersion:'foundation-semantic-contract/1.0.0',checkIds:checks.map(c=>c.id),dimensions:['scope','content'],result,checks,reviewer:review.reviewer,semanticInputs:{sources:plan.sources,evidence:plan.evidence,currentIdentityHash:plan.currentIdentityHash,factIds:plan.implementation.map(item=>item.id),factsDigest:sha256(canonicalStringify(plan.implementation))},limitations:['语义判断由所列审阅者负责；收据只证明受控路径、引用覆盖和精确输入一致','审阅者名称为自述，不是身份认证；不证明真人接受']};
+  const report={kind:'semantic-review',taskId:plan.taskId,scopeRevision:plan.scopeRevision,scopeDigest:plan.scopeDigest,subjectDigest:plan.subjectDigest,sourceDigest:plan.sourceDigest,subject:{requirementId:plan.requirementId,definitionId:plan.assetId},inputFingerprint:evidenceInputFingerprint(plan.inputs),artifactDigest:plan.planDigest || fresh.planDigest,environment:{reviewKind:review.reviewer.kind,identityAuthentication:'self-reported-not-authenticated'},runnerVersion:'foundation-semantic-review/1.0.0',verifierVersion:'foundation-semantic-contract/2.0.0',structureDigest:plan.structureInventory.sourceDigest,checkIds:checks.map(c=>c.id),dimensions:['scope','content'],result,checks,reviewer:review.reviewer,semanticInputs:{...(plan.removals?.length?{removals:plan.removals}:{}),sources:plan.sources,evidence:plan.evidence,currentIdentityHash:plan.currentIdentityHash,factIds:plan.implementation.map(item=>item.id),factsDigest:sha256(canonicalStringify(plan.implementation))},limitations:['语义判断由所列审阅者负责；收据只证明受控路径、引用覆盖和精确输入一致','审阅者名称为自述，不是身份认证；不证明真人接受']};
   const run={purpose:'foundation-evidence-run',project:realProject(project),reportDigest:sha256(canonicalStringify(report))};
   const signed={...report,foundationReceipt:{...run,integrity:signTrustedPayload(run)}},reportText=JSON.stringify(signed,null,2)+'\n';
   return {report:signed,reportText,reportSha256:sha256(reportText),mutationPerformed:false};

@@ -2,15 +2,20 @@
 const list = value => Array.isArray(value) ? value : [];
 const text = value => typeof value === 'string' && value.trim().length > 0;
 const na = value => value?.state === 'not-applicable' && text(value.reason) && text(value.source);
-export function inspectContentIntegrity(facts = {}, {requireCoverage = false} = {}) {
+export function inspectContentIntegrity(facts = {}, {requireCoverage = false,activeTaskId=null,affectedIds=null} = {}) {
+  if(!activeTaskId) {
+    const current=list(facts.changes?.items).filter(change=>change.deliveryScope).sort((a,b)=>String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')) || b.id.localeCompare(a.id))[0];
+    if(current?.deliveryScope.schemaVersion==='2.0.0'){activeTaskId=current.id;affectedIds=[...(current.affectedAssets || []),...(current.affectedPages || []),...current.deliveryScope.items.flatMap(item=>item.factIds || [])];}
+  }
   const issues = [];
   const add = (object, field, state = 'missing') => issues.push({id: `content:${object.id || object.assetId || 'task'}:${field}:${state}`, objectId: object.id || object.assetId || 'task', field, state, impact: '本次内容交付未就绪', nextStep: `补充或复核 ${field}`, message: `${object.name || object.id || '任务'}：${field} ${state === 'missing' ? '尚未登记' : state}`});
   const rows = kind => list(facts[kind]?.items);
   const pages = rows('pages'), pageIds = new Set(pages.map(x => x.id));
   const all = Object.values(facts).flatMap(x => list(x?.items));
   const byId = new Map(all.map(x => [x.id, x]));
-  for (const item of all) if (item.synchronization?.state === 'pending') add(item, 'source-review', 'pending');
-  for (const kind of ['pages', 'components', 'interactions', 'motions']) for (const item of rows(kind)) {
+  const relevant=item=>!activeTaskId || item.id===activeTaskId || (affectedIds || []).includes(item.id);
+  for (const item of all.filter(relevant)) if (item.synchronization?.state === 'pending') add(item, 'source-review', 'pending');
+  for (const kind of ['pages', 'components', 'interactions', 'motions']) for (const item of rows(kind).filter(relevant)) {
     if (!text(item.name)) add(item, 'name');
     if (!text(item.implementationMapping || item.implementationPath)) add(item, 'implementationMapping');
     for (const state of ['missing', 'pending', 'conflicts']) for (const field of list(item[state])) add(item, field, state === 'conflicts' ? 'conflict' : state);
@@ -34,7 +39,7 @@ export function inspectContentIntegrity(facts = {}, {requireCoverage = false} = 
       for (const field of list(item.requiredRecoveryStates)) if (!text(item.recoveryStates?.[field])) add(item, `recoveryStates.${field}`);
     }
   }
-  const scopes = rows('changes').filter(x => x.deliveryScope);
+  const scopes = rows('changes').filter(x => x.deliveryScope && (!activeTaskId || x.id===activeTaskId));
   if (requireCoverage && !scopes.length) add({id: 'task'}, 'deliveryScope');
   for (const change of scopes) {
     const scope = change.deliveryScope;

@@ -1,3 +1,5 @@
+import {businessFact} from './project-revisions.mjs';
+import {verifyRoundTransition} from './project-context-round.mjs';
 import {inspectContentIntegrity} from './content-integrity.mjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -211,7 +213,7 @@ function writeAtomic(file, content, mode = undefined) {
 function normalizeAssetBatch(project, payload) {
   payload = structuredClone(payload);
   const kinds = ['pages', 'components', 'interactions', 'motions', 'changes', 'design-tokens', 'relations'];
-  if (!payload || Object.keys(payload).some(key => !['documents', 'sources', 'scope', 'generatedAt', 'preview','analysis'].includes(key)) || !Array.isArray(payload.documents) || !payload.documents.length || payload.documents.length > kinds.length || !Array.isArray(payload.sources) || typeof payload.scope !== 'string' || !payload.scope.trim() || payload.scope.length > 2000) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '资产批次需 documents、sources、精确 scope 和 generatedAt');
+  if (!payload || Object.keys(payload).some(key => !['documents', 'sources', 'scope', 'generatedAt', 'preview','analysis','roundTransition'].includes(key)) || !Array.isArray(payload.documents) || (!payload.documents.length && !payload.roundTransition) || payload.documents.length > kinds.length || !Array.isArray(payload.sources) || typeof payload.scope !== 'string' || !payload.scope.trim() || payload.scope.length > 2000) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '资产批次需 documents、sources、精确 scope 和 generatedAt');
   iso(payload.generatedAt, 'generatedAt');
   const seen = new Set();
   const sources = payload.sources.map(source => {
@@ -258,6 +260,12 @@ function normalizeAssetBatch(project, payload) {
       }
       const index = items.findIndex(existingItem => existingItem.id === item.id);
       const next = {...(index < 0 ? {} : items[index]), ...item, implementationSha256: sources.find(source => source.path === item.implementationMapping).sha256, updatedAt: payload.generatedAt};
+      if(index>=0) {
+        const withoutTime=record=>{const {updatedAt,...content}=record;return content;};
+        const semanticInputs=record=>record.sourceStructure?.semanticInputs?.length?canonicalStringify(record.sourceStructure.semanticInputs.map(({path,semanticSha256})=>({path,semanticSha256})).sort((a,b)=>a.path.localeCompare(b.path))):null;
+        const oldSemantic=semanticInputs(items[index]),newSemantic=semanticInputs(next);
+        if(canonicalStringify(withoutTime(next))===canonicalStringify(withoutTime(items[index])) || oldSemantic && oldSemantic===newSemantic && canonicalStringify(businessFact(next))===canonicalStringify(businessFact(items[index])))next.updatedAt=items[index].updatedAt;
+      }
       if (index < 0) items.push(next); else items[index] = next;
     }
     facts[document.kind] = {...existing, items};
@@ -292,6 +300,7 @@ function normalizeAssetBatch(project, payload) {
     if (new Set(paths).size !== paths.length) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '预览路由与资源路径重复');
     documents.push({path: '.foundation/preview.json', content: `${JSON.stringify(preview, null, 2)}\n`});
   }
+  if(payload.roundTransition){const transition=verifyRoundTransition(project,payload.roundTransition);facts.project=transition.content;documents.push({path:'.foundation/facts/project.json',content:JSON.stringify(transition.content,null,2)+'\n'});}
   const validation = validateFacts(facts, {projectRoot: project, previewConfig: preview});
   if (validation.length) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', `资产批次引用或格式无效：${validation.join('；')}`);
   const decisions=payload.documents.flatMap(document=>document.kind==='changes'?document.upserts.flatMap(item=>item.reuseDecisions || []):[]);
@@ -430,7 +439,7 @@ export function executeClosedProjectHandler(plan) {
     const prepared = normalizeAssetBatch(plan.project, binding.payload);
     for (const document of prepared.documents) {
       const target = safeTarget(plan.project,document.path);
-      const expected = document.path === '.foundation/preview.json' ? binding.payload.preview.expectedSha256 : binding.payload.documents.find(item=>document.path === `.foundation/facts/${item.kind}.json`).expectedSha256;
+      const expected = document.path === '.foundation/facts/project.json' && binding.payload.roundTransition ? binding.payload.roundTransition.expectedSha256 : document.path === '.foundation/preview.json' ? binding.payload.preview.expectedSha256 : binding.payload.documents.find(item=>document.path === `.foundation/facts/${item.kind}.json`).expectedSha256;
       if (sha256(fs.readFileSync(target)) !== expected) throw coded('PROJECT_HANDLER_BEFORE_STATE_CHANGED','提交时事实发生变化，保留未知修改');
       writeAtomic(target, document.content);
     }

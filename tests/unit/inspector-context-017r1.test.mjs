@@ -4,9 +4,11 @@ import {buildInspectorCopyPayload, buildInspectorTaskContext, enrichInspectorObj
 
 const object = {inspectorId: 'component:component_event_action:event_action_manage', name: '管理事件', role: 'button', componentId: 'component_event_action', instanceId: 'event_action_manage', pageId: 'page_events_home', path: ['main', 'header', 'button'], ancestorIds: ['dom:main', 'dom:header'], layout: {display: 'inline-flex', width: '120px'}, style: {fontSize: '14px', color: 'rgb(1, 2, 3)'}, relatedLogic: [{id: 'relation_manage', trigger: '管理事件', condition: null, from: 'page_events_home', to: 'page_events_manage'}], usageLocations: [{pageId: 'page_events_home', instanceId: 'event_action_manage'}], gaps: ['运行绑定待验证'], factsUpdatedAt: '2026-08-29T10:00:00.000Z'};
 
-test('自动选择的最外围内容仍按普通对象名称收敛相关逻辑', () => {
+test('047 最外围对象无明确绑定时不把名称相似当作相关逻辑', () => {
   const previewRoot = enrichInspectorObject({...object, name: 'Foundation 当前事件管理事件', role: 'div', componentId: null, instanceId: null, registeredComponent: false}, {pages: [{id: 'page_events_home', name: '当前事件'}], assets: [], relations: [{id: 'relation_enter', trigger: '返回首页', from: 'page_events_manage', to: 'page_events_home'}, {id: 'relation_leave', trigger: '管理事件', from: 'page_events_home', to: 'page_events_manage'}, {id: 'relation_other', trigger: '无关', from: 'page_other', to: 'page_else'}]});
-  assert.deepEqual(previewRoot.relatedLogic.map((item) => item.id), ['relation_leave']);
+  assert.deepEqual(previewRoot.relatedLogic, []);
+  assert.equal(previewRoot.relationState,'not-checked');
+  assert(previewRoot.gaps.length>0);
 });
 
 test('检查器任务上下文按 scope 收敛，排除完整 DOM、computed style 和无关 facts', () => {
@@ -26,7 +28,8 @@ test('对象复制五类主题共享定位信封，并排除无关主题事实',
   for (const payload of Object.values(payloads)) {
     assert.match(payload, /project stable identity: project_events/);
     assert.match(payload, /page: page_events_home; route=\/events/);
-    assert.match(payload, /object stable identity: component:component_event_action:event_action_manage/);
+    assert.match(payload, /object identity: .*"kind":"temporary"/);
+    assert.match(payload,/"handle":"component:component_event_action:event_action_manage"/);
     assert.match(payload, /required ancestor chain: dom:main > dom:header/);
     assert.match(payload, /facts version timestamp: 2026-08-29T10:00:00.000Z/);
   }

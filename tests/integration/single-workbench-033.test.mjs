@@ -33,6 +33,12 @@ test('033 installed empty workspace uses original content and no help bundle; re
   assert.equal(hashDirectory(installationRoot),before);
   const project=projectFixturePath(root,'明确项目');copyProjectFixture(EVENTS,project);
   assert.throws(()=>createInstalledWorkbenchServer({installationRoot,project}),/项目未接入/);
+  // This is a supported-format workbench fixture, not a migration of the
+  // historical event-specific format used by the read-only source example.
+  const legacyIdentity=path.join(project,'.foundation/foundation.json');
+  const fixtureIdentity=JSON.parse(fs.readFileSync(legacyIdentity));
+  fixtureIdentity.dataFormatVersion='0.1.1';
+  fs.writeFileSync(legacyIdentity,JSON.stringify(fixtureIdentity));
   enableProjectFixture(project,installationRoot);
   const projectBefore=hashDirectory(project);
   const selected=await start(t,{installationRoot,project});

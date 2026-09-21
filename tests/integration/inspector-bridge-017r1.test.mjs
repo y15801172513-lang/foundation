@@ -13,7 +13,7 @@ test('预览就绪消息把最外围预览内容作为默认检查对象', () =>
   assert.equal(ready.kind, 'preview-ready');
   assert.equal(ready.object.pageId, 'page_events_home');
   assert.equal(ready.object.role, 'div');
-  assert.match(ready.object.inspectorId, /^dom:current-document:session:\d+$/u);
+  assert.match(ready.object.inspectorId, /^dom:current-document:[a-f0-9-]{36}:\d+$/u);
   announcePreview({win:dom.window});assert.equal(ready.object.inspectorId,sent.at(-1).message.object.inspectorId);
   assert.equal(ready.object.tree[0].role, 'div');
   assert.ok(ready.object.tree[0].children.some((node) => node.role === 'main'));

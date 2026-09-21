@@ -57,7 +57,7 @@ routes.push(
   {path: ['project', 'submit-semantic-review'], options: {'--project':value(true),'--root':value(true),'--plan':value(true),'--review':value(true)}, positionals:{min:0,max:0}},
   {path: ['project', 'verify-definition'], options: {'--project': value(true), '--root': value(true), '--entry-roots-json': value(true),'--task-id':value(true),'--asset-id':value(true),'--requirement-id':value(true)}, positionals: {min: 0, max: 0}},
   {path: ['project', 'status'], options: {'--project': value(true), '--root': value()}, positionals: {min: 0, max: 0}},
-  {path: ['project', 'sync'], options: {'--project': value(true), '--root': value(true), '--payload': value()}, positionals: {min: 0, max: 0}},
+  {path: ['project', 'sync'], options: {'--project': value(true), '--root': value(true), '--payload': value(), '--round': value(), '--task-id': value(), '--identity-actions-json': value()}, positionals: {min: 0, max: 0}},
   {path: ['project', 'sync-status'], options: {'--project': value(true), '--root': value(true)}, positionals: {min: 0, max: 0}},
   {path: ['project', 'delivery-check'], options: {'--project': value(true), '--root': value(true), '--changes-json': value(true), '--require-preview': flag()}, positionals: {min: 0, max: 0}},
   {path: ['project', 'list'], options: {'--root': value(true)}, positionals: {min: 0, max: 0}},

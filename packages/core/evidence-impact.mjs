@@ -1,9 +1,11 @@
+import {captureProjectRoundInputs,projectRuntimeDigest} from './project-context-round.mjs';
+import {prepareSourceScene} from './source-scene.mjs';
 import fs from 'node:fs';
 import {readFacts} from './facts.mjs';
 import path from 'node:path';
 import os from 'node:os';
 import {sha256,canonicalStringify} from './install-contract.mjs';
-import {resolveProjectFile} from './path-boundary.mjs';
+import {assertProjectFileAbsent,resolveProjectFile} from './path-boundary.mjs';
 import {verifyTrustedPayload} from './trusted-authority.mjs';
 import {inspectSourceInputIdentity,analyzerVersion} from './source-analysis.mjs';
 
@@ -19,8 +21,11 @@ export function verifySourceObservation({project,observation,current=false}) {
 export function evidenceInputFingerprint(inputs) {
   return sha256(canonicalStringify(inputs));
 }
+export function factImplementationInputs(asset) {
+  return asset?.assetModel?.implementationInputs || (asset?.sourceStructure && asset.implementationMapping ? (asset.previewBinding?.inputs || [{path:asset.implementationMapping,sha256:asset.implementationSha256}]).map(input=>({kind:'source',from:asset.id,to:input.path,sha256:input.sha256,coverage:'complete',discovery:'exact-page-source'})) : []);
+}
 export function evidenceSubjectFingerprint(asset) {
-  return sha256(canonicalStringify({assetModel:asset?.assetModel || null,composes:asset?.composes || [],usageLocations:asset?.usageLocations || []}));
+  return sha256(canonicalStringify({id:asset?.id || null,implementationMapping:asset?.implementationMapping || null,sourceStructure:asset?.sourceStructure || null,assetModel:asset?.assetModel || null,composes:asset?.composes || [],usageLocations:asset?.usageLocations || []}));
 }
 
 // Typed dependency reachability is deliberately separate from product composes.
@@ -62,17 +67,24 @@ export function inspectEvidenceReport({project,installationRoot,evidence,expecte
     if(!verifyTrustedPayload(receipt,integrity) || receipt.purpose!=='foundation-evidence-run' || receipt.project!==fs.realpathSync(project) || receipt.reportDigest!==sha256(canonicalStringify(reportContent)))throw new Error('运行收据不可信或未绑定当前报告');
     if(evidence.kind==='human-acceptance')return {state:'external-unverified',reason:'工程执行收据不证明真人接受'};
     if(evidence.kind==='browser-observation') {
+      if(report.projectRuntimeDigest!==projectRuntimeDigest(captureProjectRoundInputs(project)))return {state:'stale',reason:'项目运行输入或配置已变化，旧证据不可接受'};
       if(!installationRoot)return {state:'unknown',reason:'缺当前安装上下文，无法核验浏览器构建代际'};
       if(report.currentFileSha256!==sha256(fs.readFileSync(path.join(installationRoot,'state/current.json')))||report.previewConfigSha256!==sha256(fs.readFileSync(resolveProjectFile(project,'.foundation/preview.json','预览配置'))))return {state:'stale',reason:'安装或预览配置已变化'};
+      const facts=readFacts(project),asset=facts.components.items.find(item=>item.id===evidence.subject?.definitionId);
+      if(asset?.assetModel){const scenario=asset.assetModel.previewScenarios?.find(item=>item.id===evidence.subject?.scenarioId);let scene;try{scene=prepareSourceScene({project,facts,asset,scenario});}catch(error){return {state:'unknown',reason:error.message};}if(!report.sourceScene || report.sourceScene.digest!==scene.digest)return {state:'stale',reason:'场景没有绑定当前真实导出和配置'};}
       for(const input of report.artifactFiles || [])if(sha256(fs.readFileSync(resolveProjectFile(project,input.path,'构建证据输入')))!==input.sha256)return {state:'stale',reason:'构建资源已变化'};
-      if(!report.artifactFiles?.length||evidence.runnerVersion!=='foundation-cdp/1.0.0'||evidence.verifierVersion!=='foundation-browser-checks/1.0.0')return {state:'unknown',reason:'构建输入或验证器缺失'};
+      if(!report.artifactFiles?.length||evidence.runnerVersion!=='foundation-cdp/1.0.0'||!['foundation-browser-checks/1.0.0','foundation-browser-checks/2.0.0'].includes(evidence.verifierVersion))return {state:'unknown',reason:'构建输入或验证器缺失'};
       if(report.environment.browserExecutable?.sha256!==sha256(fs.readFileSync(report.environment.browserExecutable?.path)))return {state:'stale',reason:'浏览器执行文件已变化'};
       if(report.environment.platform!==process.platform||report.environment.architecture!==process.arch||report.environment.osRelease!==os.release())return {state:'stale',reason:'运行环境已变化'};
     }
     if(evidence.kind==='semantic-review') {
-      if(evidence.runnerVersion!=='foundation-semantic-review/1.0.0'||evidence.verifierVersion!=='foundation-semantic-contract/1.0.0'||canonicalStringify(evidence.dimensions)!==canonicalStringify(['scope','content']))return {state:'unknown',reason:'语义核验合同或版本不受支持'};
+      if(evidence.runnerVersion!=='foundation-semantic-review/1.0.0'||!['foundation-semantic-contract/1.0.0','foundation-semantic-contract/2.0.0'].includes(evidence.verifierVersion)||canonicalStringify(evidence.dimensions)!==canonicalStringify(['scope','content']))return {state:'unknown',reason:'语义核验合同或版本不受支持'};
       if(!report.semanticInputs?.sources?.length||!report.semanticInputs?.evidence?.length)return {state:'invalid',reason:'语义收据缺需求与实现引用'};
       const currentFacts=readFacts(project);
+      for(const removal of report.semanticInputs.removals || []) {
+        if(Object.entries(currentFacts).filter(([kind])=>kind!=='changes').flatMap(([,doc])=>doc?.items || []).some(record=>record.implementationMapping===removal.path||factImplementationInputs(record).some(edge=>edge.to===removal.path)||(record.sourceStructure?.inputs || []).some(input=>input.path===removal.path)))return {state:'stale',reason:'已审阅删除的输入仍有当前事实引用'};
+        try{assertProjectFileAbsent(project,removal.path);}catch{return {state:'stale',reason:'已审阅删除的输入重新出现或路径不安全'};}
+      }
       const reviewedFacts=(report.semanticInputs.factIds || []).map(id=>Object.values(currentFacts).flatMap(doc=>doc?.items || []).find(item=>item.id===id)).filter(Boolean);
       if(!report.semanticInputs.factIds?.length||sha256(canonicalStringify(reviewedFacts))!==report.semanticInputs.factsDigest)return {state:'stale',reason:'审阅涉及的产品事实已变化'};
       for(const source of report.semanticInputs.sources)if(sha256(fs.readFileSync(resolveProjectFile(project,source.path,'语义需求来源')))!==source.sha256)return {state:'stale',reason:'语义需求原文已改变'};

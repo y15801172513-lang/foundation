@@ -11,7 +11,8 @@
     "./identity": "./identity.mjs",
     "./git-identity": "./git-identity.mjs",
     "./ui-policy": "./ui-policy.mjs",
-    "./content-integrity": "./content-integrity.mjs"
+    "./content-integrity": "./content-integrity.mjs",
+    "./object-identity": "./object-identity.mjs"
   },
   "dependencies": {
     "ts-morph": "26.0.0",

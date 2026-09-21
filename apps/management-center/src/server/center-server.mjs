@@ -1,14 +1,16 @@
-import {synchronizeProject,inspectSyncSources} from '../../../../packages/core/project-sync.mjs';
-import {applyProjectMutationPlan, inspectProjectAuthority} from '../../../../packages/core/project-authority.mjs';
+import {captureProjectRoundInputs, projectRuntimeDigest} from '@foundation/core';
+import {observeWorkbenchCapabilities} from './preview-capability-observer.mjs';
+import {synchronizeProject, inspectSyncSources} from '../../../../packages/core/workspace-host.mjs';
+import {applyProjectMutationPlan, inspectProjectAuthority} from '../../../../packages/core/workspace-host.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import {spawn} from 'node:child_process';
-import {connectDevtools,evaluate,cleanupBrowser} from '../../../../packages/core/browser-lifecycle.mjs';
-import {browserLaunchContract,waitForBrowserDevtoolsPort} from '../../../../packages/core/browser-launch-contract.mjs';
-import {signTrustedPayload} from '../../../../packages/core/trusted-authority.mjs';
-import {canonicalStringify,sha256} from '../../../../packages/core/install-contract.mjs';
-import {evidenceInputFingerprint,evidenceSubjectFingerprint} from '../../../../packages/core/evidence-impact.mjs';
-import {openOrReuseWorkbench} from '../../../../packages/core/workbench-runtime.mjs';
+import {connectDevtools, evaluate, cleanupBrowser} from '../../../../packages/core/workspace-host.mjs';
+import {browserLaunchContract, waitForBrowserDevtoolsPort} from '../../../../packages/core/workspace-host.mjs';
+import {signTrustedPayload} from '../../../../packages/core/workspace-host.mjs';
+import {canonicalStringify, sha256} from '@foundation/core';
+import {evidenceInputFingerprint, evidenceSubjectFingerprint, factImplementationInputs} from '@foundation/core';
+import {openOrReuseWorkbench} from '../../../../packages/core/workspace-host.mjs';
 import http from 'node:http';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -18,7 +20,7 @@ import {workspaceDocument, workspaceModelDocument} from './workspace-document.mj
 import {inspectLocalLifecycle} from '@foundation/core';
 import {WORKSPACE_ASSETS} from './workspace-assets.mjs';
 import {readProjectPolicyForDisplay, projectWithEffectivePolicy, validateFacts, inspectProjectDeliveryFiles} from '@foundation/core';
-import {createWorkbenchRuntime} from '../../../../packages/core/workbench-runtime.mjs';
+import {createWorkbenchRuntime} from '../../../../packages/core/workspace-host.mjs';
 import {prepareWorkbenchSnapshot} from './workbench-snapshot.mjs';
 
 const DIST_ASSETS = path.resolve(import.meta.dirname, '../../dist/assets');
@@ -305,8 +307,10 @@ export async function verifyInstalledProjectBrowser({installationRoot,project,ta
   const state=inspectLocalLifecycle({installationRoot,project,operationRequirement:'lifecycle-inspect'});
   if(state.bridge?.installationHealth?.code!=='FOUNDATION_HEALTHY'||!state.project?.agreement||state.project.state!=='enabled')throw new Error('浏览器验证需要当前安装和项目身份');
   const facts=readFacts(project),task=facts.changes.items.find(item=>item.id===taskId),scope=task?.deliveryScope;
-  const requirement=scope?.items?.find(item=>item.requirementId===requirementId),asset=facts.components.items.find(item=>item.id===assetId);
-  const scenario=asset?.assetModel?.previewScenarios?.find(item=>item.id===scenarioId);
+  const requirement=scope?.items?.find(item=>item.requirementId===requirementId),asset=[...facts.components.items,...facts.pages.items].find(item=>item.id===assetId);
+  const pageTarget=!asset?.assetModel && facts.pages.items.some(page=>page.id===assetId);
+  const pageRoute=pageTarget?JSON.parse(fs.readFileSync(path.join(project,'.foundation/preview.json'),'utf8')).routes.find(route=>route.path===asset.preview):null;
+  const scenario=pageTarget && scenarioId==='page' && pageRoute?{id:'page',definitionId:assetId,adapter:pageRoute.file}:asset?.assetModel?.previewScenarios?.find(item=>item.id===scenarioId);
   if(scope?.schemaVersion!=='2.0.0'||scope.platform!=='web'||!requirement?.factIds?.includes(assetId)||!scenario||scenario.definitionId!==assetId||!requirement.browserChecks?.length)throw new Error('浏览器验证需要当前 Web 范围、匹配的定义场景和明确行为检查');
   const browserPath=process.platform==='darwin'?'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome':process.platform==='linux'?['/usr/bin/google-chrome','/usr/bin/chromium'].find(file=>fs.existsSync(file)):null;
   if(!browserPath||!fs.existsSync(browserPath)||typeof WebSocket==='undefined')return {state:'blocked',reason:'当前环境没有可用的受控 Chrome/CDP 运行工具；未签发通过收据',mutationPerformed:false};
@@ -314,13 +318,14 @@ export async function verifyInstalledProjectBrowser({installationRoot,project,ta
   if(!viewports.length||viewports.length>10||viewports.some(viewport=>viewport.width>4096||viewport.height>8192))return {state:'blocked',reason:'需明确有限的实际验证视口；未改写设计尺寸',mutationPerformed:false};
   const before=prepareWorkbenchSnapshot({installationRoot,project});
   const sourceDigest=sha256(canonicalStringify(inspectSyncSources(project)));
-  const route=Object.entries(before.routeMap).find(([,file])=>file===scenario.adapter)?.[0];
-  if(!route)throw new Error('场景适配器没有精确预览路由，不能借用其他组件本体');
-  const inputs=(asset.assetModel.implementationInputs || []).map(edge=>{
+  const sourceScene=before.sourceScenes[assetId+':'+scenarioId];
+  const route=pageTarget?Object.entries(before.routeMap).find(([,file])=>file===scenario.adapter)?.[0]:sourceScene?.route;
+  if(!route)throw new Error('场景未由当前导出声明和固定配置生成；自定义回调不能证明组件本体');
+  const inputs=factImplementationInputs(asset).map(edge=>{
     const file=path.resolve(project,edge.to);if(!file.startsWith(project+path.sep)||fs.realpathSync(file)!==file)throw new Error('验证输入路径不安全');
     return {kind:edge.kind,path:edge.to,sha256:sha256(fs.readFileSync(file))};
   });
-  if(!inputs.length||asset.assetModel.implementationInputs.some(edge=>edge.coverage!=='complete'))return {state:'blocked',reason:'定义的运行依赖覆盖不完整，保留待核',mutationPerformed:false};
+  if(!inputs.length||factImplementationInputs(asset).some(edge=>edge.coverage!=='complete'))return {state:'blocked',reason:'定义的运行依赖覆盖不完整，保留待核',mutationPerformed:false};
   const runRoot=path.join(installationRoot,'state','evidence-runs',crypto.randomUUID());
   let cursor=installationRoot;
   for(const part of path.relative(installationRoot,runRoot).split(path.sep)){cursor=path.join(cursor,part);if(fs.existsSync(cursor)){if(fs.realpathSync(cursor)!==cursor||fs.lstatSync(cursor).isSymbolicLink())throw new Error('验证运行目录不安全');}else fs.mkdirSync(cursor,{mode:0o700});}
@@ -352,11 +357,14 @@ export async function verifyInstalledProjectBrowser({installationRoot,project,ta
       const screenshot=(await devtools.call('Page.captureScreenshot',{format:'png'})).data;
       observations.push({viewport,layout,screenshotSha256:sha256(Buffer.from(screenshot,'base64'))});
     }
+    const page=facts.pages.items.find(page=>requirement.factIds.includes(page.id)) || facts.pages.items.find(page=>(asset.usageLocations || []).some(usage=>usage.pageId===page.id));
+    const assetUrl=new URL(route,instance.url);for(const [key,value]of Object.entries({projectId:state.project.projectId,revision:before.revision,channel:crypto.randomUUID(),assetId,scenarioId,foundationAssetPreview:'1',instanceId:scenario.instanceId || '',state:scenario.state || '',variantValues:JSON.stringify(scenario.variantValues || {})}))assetUrl.searchParams.set(key,value);
+    checks.push(...await observeWorkbenchCapabilities({devtools,devtoolsPort:port,sourceSceneDigest:sourceScene?.renderDigest,workbenchUrl:instance.url,projectId:state.project.projectId,revision:before.revision,pageId:page?.id,assetUrl:pageTarget?null:assetUrl.href}));
     checks.push({id:'runtime-errors',result:devtools.events.some(event=>event.method==='Runtime.exceptionThrown')?'failed':'passed'});
     const after=prepareWorkbenchSnapshot({installationRoot,project});
     if(after.revision!==before.revision||sourceDigest!==sha256(canonicalStringify(inspectSyncSources(project))))throw new Error('运行期间输入、构建或任务发生变化；未签发证据');
     const result=checks.some(check=>check.result==='failed')?'failed':'passed';
-    const report={kind:'browser-observation',taskId,scopeRevision:scope.revision,scopeDigest:sha256(canonicalStringify(scope)),subjectDigest:evidenceSubjectFingerprint(asset),sourceDigest,subject:{definitionId:assetId,scenarioId,requirementId,...(scenario.instanceId?{instanceId:scenario.instanceId}:{})},inputFingerprint:evidenceInputFingerprint(inputs),artifactDigest:before.buildDigest,currentFileSha256:sha256(fs.readFileSync(path.join(installationRoot,'state/current.json'))),previewConfigSha256:sha256(fs.readFileSync(path.join(project,'.foundation/preview.json'))),artifactFiles:[...new Set(Object.values(before.routeMap))].map(file=>({path:file,sha256:sha256(fs.readFileSync(path.join(project,file)))})),environment:{browser:browserVersion,browserExecutable:{path:browserPath,sha256:sha256(fs.readFileSync(browserPath))},platform:process.platform,architecture:process.arch,osRelease:os.release(),viewports},runnerVersion:'foundation-cdp/1.0.0',verifierVersion:'foundation-browser-checks/1.0.0',dimensions:['runtime','layout'],checkIds:checks.map(check=>check.id),checks,result,observations,revision:before.revision,artifactInputs:Object.entries(before.resourceBytes).map(([url,entry])=>({url,sha256:entry.sha256})),limitations:['只覆盖当前范围声明的检查与视口，不代表真人接受或范围外行为']};
+    const report={projectRuntimeDigest:projectRuntimeDigest(captureProjectRoundInputs(project)),...(sourceScene?{sourceScene}:{ }),kind:'browser-observation',taskId,scopeRevision:scope.revision,scopeDigest:sha256(canonicalStringify(scope)),subjectDigest:evidenceSubjectFingerprint(asset),sourceDigest,subject:{definitionId:assetId,scenarioId,requirementId,...(scenario.instanceId?{instanceId:scenario.instanceId}:{})},inputFingerprint:evidenceInputFingerprint(inputs),artifactDigest:before.buildDigest,currentFileSha256:sha256(fs.readFileSync(path.join(installationRoot,'state/current.json'))),previewConfigSha256:sha256(fs.readFileSync(path.join(project,'.foundation/preview.json'))),artifactFiles:[...new Set(Object.values(before.routeMap))].map(file=>({path:file,sha256:sha256(fs.readFileSync(path.join(project,file)))})),environment:{browser:browserVersion,browserExecutable:{path:browserPath,sha256:sha256(fs.readFileSync(browserPath))},platform:process.platform,architecture:process.arch,osRelease:os.release(),viewports},runnerVersion:'foundation-cdp/1.0.0',verifierVersion:'foundation-browser-checks/2.0.0',dimensions:['runtime','layout'],checkIds:checks.map(check=>check.id),checks,result,observations,revision:before.revision,artifactInputs:Object.entries(before.resourceBytes).map(([url,entry])=>({url,sha256:entry.sha256})),limitations:['只覆盖当前范围声明的检查与视口，不代表真人接受或范围外行为']};
     const receipt={purpose:'foundation-evidence-run',project:realProject(project),reportDigest:sha256(canonicalStringify(report))};
     const signed={...report,foundationReceipt:{...receipt,integrity:signTrustedPayload(receipt)}};
     const reportText=JSON.stringify(signed,null,2)+'\n';

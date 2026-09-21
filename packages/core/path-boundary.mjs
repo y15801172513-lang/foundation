@@ -46,3 +46,17 @@ export function normalizePreviewPath(value, field = '预览路径') {
       normalized.startsWith('/assets/chunks/') || normalized.startsWith('/assets/binary/') || normalized.startsWith('/assets/foundation-fonts/')) throw new Error(`${field} 与工作台保留路径冲突：${normalized}`);
   return normalized;
 }
+
+// Absence evidence must not follow a link or accept an ambiguous relative path.
+export function assertProjectFileAbsent(project, file) {
+  const root=realProject(project);
+  if(typeof file!=='string'||!file||path.isAbsolute(file)||file.includes('\\')||file.includes('\0')||file.split('/').some(part=>!part||part==='.'||part==='..'))throw new Error('删除验收需要精确项目相对文件路径');
+  let cursor=root;
+  for(const part of file.split('/')) {
+    cursor=path.join(cursor,part);
+    const stat=fs.lstatSync(cursor,{throwIfNoEntry:false});
+    if(!stat)return;
+    if(stat.isSymbolicLink())throw new Error('删除验收拒绝符号链接路径');
+  }
+  throw new Error('删除目标仍然存在');
+}

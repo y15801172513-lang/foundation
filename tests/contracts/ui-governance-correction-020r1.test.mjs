@@ -130,7 +130,7 @@ test('020R1 audit classifies every required scope and has no unapproved finding'
     assert.ok(classifications.has(classification), `missing audit classification: ${classification}`);
   }
   assert.deepEqual(report.blockingFindings, []);
-  assert.ok(report.findings.some((finding) => finding.file === 'examples/foundation-events/src/bridge.mjs' && finding.approved), 'bridge findings must be checked by exact exception, not skipped wholesale');
+  assert.ok(report.findings.some((finding) => finding.file === 'packages/core/preview-bridge.mjs' && finding.approved), 'bridge findings must be checked by exact exception, not skipped wholesale');
 });
 
 test('020R1 topbar has separate identity, order, behavior, and narrow-overflow assertions', async () => {

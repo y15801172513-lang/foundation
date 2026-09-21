@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-import {synchronizeProject, inspectProjectSync,analyzeProjectSources,verifyProjectDefinition,prepareProjectSemanticReview,submitProjectSemanticReview} from '../core/project-sync.mjs';
-import {analyzeSources} from '../core/source-analysis.mjs';
-import {openOrReuseWorkbench} from '../core/workbench-runtime.mjs';
+import {synchronizeProject, inspectProjectSync, analyzeProjectSources, verifyProjectDefinition, prepareProjectSemanticReview, submitProjectSemanticReview} from '../core/workspace-host.mjs';
+import {analyzeSources} from '../core/workspace-host.mjs';
+import {openOrReuseWorkbench} from '../core/workspace-host.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
@@ -31,18 +31,18 @@ import {
   verify,
 } from '@foundation/core';
 import {createLocalLifecycleManagerServerForPlanRef, createInstalledOverviewServer} from '../core/lifecycle-manager-host.mjs';
-import {receiveJourneyTransport} from '../core/journey-transport.mjs';
-import {isLaunchedCandidate, discoverLaunchedCandidateRoot, runFirstInstallBootstrap, runFirstInstallDestinationSelection, readFirstInstallOperationStatus} from '../core/first-install-bootstrap.mjs';
-import {inspectConversationalInstall} from '../core/conversational-install.mjs';
+import {receiveJourneyTransport} from '../core/workspace-host.mjs';
+import {isLaunchedCandidate, discoverLaunchedCandidateRoot, runFirstInstallBootstrap, runFirstInstallDestinationSelection, readFirstInstallOperationStatus} from '../core/workspace-host.mjs';
+import {inspectConversationalInstall} from '@foundation/core';
 import {listenManagementCenter} from '@foundation/management-center';
 import {lifecycleMenu, runLifecycleCli} from './lifecycle.mjs';
 import {CLI_ROUTE_GROUPS, parseCliInvocation} from './command-contract.mjs';
-import {conversationHelp} from '../core/conversation-commands.mjs';
-import {readCurrentFoundationRules} from '../core/rules-delivery.mjs';
-import {inspectProjectDelivery} from '../core/project-delivery.mjs';
+import {conversationHelp} from '@foundation/core';
+import {readCurrentFoundationRules} from '@foundation/core';
+import {inspectProjectDelivery} from '@foundation/core';
 import {createInstalledWorkbenchServer,verifyInstalledProjectBrowser} from '@foundation/management-center';
-import {deriveTrustedLifecycleAuthority} from '../core/trusted-authority.mjs';
-import {readInstallationScope} from '../core/installation-scope.mjs';
+import {deriveTrustedLifecycleAuthority} from '@foundation/core';
+import {readInstallationScope} from '@foundation/core';
 
 const ROOT = path.resolve(import.meta.dirname, '../..');
 
@@ -137,12 +137,12 @@ function runProjectCli(args, output) {
   }
   if (command === 'sync' || command === 'sync-status') {
     const payloadFile = option(args, '--payload');
-    const result = command === 'sync-status' ? inspectProjectSync({project:option(args,'--project'),installationRoot:option(args,'--root')}) : synchronizeProject({project:option(args,'--project'),installationRoot:option(args,'--root'),handlerPayload:payloadFile ? JSON.parse(fs.readFileSync(payloadFile,'utf8')) : null});
+    const result = command === 'sync-status' ? inspectProjectSync({project:option(args,'--project'),installationRoot:option(args,'--root')}) : synchronizeProject({project:option(args,'--project'),installationRoot:option(args,'--root'),handlerPayload:payloadFile ? JSON.parse(fs.readFileSync(payloadFile,'utf8')) : null,roundAction:option(args,'--round'),taskId:option(args,'--task-id'),identityActions:JSON.parse(option(args,'--identity-actions-json') || '[]')});
     output.log(JSON.stringify(result,null,2));
     if (['failed','conflict','stopped'].includes(result.state)) process.exitCode = 1;
     return;
   }
-  if (command === 'delivery-check') return output.log(JSON.stringify(inspectProjectDelivery({installationRoot: option(args, '--root'), project: option(args, '--project'), changes: JSON.parse(option(args, '--changes-json')), requirePreview: args.includes('--require-preview')}), null, 2));
+  if (command === 'delivery-check') return output.log(JSON.stringify(inspectProjectDelivery({installationRoot: option(args, '--root'), project: option(args, '--project'), changes: JSON.parse(option(args, '--changes-json') || '[]'), requirePreview: args.includes('--require-preview')}), null, 2));
   if (command === 'inventory') return output.log(JSON.stringify(inventoryProject(option(args, '--project', args[2]), {installationRoot: option(args, '--root')}), null, 2));
   if (command === 'status') return output.log(JSON.stringify(inspectProjectAuthority(option(args, '--project', args[2]), {installationRoot: option(args, '--root')}), null, 2));
   if (command === 'list') return output.log(JSON.stringify(listProjectAuthorities(option(args, '--root')), null, 2));

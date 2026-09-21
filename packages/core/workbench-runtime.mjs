@@ -21,6 +21,7 @@ function safe(root,relative,{missing=false}={}) {
 }
 
 export function readWorkbenchAuthorityKey({installationRoot,project=null}) {
+  if(!installationRoot)throw Object.assign(new Error('缺少安装位置；请指定 Foundation 安装根目录'),{code:'INSTALLATION_ROOT_REQUIRED'});
   const root=fs.realpathSync(installationRoot);
   if(root!==path.resolve(installationRoot))throw new Error('安装目录身份已变化');
   const current=JSON.parse(fs.readFileSync(safe(root,'state/current.json')));
@@ -30,7 +31,13 @@ export function readWorkbenchAuthorityKey({installationRoot,project=null}) {
   if(project) {
     if(fs.realpathSync(project)!==project)throw new Error('项目物理路径已变化');
     inputs.push(['project',physical(project)]);
-    for(const name of ['.foundation/integration/binding.json','.foundation/identity/project.json'])inputs.push([name,hash(fs.readFileSync(safe(project,name)))]);
+    for(const name of ['.foundation/integration/binding.json','.foundation/identity/project.json']) {
+      try { inputs.push([name,hash(fs.readFileSync(safe(project,name)))]); }
+      catch(error) {
+        if(error.code==='ENOENT')throw Object.assign(new Error('项目未接入或绑定文件缺失；请先检查项目接入状态',{cause:error}),{code:'PROJECT_NOT_ENABLED'});
+        throw error;
+      }
+    }
   }
   return hash(JSON.stringify([physical(root),inputs]));
 }
@@ -130,7 +137,18 @@ export async function openOrReuseWorkbench({installationRoot,project=null,create
     });
     await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve);});
     const record={protocolVersion:1,key,...owner,url:`http://127.0.0.1:${server.address().port}/`,generation:readWorkbenchAuthorityKey({installationRoot:root,project:canonicalProject}),surface:'installed-workbench'};
-    fs.writeFileSync(file,JSON.stringify(record),{mode:0o600});
+    const encoded=JSON.stringify(record);
+    fs.writeFileSync(file,encoded,{mode:0o600});
+    // The PID can outlive this HTTP server (for example, repeated verification).
+    // Close only releases this exact instance, never a replacement or unknown owner.
+    server.once('close',()=>{
+      try {
+        safe(root,`state/workbench-instances/${key}.json`);
+        if(fs.readFileSync(file,'utf8')===encoded)fs.unlinkSync(file);
+      } catch(error) {
+        if(error.code!=='ENOENT')process.emitWarning('工作台关闭后实例登记清理失败：'+error.message);
+      }
+    });
     return {...record,reused:false,mutationPerformed:false};
   }finally {if(fs.existsSync(lock)&&fs.readFileSync(lock,'utf8')===JSON.stringify(owner))fs.unlinkSync(lock);}
 }

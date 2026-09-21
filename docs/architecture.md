@@ -16,7 +16,7 @@ AI 只能检查、请求计划、打开 Foundation 本地管理器和读取状�
 - `@foundation/cli`（`packages/cli`）：`foundation-kit` 命令入口，只依赖公开 package API；模板与 Skill Source 仍属于仓库级资源。
 - `@foundation/management-center`（`apps/management-center`）：工作台页面、公开状态合同、HTML/view-model 和本地管理中心 HTTP 服务。
 
-workspace 之间使用 package name 与 `exports`，不得通过 `../../` 进入另一个 workspace 的内部文件。根 `./foundation-kit` 入口和既有命令保持兼容。
+workspace 的共享只读能力使用 package name 与 `exports`。仅 CLI 和管理中心 server 的固定宿主消费者可通过源码私有 `workspace-host.mjs`、`lifecycle-manager-host.mjs` 接缝调用受控执行能力；消费文件和名称由 workspace 合同测试逐项限定，浏览器模块不能导入。私有接缝不进入 package exports，也不作为 raw 模块随候选分发，候选仍将其封入 CLI/server 词法闭包。其他跨 workspace 相对路径穿透禁止。根 `./foundation-kit` 入口和既有命令保持兼容。
 
 ## 管理中心层次
 

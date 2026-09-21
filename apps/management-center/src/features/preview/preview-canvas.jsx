@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {useMemo,useState} from 'react';
 import {MetadataText} from '@/components/foundation/content-roles';
 import {Empty, EmptyDescription, EmptyHeader, EmptyTitle} from '@/components/ui/empty';
 import {Spinner} from '@/components/ui/spinner';
@@ -9,8 +9,9 @@ export function PreviewCanvas({model, state, dispatch, iframeRef, onPreviewLoad}
   const [loadedRoute, setLoadedRoute] = useState(null);
   const page = model.pages.find((item) => item.id === state.pageId) || model.pages[0];
   const route = state.iframeRoute || page?.route;
+  const displayedRevision=useMemo(()=>model.revision,[model.resourceRevision || model.revision,route,page?.id]);
   const target = route ? new URL(route,window.location.origin) : null;
-  if(target && model.revision)for(const [key,value]of Object.entries({projectId:model.project.projectId || '',revision:model.revision,channel:model.preview.channel}))target.searchParams.set(key,value);
+  if(target && model.revision)for(const [key,value]of Object.entries({pageId:page?.id || '',projectId:model.project.projectId || '',revision:displayedRevision,channel:model.preview.channel}))target.searchParams.set(key,value);
   const iframeRoute = target ? target.pathname+target.search : null;
   const loading = Boolean(iframeRoute && loadedRoute !== iframeRoute);
   const preset = getViewportPreset(state.viewportPresetId);

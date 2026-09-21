@@ -105,7 +105,7 @@ function isOrdered(body, tokens) {
 
 function probe(file) {
   const url = pathToFileURL(file).href;
-  const source = `import crypto from 'node:crypto';const value=await import(${JSON.stringify(url)});const hash=(input)=>crypto.createHash('sha256').update(input).digest('hex');console.log(JSON.stringify(Object.keys(value).sort().map((name)=>({name,type:typeof value[name],sourceHash:typeof value[name]==='function'?hash(Function.prototype.toString.call(value[name])):hash(JSON.stringify(value[name]))}))));`;
+  const source = `import {inspectModuleExports} from ${JSON.stringify(pathToFileURL(path.join(ROOT,'scripts/module-probe-values.mjs')).href)};const value=await import(${JSON.stringify(url)});console.log(JSON.stringify(inspectModuleExports(value)));`;
   const environment = {...process.env, PATH: ''};
   delete environment.NODE_OPTIONS;
   const run = spawnSync(process.execPath, ['--input-type=module', '--eval', source], {cwd: ROOT, encoding: 'utf8', env: environment, timeout: 30_000});
@@ -115,6 +115,7 @@ function probe(file) {
 }
 
 function pathsToWriters(root, functions, writerNames) {
+  if(!writerNames.size)return [];
   const results = [];
   const visit = (name, pathSoFar) => {
     if (pathSoFar.includes(name)) return;
@@ -178,7 +179,11 @@ for (const file of walk(APP).sort()) {
   });
   const boundaryNames = new Set(transactionBoundaries.map((entry) => entry.function));
   const exports = (imported.exports || []).map((entry) => {
-    const paths = entry.type === 'function' ? pathsToWriters(entry.name, functions, writerNames) : [];
+    if(entry.unclassified)findings.push({code:'MODULE_EXPORT_UNCLASSIFIED',module:relative,export:entry.name,reason:entry.unclassified});
+    const members=entry.functions || [];
+    const paths=members.flatMap(member=>pathsToWriters(member.name || entry.name,functions,writerNames).map(p=>[entry.name,...p]));
+    for(const member of members){if(member.path&&(forbiddenNames.has(member.path.split('.').at(-1))||genericForbiddenName.test(member.path.split('.').at(-1))))findings.push({code:'FORBIDDEN_DEEP_EXPORT',module:relative,export:entry.name+'.'+member.path});if(writerToken.test(member.source)&&!paths.length)paths.push([entry.name,member.path || member.name || 'anonymous-writer']);}
+
     const ungated = paths.filter((callPath) => !callPath.some((name) => boundaryNames.has(name)));
     const protectedHostOnly = relative.endsWith('/protected-host-adapter.mjs') || relative === 'packages/cli/protected-host-adapter.mjs';
     const classification = entry.type !== 'function' ? 'data-only'
@@ -187,7 +192,7 @@ for (const file of walk(APP).sort()) {
           : /(?:Plan|Effect|explain)/u.test(entry.name) ? 'plan-only'
             : 'read-only-or-inert';
     if (forbiddenNames.has(entry.name) || genericForbiddenName.test(entry.name) || ungated.length) findings.push({code: forbiddenNames.has(entry.name) || genericForbiddenName.test(entry.name) ? 'FORBIDDEN_DEEP_EXPORT' : 'UNGATED_EXPORTED_WRITER_PATH', module: relative, export: entry.name, paths: ungated});
-    return {...entry, classification, writerPaths: paths};
+    const {functions:memberFunctions,...summary}=entry;return {...summary,memberFunctions:memberFunctions?.map(({source,...member})=>({...member,sourceHash:digest(source)})),classification:entry.unclassified?'unclassified':classification,writerPaths:paths};
   });
   if (imported.status !== 'imported-isolated-empty-path') findings.push({code: 'MODULE_IMPORT_UNCLASSIFIED', module: relative, reason: imported.reason});
   if (testToken.test(source)) findings.push({code: 'TEST_CONTROL_SHIPPED', module: relative});

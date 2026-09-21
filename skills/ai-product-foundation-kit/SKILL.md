@@ -29,7 +29,7 @@ description: 使用 Foundation 制作或维护已接入项目，读取当前制�
 
 完整用户制作规则只来自已验证的 foundation-making.md。先查已有组件/variant/composition/实例和真实引用，明确全局与局部影响；既有项目 preserve-and-inventory，适用的新 React/shadcn 项目才 shadcn-first，用户明确技术栈优先。
 
-当前程序支持 project analyze 时，在任务开始和实现修改后，用明确的 entry roots 读取声明、真实 JSX/call-site 与覆盖限制。先记录需求来源、候选及拒绝理由，再在既有开发授权内实际复用定义；内容差异走 props/slots，不复制近似声明。将决定、assetModel、deliveryScope 修订和证据经同一 asset-facts-batch 写回。分析结果不能自行授权重构，静态引用不能冒充运行或真人接受。缺少此能力时如实标明，不声称完成声明级核验。
+当前程序支持 project analyze 时，在任务开始、每轮完整实现修改后和交付前，用明确的 entry roots 读取声明、真实 JSX/call-site 与覆盖限制。先记录需求来源、候选及拒绝理由，再在既有开发授权内实际复用定义；内容差异走 props/slots，不复制近似声明。将决定、assetModel、deliveryScope 修订和证据经同一 asset-facts-batch 写回。分析结果不能自行授权重构，静态引用不能冒充运行或真人接受。缺少此能力时如实标明，不声称完成声明级核验。
 
 代码按任务授权实现。事实维护从 manager inspect 的 supportedProjectOperations 选当前已支持的封闭操作：关系沿用 relation-facts-write；页面、组件、交互、动效、变更和 token 可合并使用 asset-facts-batch。批次包含 documents 的 kind/expectedSha256/upserts、sources 的相对 path/sha256、scope、generatedAt；新增页面路由可同批提供 preview 的 expectedSha256、routes 与 assets，文件也必须包含在 sources；不自行写预览配置。每项映射真实源码，verified 项另绑定验证证据。一次批次一个完整精确计划，不逐按钮审批。机器验证的是字节与引用，不证明语义或真人验收。未支持时说明缺口，不直接写 JSON 绕过。
 
@@ -73,3 +73,7 @@ HTML、心跳或 npm 不能唤醒已结束的 Codex 任务。平台/用户中断
 读取当前 rules inspect 的 continuousSync。仅 enabled 不代表新权限；未授予时一次明确申请 enable 的 continuousSync:grant，披露 technology 及 includePreview；不要沿用逐批确认流程。项目生成指引在每次任务开始和源码修改后触发 project sync --root <安装根> --project <精确项目>；本次需求与实现生成精确批次加 --payload <项目内文件>，无需面板或再次提及 Foundation。程序复用封闭 handler、精确摘要、互斥和日志，常规同步确认次数为0。外部变化下一次触发自动登记候选，未知语义保持待核；没有进程不声称实时处理。失败保留源码与待处理项，授权有效不等于内容最新。关闭页面/预览/对话不撤销；明确不用 Foundation 时进入 disable，仅撤销持续同步用 enable 的 continuousSync:revoke；打开不恢复。
 
 语义核验按当前制作规则的 prepare-semantic-review → 实际阅读与逐项审阅 → submit-semantic-review → 原事实批次 → delivery-check 执行。程序签名不证明审阅者身份或真人接受；不得自动用期望填充成功观察。
+
+047 接续按当前规则的自动结构整理与身份核对章节执行；sync 的 coverage/semanticPending/nextStep 未闭环不能作为制作成功。标准 preview-bridge 只从当前受校验产品载荷取得，不猜协议；普通结构预览与独立资产能力分别验收。
+
+047R3：制作入口按已绑定用户规则调用普通 project sync，跨轮未验收变化由程序保留；需要身份连续性时在编辑前登记 begin/finish 意图。能力缺失保持只读待更新，不回退到手填通过。

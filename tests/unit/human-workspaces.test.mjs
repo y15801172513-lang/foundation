@@ -56,7 +56,9 @@ test('预览侧栏连续投影页面关系、真实逻辑和缺口，不生成�
   assert.ok(view.incoming.every((item) => item.to === 'page_events_home'));
   assert.ok(view.outgoing.some((item) => item.trigger === '点击事件' && item.condition === '当前事件'));
   assert.ok(view.stateChanges.some((item) => item.id === 'interaction_event_state'));
-  assert.deepEqual(view.gaps, []);
+  assert(view.gaps.includes('task：deliveryScope 尚未登记'));
+  assert(view.gaps.includes('事件状态变化：implementationMapping 尚未登记'));
+  assert(view.gaps.every(gap=>gap.endsWith('尚未登记')), '历史示例缺当前必填事实，不能显示为完整交付');
   const missing = previewSidebarModel({pages: [{id: 'page_unknown', name: '未知页', entry: true}], relations: [], interactions: [], pageId: 'page_unknown'});
   assert.ok(missing.gaps.some((gap) => gap.includes('页面 未知页 尚未验证') && gap.includes('下一步')));
 });

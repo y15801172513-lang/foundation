@@ -1,3 +1,4 @@
+import {SCENE_RUNTIME_IMPORTS,SCENE_RUNTIME_TYPES} from '../packages/core/scene-runtime-contract.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import {spawnSync} from 'node:child_process';
@@ -15,6 +16,7 @@ const TMP = option('--work-root', path.join(ROOT, '.tmp', 'candidate-build'));
 const SOURCE = path.join(TMP, 'source');
 const VERSION = productVersion(ROOT);
 const OUTPUT = option('--output', path.join(ROOT, '.tmp', 'candidates', `foundation-${VERSION}-${process.platform}-${process.arch}`));
+const MANAGEMENT_DIST = option('--management-dist', path.join(ROOT,'apps/management-center/dist'));
 const RUNTIME_ARCHIVE = option('--runtime-archive', null);
 const COMMIT = readRepositoryGitCommit(ROOT) || 'uncommitted-local';
 const DIRTY = spawnSync('git', ['status', '--short'], {cwd: ROOT, encoding: 'utf8'}).stdout.trim().length > 0;
@@ -42,7 +44,7 @@ function copy(relative, destination = relative, accept) {
   else { fs.mkdirSync(path.dirname(target), {recursive: true}); fs.copyFileSync(source, target); }
 }
 
-function bundle(entry, destination, external = []) {
+function bundle(entry, destination, external = [], browser = false) {
   if (!fs.existsSync(ESBUILD)) throw new Error('候选构建缺少仓库内已声明 Vite 工具链的 esbuild；禁止回退到网络安装');
   const target = path.join(SOURCE, 'app', destination);
   fs.mkdirSync(path.dirname(target), {recursive: true});
@@ -50,7 +52,8 @@ function bundle(entry, destination, external = []) {
   const run = spawnSync(ESBUILD, [
     path.join(ROOT, entry),
     '--bundle',
-    '--platform=node',
+    browser?'--platform=browser':'--platform=node',
+    ...(browser?['--define:process.env.NODE_ENV="production"']:[]),
     '--format=esm',
     '--target=node20',
     '--log-level=warning',
@@ -89,7 +92,8 @@ copy('packages/core/package.json');
 copy('packages/cli/package.json');
 copy('apps/management-center/package.json');
 copy('apps/management-center/package.json', 'node_modules/@foundation/management-center/package.json');
-copy('apps/management-center/dist', 'node_modules/@foundation/management-center/dist');
+if(fs.realpathSync(MANAGEMENT_DIST)!==MANAGEMENT_DIST || !MANAGEMENT_DIST.startsWith(ROOT+path.sep))throw new Error('工作台构建输入必须是本项目真实目录');
+copyTree(MANAGEMENT_DIST,path.join(SOURCE,'app/node_modules/@foundation/management-center/dist'));
 const analysisDependencies=productionDependencyClosure(ROOT,['ts-morph']);
 for(const dependency of analysisDependencies) {
   copy(dependency.relative,dependency.relative,(_file,entry)=>entry.name!=='node_modules');
@@ -110,6 +114,16 @@ copy('packages/core/platform-account.mjs', 'packages/cli/platform-account.mjs');
 bundle('apps/management-center/src/server/index.mjs', 'node_modules/@foundation/management-center/src/server/index.mjs', ['./runtime-surface.mjs']);
 copy('packages/core/runtime-surface.mjs', 'node_modules/@foundation/management-center/src/server/runtime-surface.mjs');
 bundle('apps/management-center/src/server/workbench-validation-worker.mjs','node_modules/@foundation/management-center/src/server/workbench-validation-worker.mjs',['./runtime-surface.mjs']);
+bundle('apps/management-center/src/scene-react-runtime.mjs','artifacts/preview/react-runtime.mjs',[],true);
+const sceneRuntime=await import(new URL('file://'+path.join(SOURCE,'app/artifacts/preview/react-runtime.mjs')));
+for(const contract of Object.values(SCENE_RUNTIME_IMPORTS)){
+  for(const name of [...contract.named,...(contract.default?['default']:[])])if(!(name in sceneRuntime)||typeof sceneRuntime[name]!==SCENE_RUNTIME_TYPES[name])throw new Error('候选场景运行库缺少合同导出：'+name);
+  fs.writeFileSync(path.join(SOURCE,'app/artifacts/preview',contract.file),'export {'+[...contract.named,...(contract.default?['default']:[])].join(',')+"} from './react-runtime.mjs';\n");
+}
+
+copy('packages/core/preview-bridge.mjs','artifacts/preview/preview-bridge.mjs');
+copy('packages/core/asset-preview-bridge.mjs','artifacts/preview/asset-preview-bridge.mjs');
+copy('packages/core/object-identity.mjs','artifacts/preview/object-identity.mjs');
 copy('templates');
 copy('skills', 'artifacts/skills');
 copy('rules', 'artifacts/rules');
@@ -124,7 +138,7 @@ const runtimeDescriptor = createFoundationRuntimeDescriptor({
   arch: process.arch,
   buildIdentity: `${COMMIT}${DIRTY ? '+worktree' : ''}`,
   supportedProjectDataFormats: ['0.1.0', '0.1.1'],
-  factCapabilities:['component-delivery/1','semantic-review/1'],
+  factCapabilities:['component-delivery/1','semantic-review/1','automatic-project-context/1','project-round/1','deletion-review/1'],
   ruleCapabilityEndpoint: 'artifacts',
   ruleCapabilityEndpointRoot: path.join(SOURCE, 'app', 'artifacts'),
   capabilityFacts: {

@@ -76,6 +76,8 @@ project verify-definition --root <安装根> --project <项目> --entry-roots-js
 
 本合同最小能力为 descriptor.factCapabilities 中的 component-delivery/1，不以旧程序版本号推断支持。迁移使用同一精确批次，计划列出影响、文档前后摘要，恢复沿用原事务的前像；保留 ID、描述、例外与旧证据。受管更新/回退遇目标缺能力时拒绝；用户字节漂移后不覆盖恢复。
 
+删除验收需要当前 descriptor 的 `deletion-review/1` 能力；受管更新/回退到缺此能力的运行时必须拒绝。删除已观察的实现输入时，在当前需求项的 `removedInputs` 列出精确 `path`、删除前 `beforeSha256` 和本项 `sourceRefIds`，先同步清除失效事实与预览引用。保留或替代的页面/组件完成当前定义、运行和语义核验后，受控语义计划逐项审阅删除依据，原同步事务才能接受缺失路径。仅文件消失、旧成功报告或自填 null 不代表接受；文件重现、来源变化或残留引用仍拒绝。没有可验证的保留/替代对象时维持待核，不用空范围冒充删除验收。
+
 ### 受控语义核验（semantic-review/1）
 
 需求 sourceRefs.ref 使用项目内需求记录的精确位置，例如 requirements.md#L1-L6。该记录保留用户原文、来源和未确认项，不把推测改写为用户批准。完成定义与浏览器核验后，将各自 reportText 保存并经原 asset-facts-batch 持久化 evidenceIndex。
@@ -86,3 +88,41 @@ project verify-definition --root <安装根> --project <项目> --entry-roots-js
 4. 保存返回 reportText，按返回摘要加入 sources，以 semantic-review 类型加入原变化记录的 evidenceIndex；维度为 scope/content，保留原 definition/runtime/layout 证据，用同一精确 asset-facts-batch / project sync 保存。然后运行 project delivery-check 并重开工作台，核对全部必要维度与 aggregate。真人接受始终独立，不因工程审阅通过而改变。
 
 静态营销和明确展示需求可以通过相应深度检查；不能把无操作的按钮评为业务成功。预约需阅读并实际验证约定的失败/恢复；局部修改须核对未改变的二级内容。语义报告依赖的需求文件、定义、样式、运行报告或范围发生变化后，必须重新准备、读取和核验。旧候选缺 semantic-review/1 时受管兼容门拒绝该事实合同。
+
+
+## 自动结构整理与身份核对（047）
+
+每个相关任务开始、每轮完整修改后、交付前均调用受控 project sync。程序按真实源码补充同一 facts 中的 sourceStructure：结构、包含关系、源码位置与事件/字段绑定候选；这不是业务语义验证。返回 coverage.missing/stale 或 semanticPending 时继续核对需求、实现和精确批次，不能以文件已登记、命令成功或面板能显示结束制作。外部无 payload 发现只标候选；无进程期间下次任务补查，不承诺后台监听。
+
+语义审阅计划逐项包含独立源码清单中的对象，不限于调用方已提交 factIds。核对需求原文、内部区块、实例、字段、状态及操作影响；无二级页只说明导航范围，不豁免内部关系。共享规范与实例变化分别按实际引用传播；保留未知、用户例外和既有事实，不把实现自动升级为规范。
+
+预览桥接的产品模块是 packages/core/preview-bridge.mjs（工程载荷 artifacts/preview/preview-bridge.mjs），静态页面以 ES module 接入，React 在挂载后创建并在清理时 destroy。bindPreviewContext(window,{pageId}) 明确页面身份；父工作台传入 projectId/revision/channel/pageId。完成实际 DOM 后调用 announcePreview；createInspectorBridge 响应状态探测、检查选择与失效。普通桥接仅声明页面与对象检查能力，独立资产场景仍需既有隔离适配器，不能用隐藏其他页面区域冒充独立定义。
+
+显示名称优先 data-foundation-label，其次有效无障碍名称和节点自身文字；不拼接全部后代文本。装饰保持原字符和 aria-hidden，需命名时使用源码语义标注，不为检查器添加读屏名称。持久标识使用显式 data-foundation-object-id，复用既有组件/实例标识；重命名、移动时保留 ID，删除不复用。data-foundation-source 提供源码位置；动态重复对象无持久 key 时保留 session/revision 临时句柄，不承诺跨刷新稳定。复制内容必须保留身份类型、修订、来源和缺口；仅名称相似是关系候选。
+
+交付统一 assessment 派生结构覆盖和可视任务必检维度；旧收据缺工作台握手、定位、重开或适用资产 ready 时维持待核。配置存在不等于运行通过；不能通过遗漏 browserChecks、require-preview 或填 N/A 让已实现页面整体通过。静态结构和受控观察分别报告，真人接受及新任务自然发现独立留门。
+
+纯静态页面可用 verify-definition 的 --asset-id <页面ID> 绑定当前 HTML 文件；verify-browser 使用同一页面 ID 加 --scenario-id page。页面预览不强制伪造可复用组件或独立资产场景。声明核验只证明精确页面文件绑定，语义与运行各自独立。
+
+独立资产使用同一产品载荷的 asset-preview-bridge.mjs：先在独立入口挂载实际定义或实例，再 createAssetSceneBridge({root,definitionId,scenarioId})。根标注 data-foundation-component-id、data-foundation-scene，实例另给 data-foundation-instance-id；只发送 ready 不足以通过，验证器同时检查隔离 frame 中实际匹配且有尺寸的唯一场景根。缺少独立入口时明确 unsupported，不隐藏整页的其他区块充当场景。
+
+### 当前任务、语义关系与身份世代（047R1）
+
+当前验收以本次任务引用和实际实现依赖判断是否可视，不因项目有页面或历史任务是 web 而强加预览。非可视项的 not-applicable.source 必须对应本次 sourceRefs 中已确认的精确来源；把实际受影响页面省略或改写 platform 不能豁免。旧项目范围不因此自动升级。
+
+业务意义由 Codex 实读需求和实现后写入原 sourceStructure.semantics：nodes 使用 region/component/instance/field/state/interaction/data/token 类型，保留 id、name、objectIds、sourceKeys、sources；relations 使用 contains/uses/triggers/data-affects/transitions/styles，端点引用节点 id，同样绑定 sourceKeys 和当前 sources 的 path/sha256。sourceKeys 来自独立结构与事件/状态分支清单；不得机械将全部源码键塞给任意关系来冒充语义完整。缺分支、缺边、端点失效或旧来源不能进入语义通过。关系面板和对象上下文读取这一份事实；登记关系仍是 recorded-not-reviewed，只有当前受控审阅可以提供验证证据。
+
+sourceStructure.identityHistory 随同一批次保留对象世代和删除墓碑。只有当前工作台快照传入匹配世代的对象才可跨修订重解析；无世代的旧上下文只能在原修订解析。已经观察到删除的 ID 再出现必须生成新世代；两个同步观察之间发生且没有任何身份变更标记的删除重建无法由快照证明，不能宣称已解决这种不可观察复用。
+
+独立 React/静态场景可调用 asset-preview-bridge.mjs 的 mountAssetScene({definitionId,scenarioId,instanceId,render})。入口必须是空白文档，render(root) 挂载实际导出的定义并返回清理函数；React 使用现有 createRoot(root).render(...)。程序创建场景根、等待渲染后执行标准桥接。不得把整页先挂载再隐藏其他区块；保留原栈，不引入依赖或改真实存储。此挂载入口不替代候选中的实际浏览器及定义/实例绑定验证。
+
+
+### 047R3 连续观察与身份接续
+
+已获得持续同步授权后，任务开始、完整修改后和交付前调用普通 `project sync`，程序保留上次完整观察与跨轮未验收变化；同步或开始新任务不等于接受变化。当前任务通过与项目整体通过分别读取同一 delivery-check。需要明确编辑范围或身份意图时，在业务文件编辑前调用 `project sync --round begin --task-id <当前 changes ID>`，完整一轮编辑后调用 `project sync --round finish --task-id <同一 ID>`；交付前读取统一 delivery-check。程序枚举实际新增、删除、修改及资源，调用方 changes/factIds 不能替代枚举。中断保留起点；不得在编辑后伪造编辑前基线。没有运行进程时不承诺监听，下次任务必须补查。
+
+普通同步会提取 HTML 结构、直接弹窗事件及 React useState/直接 setter/条件渲染关系；多导出归属、动态事件、未知依赖和业务意义仍需精确批次补充，不能把 source-derived 当成验证通过。组件独立场景由当前导出声明、固定实例配置和源码摘要生成，任意 render 回调或自填 ready 不再证明当前组件。未知框架或顶层副作用保留 pending。
+
+持久对象在修改前随 begin 提交 `--identity-actions-json`：create 创建不可复用 incarnation；retain 声明受控保留；move 明确新 owner 与 sourceFile；retire 明确失效。create 返回的 incarnation 写入 `data-foundation-incarnation`，对象或其祖先用 `data-foundation-owner-id` 明确 owner；两者均为源码语义标注，不改变 aria 语义。结束时程序核对来源。没有可观测连续性的外部重建必须失效，不能沿用名称或相同 ID 猜测。临时对象只能在 session/revision 内定位。
+
+业务 semanticRevision、资源字节 resourceRevision、观察 observationRevision 分开。可以证明等价的 JS 格式变化保持业务版本；精确字节证据仍失效。资源字节不变时面板绑定新 envelope 并保留预览；资源本身变化时按新资源代重新加载。不得声称任意格式都能免刷新。

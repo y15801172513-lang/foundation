@@ -85,7 +85,7 @@ export function assetPreviewContract(asset,{scenario}={}) {
   if(asset.assetModel && (!scenario || scenario.definitionId!==asset.assetId || scenario.kind==='instance' && !asset.usageLocations?.some(usage=>usage.instanceId===scenario.instanceId)))return {status:'missing-context',reason:'该定义未登记匹配的隔离预览场景；请在页面中查看实际使用。'};
   if (!asset.implementationPath) return {status: 'missing-context', reason: '组件尚未登记实现路径，无法确认真实实现。'};
   const route=asset.assetModel?asset.scenarioRoutes?.[scenario.id]:asset.previewRoute;
-  if (typeof route !== 'string' || !route.startsWith('/') || route.startsWith('//') || /[?#\s\\]/u.test(route)) return {status: 'missing-context', reason: '尚未登记匹配此场景适配器的独立预览入口；可在页面预览核验实际使用，不套用其他组件的预览路径。'};
+  if (typeof route !== 'string' || !route.startsWith('/') || route.startsWith('//') || /[?#\s\\]/u.test(route)) return {status: 'missing-context', reason: asset.sceneLimitations?.[scenario?.id] || '缺少由当前源码定义生成的独立场景；可在页面中核验实际使用。'};
   return {status: 'iframe', route};
 }
 

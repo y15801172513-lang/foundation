@@ -50,7 +50,7 @@ export function contextPlainText(record) {
     `delivery assessment: ${JSON.stringify(record.assessment || {aggregate:'pending'})}`,
     `definition binding: ${JSON.stringify(record.asset?.assetModel?.binding || null)}`,
     `reuse summary: ${JSON.stringify(record.asset?.reuseSummary || null)}`,
-    `reuse decisions: ${JSON.stringify(record.asset?.reuseSummary ? record.asset.reuseSummary.decisions : record.recentChanges.flatMap(c=>c.reuseDecisions || []))}`,
+    `reuse decisions: ${JSON.stringify(record.asset?.reuseSummary ? record.asset.reuseSummary.decisions : (record.recentChanges || []).flatMap(c=>c.reuseDecisions || []))}`,
     `project name: ${valueOrUnknown(record.project?.name)}`,
     `project id: ${valueOrUnknown(record.project?.projectId)}`,
     `facts version: ${valueOrUnknown(record.factsVersion)}`,
@@ -120,6 +120,7 @@ export function contextHumanView(record) {
     issueOccurrences.set(identity, occurrence + 1);
     return {id: JSON.stringify(['issue', identity, occurrence]), issueId: issue.id || null, text: issue.message};
   })];
+  if(record.assessment?.task)deliveryEntries.splice(1,0,{id:'task-result',text:`当前任务：${record.assessment.task.state==='passed'?'通过':'待核'}；项目整体：${record.assessment.project?.state==='passed'?'通过':'待核'}`});
   return {
     identity: {title, summary: `${title}：${purpose} 当前状态：${status}。`, status},
     sections: [

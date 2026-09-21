@@ -65,3 +65,13 @@ export function verify(project) {
   }
   return {ok: errors.length === 0, errors};
 }
+
+// Read-only projections shared by the CLI and workbench.
+export {conversationHelp} from './conversation-commands.mjs';
+export {inspectConversationalInstall} from './conversational-install.mjs';
+export {evidenceInputFingerprint, evidenceSubjectFingerprint, factImplementationInputs} from './evidence-impact.mjs';
+export {readInstallationScope} from './installation-scope.mjs';
+export {captureProjectRoundInputs, projectRuntimeDigest} from './project-context-round.mjs';
+export {projectObjectRelations} from './project-coverage.mjs';
+export {projectSemanticRevision} from './project-revisions.mjs';
+export {prepareSourceScene} from './source-scene.mjs';
