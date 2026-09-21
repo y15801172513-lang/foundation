@@ -29,7 +29,15 @@ export async function mountAssetScene({win=window,definitionId,scenarioId,instan
   let cleanup;
   try {
     cleanup=await render(root);
-    await new Promise(resolve=>win.requestAnimationFrame(()=>win.requestAnimationFrame(resolve)));
+    // Offscreen sandboxed frames can suspend requestAnimationFrame. Wait for
+    // committed content and actual geometry using bounded timers instead.
+    await new Promise((resolve,reject)=>{
+      let poll;
+      const finish=error=>{win.clearTimeout(poll);win.clearTimeout(timeout);error?reject(error):resolve();};
+      const timeout=win.setTimeout(()=>finish(new Error('独立场景未在限定时间内渲染真实定义')),8000);
+      const inspect=()=>{const rect=root.getBoundingClientRect();if(root.isConnected&&root.children.length&&rect.width>0&&rect.height>0)finish();else poll=win.setTimeout(inspect,50);};
+      inspect();
+    });
     if(!root.children.length)throw new Error('独立场景尚未渲染真实定义');
     const bridge=createAssetSceneBridge({win,root,definitionId,scenarioId});
     return {...bridge,root,destroy(){bridge.destroy();if(typeof cleanup==='function')cleanup();root.remove();}};

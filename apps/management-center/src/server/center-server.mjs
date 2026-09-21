@@ -306,6 +306,9 @@ export function createInstalledWorkbenchServer({installationRoot, project = null
 export async function verifyInstalledProjectBrowser({installationRoot,project,taskId,requirementId,assetId,scenarioId}) {
   const state=inspectLocalLifecycle({installationRoot,project,operationRequirement:'lifecycle-inspect'});
   if(state.bridge?.installationHealth?.code!=='FOUNDATION_HEALTHY'||!state.project?.agreement||state.project.state!=='enabled')throw new Error('浏览器验证需要当前安装和项目身份');
+  // Opening the workbench synchronizes project inputs. Freeze verification only
+  // after that same transition, so the server can serve the captured revision.
+  synchronizeProject({project,installationRoot,trigger:'workbench-open'});
   const facts=readFacts(project),task=facts.changes.items.find(item=>item.id===taskId),scope=task?.deliveryScope;
   const requirement=scope?.items?.find(item=>item.requirementId===requirementId),asset=[...facts.components.items,...facts.pages.items].find(item=>item.id===assetId);
   const pageTarget=!asset?.assetModel && facts.pages.items.some(page=>page.id===assetId);
