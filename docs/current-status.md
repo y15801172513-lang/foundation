@@ -2,9 +2,15 @@
 
 ## 当前支持状态
 
-单页试用版 [0.2.18](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.18) 与 [npm 0.1.12](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.12) 已发布。旧正式产品线已退出维护；唯一支持政策见[安装与生命周期合同](install-platform-024.md#现行支持策略)，当前命令见[安装说明](install-with-codex.md)。
+单页试用版 [0.2.19](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.19) 与 [npm 0.1.13](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.13) 已发布。旧正式产品线已退出维护；唯一支持政策见[安装与生命周期合同](install-platform-024.md#现行支持策略)，当前命令见[安装说明](install-with-codex.md)。
 
-## 当前发行：0.2.18 / npm 0.1.12
+## 当前发行：0.2.19 / npm 0.1.13
+
+新增已安装维护发现、未完成操作的独立恢复、可信获取驱动的自然更新与离线卸载。各项确认、执行和结果在同一页面接续，保留取消、到期、失败和未知状态边界。运行载荷固定于公共源码 `a7d3816e89ab75702110887d56be6435ee39698c`，来自私有源码 `b3bd34ba6f2f946dd44c58aa580b3d69826af1a7`；随包 Skill 为 0.2.9。
+
+最终载荷六组、公共契约和浏览器状态验收通过；不可变发行、npm 实际字节及线上来源证明已回读。通过线上 npm 获取的入口在隔离账户完成安装、自然更新、维护发现与卸载；账户与 HTTP 确认使用工程夹具，传输及来源证明使用真实在线服务。真实用户安装和新 Codex 任务发现仍未验收。
+
+## 历史发行：0.2.18 / npm 0.1.12
 
 本版交付已审阅的源码上下文与逐对象验收改进，并修复组件独立预览、声明变体、二级页面验证和交付失败状态。运行载荷固定于公共源码 `37708dfca65af25f9b0a9ee3121a26a727868ff7`，来自私有源码 `9855f7502da080bde9539d7070b58aafff76f1d7`；后续工程测试和说明提交不替代载荷身份。npm 启动器字节未变，继续使用 0.1.12。
 

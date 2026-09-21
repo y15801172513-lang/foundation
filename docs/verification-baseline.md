@@ -1,5 +1,11 @@
 # Verification baseline
 
+## 0.2.19 / npm 0.1.13 lifecycle maintenance release
+
+Runtime source is public `a7d3816e89ab75702110887d56be6435ee39698c`, exported from private `b3bd34ba6f2f946dd44c58aa580b3d69826af1a7`. Documentation commits do not replace runtime identity. The new npm launcher is 0.1.13 and bundled Skill is 0.2.9.
+
+The final official-Node payload passed the six-group lifecycle gate, including the exact 17-case nonempty-fact update/recovery regression with no skips. Public contracts passed 71 tests and public-export/release regression passed 34. The final browser matrix covers 37 states with 170 screenshots; source-independent health and stable-launcher discovery are verified separately. All release assets and npm bytes were read back, with actual online proof verification. An isolated account consumed the online npm package for previous-version installation, natural forward update, current-version fresh installation, maintenance discovery and offline uninstall. OS account routing and exact HTTP confirmations are engineering fixtures; transport, downloads, TUF and release proofs are real. Actual user installation, human acceptance and fresh Codex task discovery remain pending.
+
 ## 0.2.18 source-bound preview and delivery release
 
 Runtime source is public `37708dfca65af25f9b0a9ee3121a26a727868ff7`, exported from private `9855f7502da080bde9539d7070b58aafff76f1d7`. Documentation and private test follow-up commits do not replace that immutable runtime identity. npm remains 0.1.12 with byte-identical package reuse.
