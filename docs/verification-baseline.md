@@ -1,5 +1,11 @@
 # Verification baseline
 
+## 0.2.18 source-bound preview and delivery release
+
+Runtime source is public `454c17d4b15fb64a4997a4ce776bead6c2eab34b`, exported from private `94950a951abc162739b885876e1194f704cabd18`. Documentation and private test follow-up commits do not replace that immutable runtime identity. npm remains 0.1.12 with byte-identical package reuse.
+
+The final official-Node candidate and all 426 archive members were checked. The final six-group lifecycle gate covers direct health/authority, entry, acquisition, packed lifecycle, injected health failure and the 17-case update regression. Source-bound scene tests verify real exports, declared variants and forged-input rejection. Runtime publication and anonymous readback are distinct from real installation, human acceptance and fresh-task Skill discovery; those user-environment checks remain pending.
+
 ## 0.2.17 / npm 0.1.12 verified release
 
 Nonempty recovery regression uses native manager writes and preserves nine fact files with two source-bound page records across ten stages. Empty evidence, file-set or byte drift and absent product reads are rejected. Final clean-source six-group release checks passed (direct 43, entry 13, acquisition 11, update/recovery 17; packed lifecycle and injected health failure also passed, with no skips). Public runtime source `743bec2dee04a80d9d56fd39813dfe9df5163c1b` maps to private source `23c4f645e38d7ff0d8d0a567c6546543ffe18cdc`. GitHub immutable release proofs, all 419 archive members, actual npm tarball, and anonymous acquisition were verified. Post-publication isolated usage is tracked separately; engineering fixtures do not establish real installation or host discovery.

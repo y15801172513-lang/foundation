@@ -2,9 +2,15 @@
 
 ## 当前支持状态
 
-单页试用版 [0.2.17](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.17) 与 [npm 0.1.12](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.12) 已发布。旧正式产品线已退出维护；唯一支持政策见[安装与生命周期合同](install-platform-024.md#现行支持策略)，当前命令见[安装说明](install-with-codex.md)。
+单页试用版 [0.2.18](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.18) 与 [npm 0.1.12](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.12) 已发布。旧正式产品线已退出维护；唯一支持政策见[安装与生命周期合同](install-platform-024.md#现行支持策略)，当前命令见[安装说明](install-with-codex.md)。
 
-## 当前发行：0.2.17 / npm 0.1.12
+## 当前发行：0.2.18 / npm 0.1.12
+
+本版交付已审阅的源码上下文与逐对象验收改进，并修复组件独立预览、声明变体和交付失败状态。运行载荷固定于公共源码 `454c17d4b15fb64a4997a4ce776bead6c2eab34b`，来自私有源码 `94950a951abc162739b885876e1194f704cabd18`；后续工程测试和说明提交不替代载荷身份。npm 启动器字节未变，继续使用 0.1.12。
+
+最终载荷完成六组生命周期验收，发行资产与 npm 包经实际字节回读核验。真实安装、更新和新任务 Skill 发现仍需独立授权与验收。
+
+## 历史发行：0.2.17 / npm 0.1.12
 
 修复标准获取缓存与更新路径授权的兼容问题，保留结构化错误与非空项目事实。正式发行与匿名字节回读已通过，旧版 0.2.15 / 0.2.16 嵌套布局不支持安全原地更新时，必须经过独立停用、卸载与新目录恢复确认；不搬移候选或重复下载绕过。干净最终载荷完整六组通过，GitHub 不可变发行及来源证明、npm 实际 tarball 和匿名获取均已核验。运行源码 `743bec2dee04a80d9d56fd39813dfe9df5163c1b`，对应私有源码 `23c4f645e38d7ff0d8d0a567c6546543ffe18cdc`；真实安装和新任务 Skill 发现仍待独立验收。
 
