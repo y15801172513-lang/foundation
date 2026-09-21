@@ -11,6 +11,16 @@ export async function observeWorkbenchCapabilities({devtools,devtoolsPort,source
   const open=async()=>{
     await devtools.call('Page.navigate',{url:workbenchUrl});
     if(!await wait("Boolean(document.getElementById('preview-frame')?.contentWindow)"))return null;
+    // Select the requested real page through the workbench control before
+    // observing its handshake. A fresh workbench always starts at its entry page.
+    const targetPage=await evaluate(devtools,`(()=>{const pages=window.__FOUNDATION_MODEL__?.pages||[],index=pages.findIndex(page=>page.id===${JSON.stringify(pageId)});return {index,count:pages.length,current:new URL(document.getElementById('preview-frame').src).searchParams.get('pageId')};})()`);
+    if(targetPage.index<0)return null;
+    if(targetPage.current!==pageId) {
+      await evaluate(devtools,`document.querySelector('[aria-label="当前页面"]')?.click()`);
+      if(!await wait(`document.querySelectorAll('[role="option"]').length===${targetPage.count}`))return null;
+      await evaluate(devtools,`document.querySelectorAll('[role="option"]')[${targetPage.index}]?.click()`);
+      if(!await wait(`new URL(document.getElementById('preview-frame').src).searchParams.get('pageId')===${JSON.stringify(pageId)}`))return null;
+    }
     if(!await evaluate(devtools,'Array.isArray(window.__foundationObserved)'))await evaluate(devtools,capture);
     await evaluate(devtools,`(()=>{const f=document.getElementById('preview-frame'),q=new URL(f.src).searchParams;f.contentWindow.postMessage({namespace:'ai-product-foundation-preview',kind:'preview-status-request',...Object.fromEntries(['projectId','revision','channel'].map(k=>[k,q.get(k)]))},location.origin)})()`);
     return wait(`window.__foundationObserved?.find(d=>d.kind==='preview-ready'&&d.protocolVersion==='foundation-preview/2'&&d.projectId===${JSON.stringify(projectId)}&&d.revision===${JSON.stringify(revision)}&&d.pageId===${JSON.stringify(pageId)}&&d.object?.pageId===d.pageId&&d.object?.inspectorId)`);

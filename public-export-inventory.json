@@ -2,8 +2,8 @@
   "schemaVersion": "2.0.0",
   "exportContractSchemaVersion": "2.0.0",
   "exportContractSha256": "be9f1d7766255b564bb087599db57f4cc37cb6c39f685c5c4db94a15916dd584",
-  "sourceCommit": "549966753763a90bbad54e6509b646ccb0737566",
-  "approvedSourceCommit": "549966753763a90bbad54e6509b646ccb0737566",
+  "sourceCommit": "9855f7502da080bde9539d7070b58aafff76f1d7",
+  "approvedSourceCommit": "9855f7502da080bde9539d7070b58aafff76f1d7",
   "sourceState": "clean-exact-commit-approved",
   "productVersion": "0.2.18",
   "licenseStatus": "approved",
@@ -14,17 +14,17 @@
   "publicationEligible": true,
   "commitBinding": {
     "schemaVersion": "2.0.0",
-    "approvedCommit": "549966753763a90bbad54e6509b646ccb0737566",
-    "gitTree": "c4bd05f4d2b6f4924fdf81fcdc3bd17629acdfad",
+    "approvedCommit": "9855f7502da080bde9539d7070b58aafff76f1d7",
+    "gitTree": "72e5314b5b9fe511bd76292744334fbb9b50a3bb",
     "contractSha256": "be9f1d7766255b564bb087599db57f4cc37cb6c39f685c5c4db94a15916dd584",
-    "expectedTreeHash": "7e051f1a35afde128d32202e17cba21f9c57e25f21f04aa7f6c569d6834abd25",
+    "expectedTreeHash": "2743d5ab0ab13e50571e53123d1591fad35b558a0322b678cc849e1b4f23ffe1",
     "fileCount": 435
   },
   "fileCount": 437,
   "privateExportedCount": 435,
   "generatedPublicCount": 2,
-  "treeHash": "7e051f1a35afde128d32202e17cba21f9c57e25f21f04aa7f6c569d6834abd25",
-  "inventoryHash": "22babf48042bf90e4e8085b9235b6d4b9eb564c0a7d8218f2e24439e6ddfa691",
+  "treeHash": "2743d5ab0ab13e50571e53123d1591fad35b558a0322b678cc849e1b4f23ffe1",
+  "inventoryHash": "56a7faafc3be2250bab696e3ca6d55314d677f80913392ed41f23a02799ad330",
   "files": [
     {
       "path": ".gitignore",
@@ -47,7 +47,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 1082,
-      "sha256": "4e9a00965989bc6f884124927d901f4eda19e9a583051f51027e2a790a87f32e",
+      "sha256": "4c2ebf8d34f1bed31ecc1ec0517f25c4fd6c5a3d32bfc9807ad7bf87700ec918",
       "ownership": "generated-public"
     },
     {
@@ -414,8 +414,8 @@
       "path": "apps/management-center/src/server/preview-capability-observer.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 7521,
-      "sha256": "78d096d77b4735e77bf3aba1017e66d3eb4612c857aa2e8aa6feb71e9ae8bc0f",
+      "bytes": 8524,
+      "sha256": "acdbf5c1e0702569b4efcd86b3a64662f3bd41ed73cd1ad12a9e98a403a69995",
       "ownership": "private-exported"
     },
     {
