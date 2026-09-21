@@ -2,9 +2,9 @@
 
 ## 0.2.18 source-bound preview and delivery release
 
-Runtime source is public `454c17d4b15fb64a4997a4ce776bead6c2eab34b`, exported from private `94950a951abc162739b885876e1194f704cabd18`. Documentation and private test follow-up commits do not replace that immutable runtime identity. npm remains 0.1.12 with byte-identical package reuse.
+Runtime source is public `37708dfca65af25f9b0a9ee3121a26a727868ff7`, exported from private `9855f7502da080bde9539d7070b58aafff76f1d7`. Documentation and private test follow-up commits do not replace that immutable runtime identity. npm remains 0.1.12 with byte-identical package reuse.
 
-The final official-Node candidate and all 426 archive members were checked. The final six-group lifecycle gate covers direct health/authority, entry, acquisition, packed lifecycle, injected health failure and the 17-case update regression. Source-bound scene tests verify real exports, declared variants and forged-input rejection. Runtime publication and anonymous readback are distinct from real installation, human acceptance and fresh-task Skill discovery; those user-environment checks remain pending.
+The final official-Node candidate and all 426 archive members were checked. The final six-group lifecycle gate covers direct health/authority, entry, acquisition, packed lifecycle, injected health failure and the 17-case update regression. Source-bound scene tests verify real exports, declared variants and forged-input rejection. Secondary-page verification selects the real workbench page before checking handshake, object location and reopen. Runtime publication and anonymous readback are distinct from real installation, human acceptance and fresh-task Skill discovery; those user-environment checks remain pending.
 
 ## 0.2.17 / npm 0.1.12 verified release
 

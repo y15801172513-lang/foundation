@@ -6,7 +6,7 @@
 
 本文是可从固定发行提交读取的操作说明，不单独证明该版本已发布。必须以实际 npm registry 和公共不可变 Release 的验证结果为准；缺包、缺发行或验证失败时停止获取，不把仓库存在当作安装成功。真实安装、Skill 注册及新对话发现分别验收。
 
-当前不可变发行：[0.2.18](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.18)、[npm 0.1.12](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.12)，运行源码 `454c17d4b15fb64a4997a4ce776bead6c2eab34b`，与该发行证明绑定一致。文档提交不替代运行源码身份；旧资产不覆盖。
+当前不可变发行：[0.2.18](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.18)、[npm 0.1.12](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.12)，运行源码 `37708dfca65af25f9b0a9ee3121a26a727868ff7`，与该发行证明绑定一致。文档提交不替代运行源码身份；旧资产不覆盖。
 
 在具备权限的新 Codex 对话中使用：
 
