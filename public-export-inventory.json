@@ -2,8 +2,8 @@
   "schemaVersion": "2.0.0",
   "exportContractSchemaVersion": "2.0.0",
   "exportContractSha256": "d8c03074922f9bb237641b12cf3a0ec4428761aa691ab33dacedacf6b6f07c6b",
-  "sourceCommit": "cbc1e1329e05a90ada64aa6eaaab57a3412d8b97",
-  "approvedSourceCommit": "cbc1e1329e05a90ada64aa6eaaab57a3412d8b97",
+  "sourceCommit": "100f036ee7628d24eaa8ba9660a30fec661dccd4",
+  "approvedSourceCommit": "100f036ee7628d24eaa8ba9660a30fec661dccd4",
   "sourceState": "clean-exact-commit-approved",
   "productVersion": "0.2.19",
   "licenseStatus": "approved",
@@ -14,17 +14,17 @@
   "publicationEligible": true,
   "commitBinding": {
     "schemaVersion": "2.0.0",
-    "approvedCommit": "cbc1e1329e05a90ada64aa6eaaab57a3412d8b97",
-    "gitTree": "a1580b20e7bd93538b5dcc69999866ff8c43496a",
+    "approvedCommit": "100f036ee7628d24eaa8ba9660a30fec661dccd4",
+    "gitTree": "d91daa0d12feb77aad937cb57d1712a6b4b5838c",
     "contractSha256": "d8c03074922f9bb237641b12cf3a0ec4428761aa691ab33dacedacf6b6f07c6b",
-    "expectedTreeHash": "f7fee45d607c20e33dec36115634f495cb83d9dab55b01243a9b21d663cf4494",
+    "expectedTreeHash": "1572e920d811ee6d861ac051fc059d201cae85844e06257490e33cb134b9effb",
     "fileCount": 437
   },
   "fileCount": 439,
   "privateExportedCount": 437,
   "generatedPublicCount": 2,
-  "treeHash": "f7fee45d607c20e33dec36115634f495cb83d9dab55b01243a9b21d663cf4494",
-  "inventoryHash": "c19931e8fcfd65fd4c470dbe8278b3dc1a8c6277370ce34be17a77e04d0b6887",
+  "treeHash": "1572e920d811ee6d861ac051fc059d201cae85844e06257490e33cb134b9effb",
+  "inventoryHash": "e8f61d038b73614e28379074355d9fa87d416affd7f9497267ed73f9dbee202d",
   "files": [
     {
       "path": ".gitignore",
@@ -47,15 +47,15 @@
       "type": "file",
       "mode": 420,
       "bytes": 1082,
-      "sha256": "f3bf661ef0e1692d029a024f22ca3070c5fbb1a8272c26a546c373fa254dd504",
+      "sha256": "52d88c184c550de89b3176d09e8ae858d0cb6a847284e0239c1923a474906117",
       "ownership": "generated-public"
     },
     {
       "path": "README.md",
       "type": "file",
       "mode": 420,
-      "bytes": 7888,
-      "sha256": "849b93ecaa2d6401919ca5d4090e20deaabb3c52fb9b8fa019e46329648ed333",
+      "bytes": 6384,
+      "sha256": "de7c31c5bb8e9150648de2d2c71f680eef28e32d45b46bb61e3f714377ac3c95",
       "ownership": "private-exported"
     },
     {
@@ -862,8 +862,8 @@
       "path": "docs/foundation-workbench-example.png",
       "type": "file",
       "mode": 420,
-      "bytes": 61505,
-      "sha256": "6878a46ca1c96a7b27b15e181d088d23a9142fe31ae0c1fb061b9f1a9d675a0a",
+      "bytes": 305624,
+      "sha256": "bc2e676b67e02610a2e201b31d7500226763c61d6e91b1a34f723e0070a36add",
       "ownership": "private-exported"
     },
     {
