@@ -1,5 +1,13 @@
 # Verification baseline
 
+## 0.2.31 reconstructed object and asset delivery release
+
+Runtime source is public `9aaaf3c28498df9301cfb5993b77fe364d66b583`, exported from private `70015e7ac09cdd6ee48465017aab3c3a797bcc48`. Candidate `2d0b569673b2c29c9c8a5089444b3ba09ca64c2dd130a7173b9af79b37ccb9be` and archive `a2f97698927ab7e88815994c75e6d7afeea8e69a663a519d50ea42db49b09701` are newly built 0.2.31 artifacts. Earlier unretained 0.2.29 artifacts are not claimed as recovered. npm 0.1.13 is reused byte-for-byte.
+
+Final lifecycle gates passed: direct 126 (including 71 public workspace contracts), entry 15, acquisition 11, update/recovery 17, packed cycle and injected-health failure, with no failures or skips. Supplementary final-payload checks cover official 0.2.19 forward update preserving nonempty project facts, 80 browser object selections and cross-session source resolution, three-viewport font 24-to-28 propagation, native clipboard denial/retry, five-dimensional delivery, and two-tab asset admission invalidation/recovery. The historical browser selector removed by the current asset UI was replaced by assertions against current admission, preview and copy behavior; the original failure remains in private evidence.
+
+Immutable release and asset proofs, anonymous downloaded bytes, and the actual npm package were verified. Actual online assets and release proofs passed; the full hash-verified downloaded artifact passed native isolated installation and reopen. The earlier default npm online-install attempt timed out during slow download and is not claimed as passed. OS account routing, source-workspace classification and exact HTTP confirmation are engineering fixtures. No real-user installation, global Skill registration, human acceptance or fresh Codex task discovery is claimed. Documentation changes do not replace the immutable runtime source.
+
 ## 0.2.19 / npm 0.1.13 lifecycle maintenance release
 
 Runtime source is public `a7d3816e89ab75702110887d56be6435ee39698c`, exported from private `b3bd34ba6f2f946dd44c58aa580b3d69826af1a7`. Documentation commits do not replace runtime identity. The new npm launcher is 0.1.13 and bundled Skill is 0.2.9.

@@ -4,7 +4,7 @@ All notable changes to AI Product Foundation Kit are documented in this file.
 
 ## [Unreleased]
 
-### 0.2.31 candidate
+## [0.2.31] - 2026-09-23
 
 - 将新增 CLI 与服务端跨模块调用统一接入精确宿主入口，并补齐对应契约检查；不新增包级原始写入能力。
 
@@ -15,7 +15,7 @@ All notable changes to AI Product Foundation Kit are documented in this file.
 - 交付收尾选择当前对象的有效证据，保留历史记录并精确登记已替换来源。
 - 修正内部 workspace 版本引用，固定可获取的 Floating UI 工具依赖，确保干净环境可安装构建。
 
-0.2.30 已发布；0.2.31 为后续边界修正候选，尚未发布。npm 启动器源码未变，复用 0.1.13。
+0.2.30 保留为历史不可变发行，宿主导入边界由 0.2.31 修正。npm 启动器源码未变，复用并核验 0.1.13。
 
 ## [0.2.18] - 2026-09-21
 

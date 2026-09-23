@@ -29,14 +29,14 @@ Foundation 是一个本地工作台。你可以在页面预览里选中一个按
 新建一个有安装权限的 Codex 对话，不要选 Foundation 源码目录，然后粘贴：
 
 ```text
-npx --yes --package @josephyulei/summon-foundation@0.1.13 summon foundation --version 0.2.19
+npx --yes --package @josephyulei/summon-foundation@0.1.13 summon foundation --version 0.2.31
 ```
 
 安装页会让你选择文件夹，以及是否启用 Foundation 的 Codex 对话功能（Skill）。下载和校验完成后，你可以查看具体安装内容，再点击确认。程序和对话功能分别确认，整个过程都在同一个页面里完成。
 
 不需要克隆仓库或手动解压。缺少 Node.js、npm 或权限时，Codex 会先说明需要准备什么，不会自动安装全局工具。完整步骤见[安装说明](docs/install-with-codex.md)。
 
-当前版本：[Foundation 0.2.19](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.19) · [npm 0.1.13](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.13)。
+当前版本：[Foundation 0.2.31](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.31) · [npm 0.1.13](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.13)。
 
 ## 开始使用
 
