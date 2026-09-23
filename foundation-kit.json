@@ -1,7 +1,7 @@
 {
   "product": {
     "name": "AI Product Foundation Kit",
-    "version": "0.2.30",
+    "version": "0.2.31",
     "dataFormatVersion": "0.1.0"
   },
   "versionAuthority": "foundation-kit.json#/product/version",

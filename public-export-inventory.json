@@ -2,10 +2,10 @@
   "schemaVersion": "2.0.0",
   "exportContractSchemaVersion": "2.0.0",
   "exportContractSha256": "dc81aca61054c0c441988cf8b6e99123d9e3335dd5587f5786fa5bf125e65860",
-  "sourceCommit": "86cb6f034da562c859c57b74f13e0ea03aaab5f8",
-  "approvedSourceCommit": "86cb6f034da562c859c57b74f13e0ea03aaab5f8",
+  "sourceCommit": "70015e7ac09cdd6ee48465017aab3c3a797bcc48",
+  "approvedSourceCommit": "70015e7ac09cdd6ee48465017aab3c3a797bcc48",
   "sourceState": "clean-exact-commit-approved",
-  "productVersion": "0.2.30",
+  "productVersion": "0.2.31",
   "licenseStatus": "approved",
   "scopeReviewStatus": "approved",
   "publicRepositoryNameStatus": "approved",
@@ -14,17 +14,17 @@
   "publicationEligible": true,
   "commitBinding": {
     "schemaVersion": "2.0.0",
-    "approvedCommit": "86cb6f034da562c859c57b74f13e0ea03aaab5f8",
-    "gitTree": "a8f879d3989ac1444d4abce3df286c1f68201408",
+    "approvedCommit": "70015e7ac09cdd6ee48465017aab3c3a797bcc48",
+    "gitTree": "f873a23f3b2869f6ab0796612d647c1a11a9ecc2",
     "contractSha256": "dc81aca61054c0c441988cf8b6e99123d9e3335dd5587f5786fa5bf125e65860",
-    "expectedTreeHash": "bde47b01765c7baed3ad7f699351214b2e1e99db57dacd2f267e0e8775f1e6fd",
+    "expectedTreeHash": "fade275cd572577d6b652bd313d47fc7a06b16dd1b46352bdeab4ccef73647fe",
     "fileCount": 449
   },
   "fileCount": 451,
   "privateExportedCount": 449,
   "generatedPublicCount": 2,
-  "treeHash": "bde47b01765c7baed3ad7f699351214b2e1e99db57dacd2f267e0e8775f1e6fd",
-  "inventoryHash": "8c0b2606fb8fe53bd3de7ba0ec597b9ae214d290e2531cd79ca1f6d7442b3cdb",
+  "treeHash": "fade275cd572577d6b652bd313d47fc7a06b16dd1b46352bdeab4ccef73647fe",
+  "inventoryHash": "ba84fdde315b1e27974f543a8937d28c1f748e213c624996970f1ec400e413b3",
   "files": [
     {
       "path": ".gitignore",
@@ -38,8 +38,8 @@
       "path": "CHANGELOG.md",
       "type": "file",
       "mode": 420,
-      "bytes": 4410,
-      "sha256": "563066e973d9b327a4c9062235fe614a950321c2da50787fa7e19ba1e2c400b6",
+      "bytes": 4621,
+      "sha256": "d34a46ec6516f913f41b3c8d9bb32329b3d121d16a287650f5ff63672475c0b7",
       "ownership": "private-exported"
     },
     {
@@ -47,7 +47,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 1082,
-      "sha256": "ca36615ea1a669bd9fa1bc89b8635aaed44ce32643da808fcac5d988db9fb13b",
+      "sha256": "69e2291183a63f66a86c48cb42d13c8578e901843a2ef5b0a6186f365d3e786e",
       "ownership": "generated-public"
     },
     {
@@ -103,7 +103,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 1330,
-      "sha256": "9808a9747d8d3534e293814038d964ba36c56b12d07a1bf192065d5688a61716",
+      "sha256": "beaf313072818bd52fc20cc86ad847fef8354ac1863380ed79fbd1375cf7155a",
       "ownership": "private-exported"
     },
     {
@@ -406,8 +406,8 @@
       "path": "apps/management-center/src/server/center-server.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 32986,
-      "sha256": "d8acf4abbf44aec048398f765d3e438b0c2b3d2c121ff6cff977544c62e729da",
+      "bytes": 32983,
+      "sha256": "c15e286192b4e8855bf61c4ea502c9c31518909d724155407fc10438b6bd71e7",
       "ownership": "private-exported"
     },
     {
@@ -1423,7 +1423,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 1107,
-      "sha256": "d9a95e56edd00073f6f2a59b518dd56f46c9baca114c4c8fa22f93704f6dd7e4",
+      "sha256": "b3070954641cf1a509e448f1de3ce8f3e0bc1ce65ce4d7c3172b3e4673aa401e",
       "ownership": "private-exported"
     },
     {
@@ -1439,7 +1439,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 221285,
-      "sha256": "f69ed3245900f64a404c079abb19ed4fe0be8273ba5b3b2940ef1dbf6c927e47",
+      "sha256": "de4fcd2326574ce9eedd6ecee078a65d845f7509c75045f303628930b0b19371",
       "ownership": "private-exported"
     },
     {
@@ -1447,7 +1447,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 957,
-      "sha256": "475879d866bc3b7999c45a4f267e1aff097a5090bf4152923886f6d4c3a70fe2",
+      "sha256": "2a54cc473456f6c6622b909822940081248287b4bb0a0838bf79500b2dfbb356",
       "ownership": "private-exported"
     },
     {
@@ -1462,8 +1462,8 @@
       "path": "packages/cli/index.mjs",
       "type": "file",
       "mode": 493,
-      "bytes": 27640,
-      "sha256": "0888447fbe23e4d4f03ccacab96da67dd4d1179d61aaa29e5e128a75ed0f5465",
+      "bytes": 27451,
+      "sha256": "802b1228a682992f717445dfaccea16f2b14d35da81a70e0a647b0d7fbce39de",
       "ownership": "private-exported"
     },
     {
@@ -1487,7 +1487,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 294,
-      "sha256": "d3b666e7325957efda548d85ca8705f48ba6dbf1387e973ee313d27bd6bdad56",
+      "sha256": "9d7c1529b8bc9155cc3d60d3dbbde10180c079a779a9cdaba8367e3a6e554594",
       "ownership": "private-exported"
     },
     {
@@ -1911,7 +1911,7 @@
       "type": "file",
       "mode": 420,
       "bytes": 582,
-      "sha256": "997e94e3e971026f61b12d216e131244a2858a14f0fcdecb6709558f00e391f9",
+      "sha256": "9b4883199c635bcc1edf718fc1453da9c77fb9fcb10ee724415b361612f38e7e",
       "ownership": "private-exported"
     },
     {
@@ -2310,8 +2310,8 @@
       "path": "packages/core/workspace-host.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 1107,
-      "sha256": "a593ab3a8317deee1dca3c0b09096e7224d1427411b262b57c5cbfd7f31a6d36",
+      "bytes": 1496,
+      "sha256": "f4a26591aa62303267ab71d7ac003b5a2020a4c969020d57169d669ef5df24d8",
       "ownership": "private-exported"
     },
     {
@@ -2686,8 +2686,8 @@
       "path": "tests/contracts/workspaces.test.mjs",
       "type": "file",
       "mode": 420,
-      "bytes": 7148,
-      "sha256": "7ca7155c46259e83a4b64b84da0a25ea9f235d3e62b3dffbe8eb0d1d38609cdc",
+      "bytes": 7331,
+      "sha256": "75e131e7da26a8c3a35e83521f6d5430970c1ba5791d300c48a6cfc21002f67b",
       "ownership": "private-exported"
     },
     {

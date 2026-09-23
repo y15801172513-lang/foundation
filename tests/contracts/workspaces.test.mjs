@@ -28,6 +28,7 @@ test('三个真实 workspace 通过公开 exports 暴露职责', () => {
 // Exact source-host consumers only; these capabilities never become package exports.
 const hostImports = {
   "apps/management-center/src/server/center-server.mjs": [
+    "projectSemanticRevision",
     "applyProjectMutationPlan",
     "browserLaunchContract",
     "cleanupBrowser",
@@ -49,6 +50,11 @@ const hostImports = {
     "readWorkbenchAuthorityKey"
   ],
   "packages/cli/index.mjs": [
+    "deliveryVerificationPlan",
+    "projectDeliveryIdentity",
+    "prepareInspectorUpgradePlan",
+    "resolveProjectObject",
+    "resolveProjectFile",
     "analyzeProjectSources",
     "analyzeSources",
     "discoverLaunchedCandidateRoot",

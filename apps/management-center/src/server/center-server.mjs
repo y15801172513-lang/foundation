@@ -1,5 +1,5 @@
 import {browserRequirementDigest,browserConfigurationInputs,currentEvidenceInputs} from '@foundation/core';
-import {projectSemanticRevision} from '../../../../packages/core/project-revisions.mjs';
+import {projectSemanticRevision} from '../../../../packages/core/workspace-host.mjs';
 import {captureProjectRoundInputs, projectRuntimeDigest} from '@foundation/core';
 import {observeWorkbenchCapabilities} from './preview-capability-observer.mjs';
 import {synchronizeProject, inspectSyncSources} from '../../../../packages/core/workspace-host.mjs';

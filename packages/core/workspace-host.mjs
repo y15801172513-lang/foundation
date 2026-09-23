@@ -9,3 +9,9 @@ export {analyzeProjectSources, inspectProjectSync, inspectSyncSources, preparePr
 export {analyzeSources} from './source-analysis.mjs';
 export {signTrustedPayload} from './trusted-authority.mjs';
 export {createWorkbenchRuntime, openOrReuseWorkbench, readWorkbenchAuthorityKey} from './workbench-runtime.mjs';
+export {deliveryVerificationPlan} from './delivery-verification.mjs';
+export {projectDeliveryIdentity} from './delivery-identity.mjs';
+export {prepareInspectorUpgradePlan} from './inspector-upgrade-plan.mjs';
+export {resolveProjectObject} from './object-context.mjs';
+export {resolveProjectFile} from './path-boundary.mjs';
+export {projectSemanticRevision} from './project-revisions.mjs';

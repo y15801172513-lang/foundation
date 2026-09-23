@@ -1,9 +1,5 @@
 #!/usr/bin/env node
-import {deliveryVerificationPlan} from '../core/delivery-verification.mjs';
-import {projectDeliveryIdentity} from '../core/delivery-identity.mjs';
-import {prepareInspectorUpgradePlan} from '../core/inspector-upgrade-plan.mjs';
-import {resolveProjectObject} from '../core/object-context.mjs';
-import {resolveProjectFile} from '../core/path-boundary.mjs';
+import {deliveryVerificationPlan, projectDeliveryIdentity, prepareInspectorUpgradePlan, resolveProjectObject, resolveProjectFile} from '../core/workspace-host.mjs';
 import {runInstalledMaintenance} from './installed-maintenance.mjs';
 import {synchronizeProject, inspectProjectSync, analyzeProjectSources, verifyProjectDefinition, prepareProjectSemanticReview, submitProjectSemanticReview} from '../core/workspace-host.mjs';
 import {analyzeSources} from '../core/workspace-host.mjs';
