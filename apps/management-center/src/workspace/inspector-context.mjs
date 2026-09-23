@@ -1,12 +1,12 @@
-import {inspectObjectName, objectLocator} from '@foundation/core/object-identity';
+import {inspectObjectName, objectLocator, shortObjectName} from '@foundation/core/object-identity';
 const compact = (record = {}) => Object.entries(record).filter(([, value]) => value).map(([key, value]) => `${key}=${value}`).join(', ') || '尚未登记';
 
 export const INSPECTOR_COPY_CATEGORIES = [
   {id: 'full', label: '完整对象上下文'},
-  {id: 'identity', label: '身份与层级'},
-  {id: 'logic', label: '相关逻辑'},
+  {id: 'identity', label: '定位与层级'},
+  {id: 'logic', label: '交互逻辑'},
   {id: 'layout', label: '布局与样式'},
-  {id: 'impact', label: '使用、影响与缺口'}
+  {id: 'impact', label: '关联与待完善'}
 ];
 
 export function suggestedInspectorScope(object, target = '') {
@@ -24,14 +24,15 @@ export function enrichInspectorObject(object, model) {
   const page = model.pages?.find((item) => item.id === object.pageId) || null;
   const asset = model.assets?.find((item) => item.assetId === object.componentId) || null;
   const structures=[...(page?.sourceStructure?.objects || []),...(asset?.contentFact?.sourceStructure?.objects || [])];
-  const bindings=object.persistentId?structures.filter(item=>item.persistentId===object.persistentId&&(!object.instanceId||item.instanceKey===object.instanceId)&&(!object.identityGeneration||item.incarnation===object.identityGeneration)):[];
+  const bindings=object.persistentId?structures.filter(item=>item.persistentId===object.persistentId&&(!object.instanceId||!item.instanceKey||item.instanceKey===object.instanceId)&&(!object.identityGeneration||item.incarnation===object.identityGeneration)):[];
   const mapped=bindings.length===1?bindings[0]:null;
-  const name = asset?.name || mapped?.name || object.name || object.role;
+  const name = shortObjectName({label:object.name,role:object.role}).name;
   if(mapped)object={...object,sourceLocation:{file:mapped.file,line:mapped.line,offset:mapped.offset,sha256:mapped.sha256,source:'current-facts-source-structure'}};
   const normalizedName = String(name || '').toLowerCase();
   const ids=new Set([object.persistentId,object.componentId,object.instanceId,object.bindingId].filter(Boolean));
   const relatedLogic=[...(model.relations || []),...(model.objectRelations || [])].filter(relation=>(!relation.ownerId || relation.ownerId===page?.id || relation.ownerId===asset?.assetId) && (ids.has(relation.from)||ids.has(relation.to)||ids.has(relation.bindingId)||[...(relation.fromBindings || []),...(relation.toBindings || [])].some(id=>ids.has(id))));
   const relationCandidates=(model.relations || []).filter(relation=>!relatedLogic.includes(relation) && normalizedName && relation.trigger && normalizedName===String(relation.trigger).toLowerCase());
+  object={...object,projectId:model.project?.projectId || object.projectId,contentVersion:model.semanticRevision || object.contentVersion};
   const locator=objectLocator(object);
   const gaps = [];
   if(inspectObjectName(name).state!=='usable')gaps.push('对象名称缺失或仅含符号；需核对用途后命名');
@@ -46,7 +47,7 @@ export function enrichInspectorObject(object, model) {
   for (const item of asset?.pending || []) gaps.push(`待确认：${item}`);
   const factsUpdatedAt = [model.project?.updatedAt, page?.updatedAt, asset?.updatedAt, ...relatedLogic.map((item) => item.updatedAt)].filter(Boolean).sort().at(-1) || model.relationsVersion || null;
   const registeredComponent = Boolean(asset || object.registeredComponent);
-  return {...object, name: asset?.name || name, page, asset, relatedLogic, relationCandidates, relationState:relatedLogic.length?'matched':ids.size?'no-direct-match':'not-checked', locator, usageLocations: asset?.usedByPages || [], gaps, factsUpdatedAt, revision:model.revision || object.revision,factsVersion: model.revision || model.relationsVersion || factsUpdatedAt, localStructureNote: registeredComponent ? null : '这是当前页面里的普通结构，可定位和修改，但没有被视为缺失组件。', recommendation: inspectorScopeRecommendation({...object, registeredComponent}), suggestedScope: suggestedInspectorScope({...object, registeredComponent})};
+  return {...object, name, page, asset, relatedLogic, relationCandidates, relationState:relatedLogic.length?'matched':ids.size?'no-direct-match':'not-checked', locator, usageLocations: asset?.usedByPages || [], gaps, factsUpdatedAt, revision:model.revision || object.revision,factsVersion: model.revision || model.relationsVersion || factsUpdatedAt, localStructureNote: registeredComponent ? null : '这是当前页面里的普通结构，可定位和修改，但没有被视为缺失组件。', recommendation: inspectorScopeRecommendation({...object, registeredComponent}), suggestedScope: suggestedInspectorScope({...object, registeredComponent})};
 }
 
 function locatorEnvelope({project, page, object}) {
@@ -56,7 +57,7 @@ function locatorEnvelope({project, page, object}) {
     `project name: ${project?.name || '尚未登记'}`,
     `page: ${page?.id || object?.pageId || '尚未登记'}; route=${page?.preview || page?.route || '尚未登记'}`,
     `object identity: ${JSON.stringify(objectLocator(object))}`,
-    `source location: ${JSON.stringify(object?.sourceLocation || {state:'unknown'})}`,
+    '只读补取：foundation-kit project resolve-object --root <安装根> --project <项目根> --input <保存此复制内容的项目内文件>',
     `snapshot revision: ${object?.revision || object?.factsVersion || '尚未核验'}`,
     `object type: ${object?.registeredComponent || object?.componentId ? 'registered component' : 'local page structure'}; role=${object?.role || '尚未登记'}; name=${object?.name || '尚未登记'}`,
     `required ancestor chain: ${ancestorChain}`,

@@ -65,6 +65,7 @@ export function inspectReuseDecision(decision, before, after) {
 export function inspectAssetReferences(facts) {
   const issues=[];
   const assets=rows(facts),ids=new Set(assets.map(a=>a.id));
+  const assetIds=new Set(['pages','components','motions','design-tokens'].flatMap(kind=>(facts[kind]?.items || []).map(item=>item.id)));
   const allIds=new Set(Object.values(facts).flatMap(d=>d?.items || []).map(x=>x.id));
   const bindings=new Map();
   for(const asset of assets) {
@@ -88,8 +89,8 @@ export function inspectAssetReferences(facts) {
       if(item.factIds?.some(id=>!allIds.has(id)))issues.push(`${change.id}: requirement 引用了不存在的事实`);
       if(item.sourceRefIds?.some(id=>!sourceIds.has(id)))issues.push(`${change.id}: requirement 来源引用不存在`);
     }
-    for(const decision of change.reuseDecisions || [])if(!requirementIds.has(decision.requirementId) || decision.scopeRevision!==scope.revision || decision.candidateIds?.some(id=>!ids.has(id)) || (decision.assetId&&!ids.has(decision.assetId)) || decision.rejectedCandidates?.some(candidate=>!ids.has(candidate.assetId)))issues.push(`${change.id}: 决定引用或 scope revision 无效`);
-    for(const evidence of change.evidenceIndex || [])if(evidence.taskId!==scope.taskId || evidence.scopeRevision!==scope.revision || (evidence.subject?.definitionId && !ids.has(evidence.subject.definitionId) && !(facts.pages?.items || []).some(page=>page.id===evidence.subject.definitionId&&page.sourceStructure?.objects?.length)))issues.push(`${change.id}: 证据任务、修订或定义引用无效`);
+    for(const decision of change.reuseDecisions || [])if(!requirementIds.has(decision.requirementId) || decision.scopeRevision!==scope.revision || decision.candidateIds?.some(id=>!ids.has(id)) || (decision.assetId&&!assetIds.has(decision.assetId)) || decision.rejectedCandidates?.some(candidate=>!ids.has(candidate.assetId)))issues.push(`${change.id}: 决定引用或 scope revision 无效`);
+    for(const evidence of change.evidenceIndex || [])if(evidence.taskId!==scope.taskId || evidence.scopeRevision!==scope.revision || (evidence.subject?.definitionId && !ids.has(evidence.subject.definitionId) && !(facts.pages?.items || []).some(page=>page.id===evidence.subject.definitionId&&page.sourceStructure?.objects?.length) && !(facts.motions?.items || []).some(motion=>motion.id===evidence.subject.definitionId&&motion.animationName&&motion.implementationMapping)))issues.push(`${change.id}: 证据任务、修订或定义引用无效`);
   }
   return issues;
 }

@@ -1,16 +1,18 @@
+import {CopyToast} from '@/components/foundation/copy-toast';
 import {Component, lazy, Suspense, useEffect, useMemo, useReducer, useRef, useState} from 'react';
 import {buildContextRecord, contextPlainText, resolveComponentSelection} from '@foundation/core/context';
 import {Moon, Sun} from 'lucide-react';
 import {MetadataText} from '@/components/foundation/content-roles';
 import {FoundationIconButton} from '@/components/foundation/icon-button';
 import {NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList} from '@/components/ui/navigation-menu';
+import {Button} from '@/components/ui/button';
 import {Spinner} from '@/components/ui/spinner';
 import {TooltipProvider} from '@/components/ui/tooltip';
 import {isAllowedPreviewMessage} from '@/features/preview/bridge-policy.mjs';
 import {createWorkspaceState, transitionWorkspace,selectionRef} from '@/state/workspace-state.mjs';
 import {applyWorkspaceTheme, readWorkspaceTheme} from '@/theme/workspace-theme.mjs';
-import {copyContextPlainText} from './copy-context.mjs';
-import {enrichInspectorObject} from './inspector-context.mjs';
+import {createSelectionCopier} from './copy-context.mjs';
+import {buildInspectorCopyPayload, enrichInspectorObject} from './inspector-context.mjs';
 
 const initialModel = window.__FOUNDATION_MODEL__ || {project: {name: 'Foundation'}, pages: [], relations: [], components: [], assets: [], changes: [], interactions: [], preview: {mode: 'local-static', allowedOrigins: ['self']}};
 const InformationLogicWorkspace = lazy(() => import('./information-logic-workspace').then((module) => ({default: module.InformationLogicWorkspace})));
@@ -82,6 +84,10 @@ export function WorkspaceApp() {
   const boundRevision=useRef(model.revision);
   const themeRef = useRef(theme);
   const inspectorRef = useRef(inspector);
+  const copySequence = useRef(0);
+  const selectionCopier = useRef(null);
+  if(!selectionCopier.current)selectionCopier.current=createSelectionCopier(navigator.clipboard);
+  const [copyNotice,setCopyNotice] = useState(null);
   const workspaceModelRef = useRef(workspaceModel);
   const page = workspaceModel.pages.find((item) => item.id === state.pageId) || workspaceModel.pages[0];
   const selection = resolveComponentSelection(workspaceModel.components, {componentId: state.componentId, instanceId: state.instanceId, eventId: state.eventId, variant: state.variant, pageId: state.componentPageId || state.pageId});
@@ -117,8 +123,17 @@ export function WorkspaceApp() {
       }
       if (event.data.kind === 'component-selected' && !inspectorRef.current.active) dispatch({type: 'set-component', componentId: event.data.componentId, instanceId: event.data.instanceId, eventId: event.data.eventId, eventState: event.data.eventState, variant: event.data.variant, pageId: event.data.pageId});
       if (event.data.kind === 'inspect-hovered' && inspectorRef.current.active) setInspector((current) => ({...current, phase: 'hover'}));
-      if (event.data.kind === 'inspect-selected' && inspectorRef.current.active) {
-        setInspector({active: true, phase: 'locked', object: enrichInspectorObject(event.data.object, workspaceModelRef.current)});
+      if (event.data.kind === 'inspect-updated' && inspectorRef.current.object?.inspectorId===event.data.object?.inspectorId) {
+        const next={...inspectorRef.current,object:enrichInspectorObject(event.data.object,workspaceModelRef.current)};
+        inspectorRef.current=next;setInspector(next);
+      }
+      if (event.data.kind === 'inspect-selected') {
+        const selected=enrichInspectorObject(event.data.object, workspaceModelRef.current);
+        const next={active:false,phase:'locked',object:selected};
+        inspectorRef.current=next;setInspector(next);
+        postToPreview({kind:'inspect-mode-changed',active:false});
+        const current=workspaceModelRef.current;
+        void copyContext(buildInspectorCopyPayload({project:current.project,page:current.pages.find(page=>page.id===selected.pageId),object:selected,category:'identity'}));
         const object=event.data.object;
         if(object?.componentId)dispatch({type:'set-component',componentId:object.componentId,instanceId:object.instanceId,pageId:object.pageId,eventId:object.eventId,eventState:object.eventState,variant:object.variant});
         else dispatch({type:'clear-component'});
@@ -132,23 +147,21 @@ export function WorkspaceApp() {
   }, []);
 
   const copyContext = async (content) => {
-    const result = await copyContextPlainText(navigator.clipboard, content);
+    const sequence=++copySequence.current;
+    setCopyNotice({message:'正在复制定位信息…',content,pending:true});
+    const result = await selectionCopier.current(content);
+    if(sequence!==copySequence.current)return;
+    setCopyNotice({message:result.message,content,pending:false,failed:!result.ok});
     setBridge((current) => ({...current, label: result.message}));
   };
   const toggleInspector = () => {
     const active = !inspector.active;
-    const next = {active, phase: active ? 'hover' : 'inactive', object: null};
+    const next = {active, phase: inspector.object ? 'locked' : active ? 'hover' : 'inactive', object: inspector.object};
     inspectorRef.current = next;
     setInspector(next);
     postToPreview({kind: 'inspect-mode-changed', active});
   };
   const navigateInspector = (navigation) => {
-    if (!inspectorRef.current.active) {
-      const next = {active: true, phase: 'hover', object: null};
-      inspectorRef.current = next;
-      setInspector(next);
-      postToPreview({kind: 'inspect-mode-changed', active: true});
-    }
     postToPreview({kind: 'inspect-navigate', ...navigation});
   };
   const onPreviewLoad = (route) => {
@@ -179,5 +192,5 @@ export function WorkspaceApp() {
     themeRef.current = next;
     setTheme(next);
   };
-  return <TooltipProvider><div className="app-shell"><header className="topbar"><span className="topbar-project truncate text-base font-medium" aria-label={workspaceModel.project?.name || 'Foundation'} title={workspaceModel.project?.name || 'Foundation'}>{workspaceModel.project?.name || 'Foundation'}</span><NavigationMenu className="topbar-navigation" aria-label="工作区"><NavigationMenuList><NavigationMenuItem><NavigationMenuLink href="#preview" active={state.workspaceArea === 'building' && state.buildingMode === 'preview'} onClick={(event) => { event.preventDefault(); setBuildingMode('preview'); }}>预览搭建</NavigationMenuLink></NavigationMenuItem><NavigationMenuItem><NavigationMenuLink href="#logic" active={state.workspaceArea === 'building' && state.buildingMode === 'logic'} onClick={(event) => { event.preventDefault(); setBuildingMode('logic'); }}>逻辑搭建</NavigationMenuLink></NavigationMenuItem><NavigationMenuItem><NavigationMenuLink href="#assets" active={state.workspaceArea === 'assets'} onClick={(event) => { event.preventDefault(); openAssets(); }}>资产管理</NavigationMenuLink></NavigationMenuItem></NavigationMenuList></NavigationMenu><FoundationIconButton data-theme-toggle className="ml-1" label={dark ? '切换到亮模式' : '切换到暗模式'} aria-pressed={dark} onClick={toggleTheme}>{dark ? <Sun data-icon="inline-start" /> : <Moon data-icon="inline-start" />}</FoundationIconButton></header>{statusMessage ? <MetadataText role="status">{statusMessage}</MetadataText> : null}{content}<footer className="statusbar"><span title={model.delivery?.summary}>{model.projectSelected === false ? '未选择项目 · 不自动扫描或启用' : model.synchronization?.authorization === 'revoked' ? '持续同步已撤销 · 保留资料只读查看' : model.synchronization && model.synchronization.state !== 'latest' ? '持续授权与最新状态独立 · 内容更新待核' : model.delivery?.contentIntegrity?.ready === false ? '内容交付不完整 · 请查看缺口' : model.delivery?.state === 'sync-pending' ? 'Foundation 同步待完成 · 只读检查可查看缺口' : bridge.label}</span><span>Foundation 项目资料 · {workspaceModel.pages.length} 个页面 · {workspaceModel.components.length} 个组件</span></footer></div></TooltipProvider>;
+  return <TooltipProvider><div className="app-shell"><header className="topbar"><span className="topbar-project truncate text-base font-medium" aria-label={workspaceModel.project?.name || 'Foundation'} title={workspaceModel.project?.name || 'Foundation'}>{workspaceModel.project?.name || 'Foundation'}</span><NavigationMenu className="topbar-navigation" aria-label="工作区"><NavigationMenuList><NavigationMenuItem><NavigationMenuLink href="#preview" active={state.workspaceArea === 'building' && state.buildingMode === 'preview'} onClick={(event) => { event.preventDefault(); setBuildingMode('preview'); }}>预览搭建</NavigationMenuLink></NavigationMenuItem><NavigationMenuItem><NavigationMenuLink href="#logic" active={state.workspaceArea === 'building' && state.buildingMode === 'logic'} onClick={(event) => { event.preventDefault(); setBuildingMode('logic'); }}>逻辑搭建</NavigationMenuLink></NavigationMenuItem><NavigationMenuItem><NavigationMenuLink href="#assets" active={state.workspaceArea === 'assets'} onClick={(event) => { event.preventDefault(); openAssets(); }}>资产管理</NavigationMenuLink></NavigationMenuItem></NavigationMenuList></NavigationMenu><FoundationIconButton data-theme-toggle className="ml-1" label={dark ? '切换到亮模式' : '切换到暗模式'} aria-pressed={dark} onClick={toggleTheme}>{dark ? <Sun data-icon="inline-start" /> : <Moon data-icon="inline-start" />}</FoundationIconButton></header>{statusMessage ? <MetadataText role="status">{statusMessage}</MetadataText> : null}<CopyToast notice={copyNotice} onRetry={copyContext}/>{content}<footer className="statusbar"><span title={model.delivery?.summary}>{model.projectSelected === false ? '未选择项目 · 不自动扫描或启用' : model.synchronization?.authorization === 'revoked' ? '持续同步已撤销 · 保留资料只读查看' : model.synchronization && model.synchronization.state !== 'latest' ? '持续授权与最新状态独立 · 内容更新待核' : model.delivery?.contentIntegrity?.ready === false ? '内容交付不完整 · 请查看缺口' : model.delivery?.state === 'sync-pending' ? 'Foundation 同步待完成 · 只读检查可查看缺口' : bridge.label}</span><span>Foundation 项目资料 · {workspaceModel.pages.length} 个页面 · {workspaceModel.components.length} 个组件</span></footer></div></TooltipProvider>;
 }

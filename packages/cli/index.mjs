@@ -1,4 +1,9 @@
 #!/usr/bin/env node
+import {deliveryVerificationPlan} from '../core/delivery-verification.mjs';
+import {projectDeliveryIdentity} from '../core/delivery-identity.mjs';
+import {prepareInspectorUpgradePlan} from '../core/inspector-upgrade-plan.mjs';
+import {resolveProjectObject} from '../core/object-context.mjs';
+import {resolveProjectFile} from '../core/path-boundary.mjs';
 import {runInstalledMaintenance} from './installed-maintenance.mjs';
 import {synchronizeProject, inspectProjectSync, analyzeProjectSources, verifyProjectDefinition, prepareProjectSemanticReview, submitProjectSemanticReview} from '../core/workspace-host.mjs';
 import {analyzeSources} from '../core/workspace-host.mjs';
@@ -124,6 +129,39 @@ export function upgradeProject(project, {plan} = {}) {
 
 function runProjectCli(args, output) {
   const command = args[1];
+  if(command==='delivery-identity') {
+    const project=option(args,'--project'),installationRoot=option(args,'--root');
+    const state=inspectLocalLifecycle({installationRoot,project,operationRequirement:'lifecycle-inspect'});
+    if(state.bridge?.installationHealth?.code!=='FOUNDATION_HEALTHY'||state.project?.state!=='enabled'||!state.project?.agreement)throw new Error('交付读回需要健康安装和当前项目绑定');
+    return output.log(JSON.stringify(projectDeliveryIdentity({project,current:state.installation.current}),null,2));
+  }
+  if(command==='inspector-plan') {
+    const project=option(args,'--project'),authority=inspectProjectAuthority(project,{installationRoot:option(args,'--root')});
+    if(authority.state!=='enabled'||!authority.agreement)throw new Error('升级计划需要已核验项目绑定');
+    return output.log(JSON.stringify(prepareInspectorUpgradePlan({project,installationRoot:option(args,'--root')}),null,2));
+  }
+  if(command==='resolve-object') {
+    const project=option(args,'--project'),installationRoot=option(args,'--root');
+    const authority=inspectProjectAuthority(project,{installationRoot});
+    if(authority.state!=='enabled'||!authority.agreement)throw new Error('只读对象补取需要当前已核验的项目绑定');
+    const input=fs.readFileSync(resolveProjectFile(project,option(args,'--input'),'复制信封'),'utf8');
+    const result=resolveProjectObject({project,input});output.log(JSON.stringify(result,null,2));
+    if(result.state!=='resolved')process.exitCode=2;return;
+  }
+  if(command==='verify-delivery')return (async()=>{
+    const project=option(args,'--project'),installationRoot=option(args,'--root'),taskId=option(args,'--task-id');
+    const authority=inspectProjectAuthority(project,{installationRoot});
+    if(authority.state!=='enabled'||!authority.agreement)throw new Error('交付验证需要当前已核验的项目绑定');
+    const plan=deliveryVerificationPlan(readFacts(project),taskId),results=[];
+    for(const request of plan.requests)try {
+      const {kind,...options}=request;
+      const result=kind==='definition'?await verifyProjectDefinition({project,installationRoot,...options}):await verifyInstalledProjectBrowser({project,installationRoot,...options});
+      results.push({request,result});
+    }catch(error){results.push({request,state:'failed',reason:error.message});}
+    const passed=!plan.pending.length&&results.length>0&&results.every(item=>item.result?.report?.result==='passed'||item.result?.state==='passed');
+    output.log(JSON.stringify({state:passed?'passed':'pending',plan,results,nextStep:'将返回的真实报告写入项目并通过正常 sync 精确批次登记；重开后核对 delivery-identity。'},null,2));
+    if(!passed)process.exitCode=2;
+  })();
   if(command==='verify-browser')return verifyInstalledProjectBrowser({project:option(args,'--project'),installationRoot:option(args,'--root'),taskId:option(args,'--task-id'),assetId:option(args,'--asset-id'),scenarioId:option(args,'--scenario-id'),requirementId:option(args,'--requirement-id')}).then(result=>{output.log(JSON.stringify(result,null,2));if(result.state!=='passed')process.exitCode=2;},error=>{output.error(`错误：浏览器验证失败（${error.message}）`);process.exitCode=1;});
   if(command==='prepare-semantic-review')return Promise.resolve().then(()=>prepareProjectSemanticReview({project:option(args,'--project'),installationRoot:option(args,'--root'),taskId:option(args,'--task-id'),assetId:option(args,'--asset-id'),requirementId:option(args,'--requirement-id')})).then(result=>output.log(JSON.stringify(result,null,2)),error=>{output.error(`错误：语义核验准备失败（${error.message}）`);process.exitCode=1;});
   if(command==='submit-semantic-review')return Promise.resolve().then(()=>submitProjectSemanticReview({project:option(args,'--project'),installationRoot:option(args,'--root'),prepared:JSON.parse(fs.readFileSync(option(args,'--plan'),'utf8')),review:JSON.parse(fs.readFileSync(option(args,'--review'),'utf8'))})).then(result=>{output.log(JSON.stringify(result,null,2));if(result.report.result!=='passed')process.exitCode=2;},error=>{output.error(`错误：语义核验提交失败（${error.message}）`);process.exitCode=1;});

@@ -8,7 +8,7 @@ import {sha256,canonicalStringify} from './install-contract.mjs';
 import {assertProjectFileAbsent,resolveProjectFile as resolveEvidencePath,realProject} from './path-boundary.mjs';
 import {FACT_FILES, readFacts, validateFacts, inspectProjectPreparation} from './facts.mjs';
 import {readCurrentFoundationRules} from './rules-delivery.mjs';
-import {inspectEvidenceReport,inspectEvidenceImpact,evidenceSubjectFingerprint,factImplementationInputs} from './evidence-impact.mjs';
+import {currentEvidenceInputs,inspectEvidenceReport,inspectEvidenceImpact,evidenceSubjectFingerprint,factImplementationInputs} from './evidence-impact.mjs';
 import {inspectSyncSources} from './source-inventory.mjs';
 import {inspectSourceInputIdentity,analyzerVersion} from './source-analysis.mjs';
 
@@ -51,7 +51,7 @@ export function assessDelivery(facts,{contentIntegrity=null,evidenceResults={},a
       if(isVisual && dimension==='runtime') {
         const required=[...REQUIRED_PREVIEW_CHECKS];
         if((facts.components?.items || []).some(asset=>(item.factIds || []).includes(asset.id)&&asset.assetModel?.previewScenarios?.length))required.push('asset-ready');
-        const capable=supported.filter(x=>x.report?.verifierVersion==='foundation-browser-checks/2.0.0' && required.every(id=>x.report.checks?.some(check=>check.id===id && check.result==='passed')));
+        const capable=supported.filter(x=>['foundation-browser-checks/2.0.0','foundation-browser-checks/3.0.0'].includes(x.report?.verifierVersion) && required.every(id=>x.report.checks?.some(check=>check.id===id && check.result==='passed')));
         if(!capable.length)issues.push({id:`delivery:preview:${item.requirementId}`,dimension:'runtime',state:'pending',message:`预览必要能力待核：${required.join('、')}`});
         // Preserve actual failures; only passing observations require all capabilities.
         supported=supported.filter(x=>x.result==='failed'||capable.includes(x));
@@ -174,12 +174,10 @@ export function inspectProjectDeliveryFiles({project, installationRoot=null,chan
   let sourceDigest;
   for(const change of facts.changes.items) for(const evidence of change.evidenceIndex || []) {
     const inputs=[];
-    for(const asset of [...facts.components.items,...facts.pages.items].filter(a=>a.id===evidence.subject?.definitionId))for(const edge of factImplementationInputs(asset)) {
-      try {const file=fileAt(root,edge.to);inputs.push({kind:edge.kind,path:edge.to,sha256:file?sha256(fs.readFileSync(file)):null});}
-      catch {inputs.push({kind:edge.kind,path:edge.to,sha256:null});}
-    }
-    const edges=[...facts.components.items,...facts.pages.items].flatMap(asset=>factImplementationInputs(asset));
-    const impact=inspectEvidenceImpact({evidence,edges,changedInputs:inputs.filter(input=>edges.some(edge=>edge.to===input.path&&edge.sha256!==input.sha256)).map(input=>input.path),current:{taskId:change.id,scopeRevision:change.deliveryScope?.revision}});
+    const target=[...facts.components.items,...facts.pages.items,...facts.motions.items].find(a=>a.id===evidence.subject?.definitionId);
+    try{inputs.push(...currentEvidenceInputs(root,target));}catch{inputs.push(...factImplementationInputs(target).map(edge=>({kind:edge.kind,path:edge.to,sha256:null})));}
+    const edges=[...facts.components.items,...facts.pages.items,...facts.motions.items].flatMap(asset=>asset.animationName?inputs.filter(input=>asset.id===target?.id).map(input=>({kind:input.kind,from:asset.id,to:input.path,sha256:input.sha256,coverage:'complete'})):factImplementationInputs(asset));
+    const impact=inspectEvidenceImpact({evidence,edges,changedInputs:inputs.filter(input=>edges.some(edge=>edge.to===input.path&&edge.kind===input.kind&&edge.sha256!==input.sha256)).map(input=>input.path),current:{taskId:change.id,scopeRevision:change.deliveryScope?.revision}});
     const expectedSourceDigest=['browser-observation','semantic-review'].includes(evidence.kind)?(sourceDigest ??= sha256(canonicalStringify(inspectSyncSources(root)))):undefined;
     let reportIdentity=null;
     try {
@@ -187,7 +185,7 @@ export function inspectProjectDeliveryFiles({project, installationRoot=null,chan
       reportIdentity={sha256:sha256(bytes),semanticSources:(report.semanticInputs?.sources || []).map(source=>({path:source.path,sha256:(()=>{try{return sha256(fs.readFileSync(resolveEvidencePath(root,source.path)));}catch{return null;}})()})),analysisInput:evidence.kind==='source-analysis'?inspectSourceInputIdentity({project:root,entryRoots:report.analysis?.entryRoots}).inputDigest:null};
     }catch{reportIdentity={state:'unavailable'};}
     acceptanceInputs.push({evidenceId:evidence.evidenceId,inputs,sourceDigest:expectedSourceDigest || null,reportIdentity});
-    let checked=inputs.length?inspectEvidenceReport({project:root,installationRoot,evidence,expectedInputs:inputs,expectedScopeDigest:sha256(canonicalStringify(change.deliveryScope)),expectedSubjectDigest:evidenceSubjectFingerprint([...facts.components.items,...facts.pages.items].find(a=>a.id===evidence.subject?.definitionId)),...(expectedSourceDigest?{expectedSourceDigest}:{}),...(evidence.kind==='source-analysis'?{expectedEnvironment:{platform:process.platform,architecture:process.arch,node:process.versions.node}}:{})}):{state:'unknown',reason:'缺精确依赖输入'};
+    let checked=inputs.length?inspectEvidenceReport({project:root,installationRoot,evidence,expectedInputs:inputs,expectedScopeDigest:sha256(canonicalStringify(change.deliveryScope)),expectedSubjectDigest:evidenceSubjectFingerprint([...facts.components.items,...facts.pages.items,...facts.motions.items].find(a=>a.id===evidence.subject?.definitionId)),...(expectedSourceDigest?{expectedSourceDigest}:{}),...(evidence.kind==='source-analysis'?{expectedEnvironment:{platform:process.platform,architecture:process.arch,node:process.versions.node}}:{})}):{state:'unknown',reason:'缺精确依赖输入'};
     if(impact.state!=='fresh' && checked.state==='verified')checked={state:impact.state,reason:impact.reasons.join('；')};
     if(checked.state==='verified' && evidence.kind==='source-analysis') {
       try{const identity=inspectSourceInputIdentity({project:root,entryRoots:checked.report.analysis.entryRoots});if(identity.inputDigest!==evidence.artifactDigest||evidence.runnerVersion!==analyzerVersion||evidence.verifierVersion!=='foundation-definition/1.1.0')checked={state:'stale',reason:'分析输入或验证器已变化'};}
@@ -195,7 +193,7 @@ export function inspectProjectDeliveryFiles({project, installationRoot=null,chan
     }
     evidenceResults[evidence.evidenceId]=checked;
   }
-  const structureInventory=inspectProjectStructure(root);
+  const structureInventory=inspectProjectStructure(root,{installationRoot});
   const structureCoverage=inspectStructureCoverage(facts,structureInventory);
   const assessment=assessDelivery(facts,{contentIntegrity,evidenceResults,structureCoverage,activeTaskId,changedInputs:[...changes,...actualChanges,...(resourceImpact?[{path:'package.json'}]:[])]});
   const taskAssessment=structuredClone(assessment),acceptanceCandidates=[];
@@ -255,7 +253,7 @@ export function inspectProjectDeliveryFiles({project, installationRoot=null,chan
   assessment.task={taskId:taskAssessment.taskId,state:taskReady?'passed':taskAssessment.aggregate==='passed'?'pending':taskAssessment.aggregate};
   assessment.project={state:['failed','blocked'].includes(assessment.aggregate)?assessment.aggregate:issues.length?'pending':assessment.aggregate,pendingPaths:projectPendingChanges.map(change=>change.path)};
   if(issues.length){assessment.issues=[...(assessment.issues || []),...issues.map(issue=>({...issue,priority:'P1',dimension:'scope'}))];if(!['failed','blocked'].includes(assessment.aggregate))assessment.aggregate='pending';if(!['failed','blocked'].includes(assessment.scope?.state))assessment.scope={...(assessment.scope || {}),state:'pending'};}
-  return {schemaVersion: '1.0.0', project: root, objectIdentities:(facts.project.contextLifecycle?.identities || []).map(identity=>({...identity,state:identity.state==='active'&&round.current?.end?.files?.some(file=>file.path===identity.sourceFile&&file.physical===identity.sourcePhysical)&&round.physicalDigest===round.current.end.physicalDigest?'active':'unverified'})), state: issues.length ? 'sync-pending' : 'consistent', summary: issues.length ? '代码完成，Foundation同步待完成' : '源码字节、事实引用与所要求的预览映射一致', changes, issues, contentIntegrity, structureCoverage, round,taskReady,taskAssessment,projectPendingChanges,acceptanceCandidates,projectDeliveryReady:!issues.length&&assessment.aggregate==='passed', assessment, evidenceResults, acceptanceInputs, deliveryReady: !issues.length && assessment.aggregate==='passed', preview: {required: requirePreview, state: supported ? assessment.runtime.state==='passed'?'verified-current-capabilities':'configured-not-browser-verified' : 'unavailable'}, semanticAcceptance: 'not-verified', mutationPerformed: false};
+  return {schemaVersion: '1.0.0', project: root, objectIdentities:(facts.project.contextLifecycle?.identities || []).map(identity=>({...identity,state:identity.state==='active'&&round.current?.end?.files?.some(file=>file.path===identity.sourceFile&&file.physical===identity.sourcePhysical)&&round.physicalDigest===round.current.end.physicalDigest?'active':'unverified'})), state: issues.length ? 'sync-pending' : 'consistent', summary: issues.length ? '代码完成，Foundation同步待完成' : '源码字节、事实引用与所要求的预览映射一致', changes, issues, contentIntegrity, structureCoverage, round,taskReady,taskAssessment,projectPendingChanges,acceptanceCandidates,projectDeliveryReady:!issues.length&&assessment.aggregate==='passed', assessment, evidenceResults, acceptanceInputs, deliveryReady: !issues.length && assessment.aggregate==='passed', preview: {required: requirePreview, state: supported ? assessment.runtime.state==='passed'?'verified-current-capabilities':'configured-not-browser-verified' : 'unavailable'}, semanticAcceptance: assessment.aggregate==='passed'?'verified-codex-or-reviewer-not-human':'not-verified', mutationPerformed: false};
 }
 
 export function inspectProjectDelivery({installationRoot, project, changes, requirePreview = false, activeTaskId = null} = {}) {

@@ -1,3 +1,5 @@
+import {historicalSourceCurrent} from './historical-source.mjs';
+import {discoverStyleAssets} from './style-assets.mjs';
 import {planStaticPreview} from './static-preview-plan.mjs';
 import {prepareSourceScene} from './source-scene.mjs';
 import {captureProjectRoundInputs,inspectProjectRound,prepareRoundTransition} from './project-context-round.mjs';
@@ -23,6 +25,7 @@ import {evidenceInputFingerprint,evidenceSubjectFingerprint,factImplementationIn
 // Shared dependencies invalidate every registered consumer, while local inputs
 // affect only their owner. Unknown/unregistered usage still remains a coverage gap.
 export function inspectFactSourceImpact(record,sources) {
+  if(historicalSourceCurrent(record,sources))return {state:'unchanged',changed:[],fingerprint:sha256('historical-source-disposition')};
   const current=new Map(sources.map(source=>[source.path,source.sha256]));
   const edges=[{to:record.implementationMapping,sha256:record.implementationSha256},...factImplementationInputs(record)].filter(edge=>edge.to);
   const changed=[...new Map(edges.filter(edge=>(current.get(edge.to) || null)!==(edge.sha256 || null)).map(edge=>[edge.to,{path:edge.to,previous:edge.sha256 || null,current:current.get(edge.to) || null}])).values()].sort((a,b)=>a.path.localeCompare(b.path));
@@ -119,7 +122,7 @@ function recordAttempt(installationRoot, record) {
 
 function currentMappedSources(project,facts){
   const sources=inspectSyncSources(project),known=new Set(sources.map(input=>input.path));
-  for(const item of Object.values(facts).flatMap(document=>document?.items || []))for(const file of [item.implementationMapping,...factImplementationInputs(item).map(edge=>edge.to)])if(file&&!known.has(file))try{const bytes=fs.readFileSync(resolveProjectFile(project,file));sources.push({path:file,sha256:sha256(bytes)});known.add(file);}catch{}
+  for(const item of Object.values(facts).flatMap(document=>document?.items || []))for(const file of [item.implementationMapping,...factImplementationInputs(item).map(edge=>edge.to),item.sourceDisposition?.source?.path,...(item.sourceDisposition?.replacements||[]).map(input=>input.path)])if(file&&!known.has(file))try{const bytes=fs.readFileSync(resolveProjectFile(project,file));sources.push({path:file,sha256:sha256(bytes)});known.add(file);}catch{}
   return sources.sort((a,b)=>a.path.localeCompare(b.path));
 }
 
@@ -130,10 +133,10 @@ export function inspectProjectSync({project, installationRoot}) {
   if (!preparation.factsReady) return {authorization, state:'pending', preparation, pending:preparation.errors, mutationPerformed:false};
   const facts = readFacts(project), sources = currentMappedSources(project,facts);
   const records = Object.values(facts).flatMap(document => document?.items || []);
-  const coverage=inspectStructureCoverage(facts,inspectProjectStructure(project));
-  const semanticPending=records.filter(item=>item.synchronization?.state==='pending');
+  const coverage=inspectStructureCoverage(facts,inspectProjectStructure(project,{installationRoot}));
+  const semanticPending=records.filter(item=>item.synchronization?.state==='pending'||item.sourceDisposition&&!historicalSourceCurrent(item,sources));
   const coveragePending=coverage.state!=='structurally-recorded'||semanticPending.length>0;
-  const pending = sources.filter(source => !records.some(item => item.implementationMapping === source.path && item.implementationSha256 === source.sha256 || item.sourceStructure?.inputs?.some(input=>input.path===source.path&&input.sha256===source.sha256)));
+  const pending = sources.filter(source => !records.some(item => item.implementationMapping === source.path && item.implementationSha256 === source.sha256 || item.sourceStructure?.inputs?.some(input=>input.path===source.path&&input.sha256===source.sha256) || factImplementationInputs(item).some(input=>input.to===source.path&&input.sha256===source.sha256)||item.sourceDisposition?.source?.path===source.path&&item.sourceDisposition.source.sha256===source.sha256));
   const delivery = inspectProjectDeliveryFiles({project,installationRoot});
   const last = authority.projectId ? latestAttempt(installationRoot,authority.projectId) : null;
   return {authorization, revision:authority.continuousSync?.revision || null, lastAttempt: last ? {attemptId:last.attemptId,state:last.state,error:last.error || null} : null, state: last && ['failed','conflict','executing'].includes(last.state) ? (last.state === 'executing' ? 'pending' : last.state) : last?.unresolvedAttempts?.length || pending.length || coveragePending || delivery.state !== 'consistent' ? 'pending' : 'latest', syncState: pending.length || coveragePending || delivery.state !== 'consistent' ? 'pending' : 'latest', coverage, semanticPending:semanticPending.map(item=>item.id), nextStep:coveragePending?'核对需求和实现结构，生成精确语义批次；文件候选不是制作完成':null, acceptanceState:delivery.assessment?.aggregate || 'pending', pending, unresolvedAttempts:last?.unresolvedAttempts || [], delivery, mutationPerformed:false};
@@ -162,9 +165,9 @@ export function continueProjectPreparation({project, installationRoot}) {
   } catch (error) { return {ok:false,state:'failed',steps,error:{code:error.code || 'PROJECT_PREPARATION_FAILED',message:error.message},preserved:'前序已完成步骤与源码；下一次触发重读后接续'}; }
 }
 
-function settleProjectObservation({project,installationRoot,now}) {
+function settleProjectObservation({project,installationRoot,now,action='observe'}) {
   const facts=readFacts(project),taskId=facts.project.contextLifecycle?.rounds?.find(round=>round.id===facts.project.contextLifecycle.currentRoundId)?.taskId || 'automatic';
-  const roundTransition=prepareRoundTransition({project,facts,taskId,action:'observe',installationRoot,now});
+  const roundTransition=prepareRoundTransition({project,facts,taskId,action,installationRoot,now});
   if(canonicalStringify(roundTransition.content)===canonicalStringify(facts.project))return false;
   const plan=createProjectMutationPlan({operation:'asset-facts-batch',project,installationRoot,handlerPayload:{documents:[],sources:[],scope:'自动观察与精确验收归属；不是将同步当成接受',generatedAt:new Date(now).toISOString(),roundTransition},now});
   if(!plan.continuousSyncRevision)throw new Error('观察提交前持续授权失效');
@@ -205,7 +208,7 @@ export function synchronizeProject({project, installationRoot, handlerPayload = 
     if (!payload) {
       const facts = readFacts(project), sources = currentMappedSources(project,facts);
       const documents = [], generatedAt = new Date(now).toISOString();
-      const inventory=inspectProjectStructure(project),discovered=new Map(),previewPlans=[],discoveryProblems=new Map();
+      const inventory=inspectProjectStructure(project,{installationRoot}),discovered=new Map(),previewPlans=[],discoveryProblems=new Map();
       const previewFile=path.join(project,'.foundation/preview.json'),preview=fs.existsSync(previewFile)?JSON.parse(fs.readFileSync(previewFile)):{};
       for(const source of sources){
         const objects=inventory.objects.filter(object=>object.file===source.path);
@@ -228,11 +231,12 @@ export function synchronizeProject({project, installationRoot, handlerPayload = 
           if(definitions.length===1){const d=definitions[0];discovered.set(source.path,{kind:'components',record:{...common,name:d.name,family:id,assetModel:{schemaVersion:'1.0.0',kind:'local',responsibility:'源码导出 '+d.name+'；业务职责待核',reuseScope:'local',binding:{file:d.file,export:d.exports[0],declarationKind:d.declarationKind,anchor:d.anchor,line:d.line},configuration:[],slots:[],variantAxes:[],states:[],previewScenarios:[{id:'definition',kind:'definition',definitionId:id}],implementationInputs:observation.inputs.map(input=>({kind:'source',from:id,to:input.path,sha256:input.sha256,discovery:'source-analysis',coverage:observation.coverage.state==='complete'?'complete':'partial'}))},synchronization:{state:'source-derived',reason:'自动提取当前导出及结构；业务意义与运行待核'}}});}
         }
       }
+      for(const item of discoverStyleAssets(project,sources,facts,generatedAt))discovered.set(item.record.id,item);
       for(const item of discovered.values())if(item.record.assetModel)try{const asset=item.record,scene=prepareSourceScene({project,facts:{...facts,components:{items:[...facts.components.items,...[...discovered.values()].filter(item=>item.kind==='components').map(item=>item.record)]}},asset,scenario:asset.assetModel.previewScenarios[0]});asset.assetModel.implementationInputs=scene.plan.inputs.map(input=>({kind:'source',from:asset.id,to:input.path,sha256:input.sha256,discovery:'source-scene-closure',coverage:'complete'}));}catch{}
       for (const kind of ['pages','components','interactions','motions','changes','design-tokens','relations']) {
         const upserts = [...discovered.values()].filter(item=>item.kind===kind).map(item=>item.record);
         for (const item of facts[kind].items) {
-          if(discovered.get(item.implementationMapping)?.kind===kind)continue;
+          if(discovered.has(item.id)||discovered.get(item.implementationMapping)?.kind===kind)continue;
           const source = sources.find(source => source.path === item.implementationMapping);
           const impact=inspectFactSourceImpact(item,sources);
           if(item.implementationMapping&&!source)continue; // Missing bytes stay readable and pending; never fabricate a source claim.
@@ -253,7 +257,7 @@ export function synchronizeProject({project, installationRoot, handlerPayload = 
       }
       payload = {documents,sources,scope:'自动发现并登记源码变化；未知内容保留待核，不声明运行通过',generatedAt,...(previewPlans.length?{preview:{expectedSha256:sha256(fs.readFileSync(previewFile)),routes:previewPlans.flatMap(item=>item.routes),assets:[...new Map(previewPlans.flatMap(item=>item.assets).map(entry=>[entry.path,entry])).values()]}}:{})};
     }
-    payload=JSON.parse(JSON.stringify(attachObservedStructure(payload,inspectProjectStructure(project),readFacts(project))));
+    payload=JSON.parse(JSON.stringify(attachObservedStructure(payload,inspectProjectStructure(project,{installationRoot}),readFacts(project))));
     if(roundAction)payload.roundTransition=prepareRoundTransition({project,facts:readFacts(project),taskId,action:roundAction,identityActions,installationRoot,now});
     attempt = {attemptId:`${Date.now()}-${crypto.randomUUID()}`,projectId:authority.projectId,project,revision:authority.continuousSync.revision,unresolvedAttempts,payload,trigger,state:'executing',createdAt:Date.now()};
     recordAttempt(installationRoot,attempt);
@@ -263,12 +267,21 @@ export function synchronizeProject({project, installationRoot, handlerPayload = 
     recordAttempt(installationRoot,attempt);
     const result = applyProjectMutationPlan({plan,now});committed=true;
     recordAttempt(installationRoot,{...attempt,state:'completed',planId:plan.planId,planHash:plan.integrity.hash,completedAt:Date.now()});
+    // A batch may change preview mappings. Close against the committed outputs,
+    // then evaluate acceptance; the pre-write snapshot cannot represent them.
+    if(roundAction==='finish')settleProjectObservation({project,installationRoot,now,action:'finish'});
     settleProjectObservation({project,installationRoot,now});
     return {...inspectProjectSync({project,installationRoot}),planId:plan.planId,planHash:plan.integrity.hash,result,prepared,mutationPerformed:true};
   } catch (error) {
     if (attempt) recordAttempt(installationRoot,{...attempt,state:'failed',error:{code:error.code || 'PROJECT_SYNC_FAILED',message:error.message},failedAt:Date.now()});
     return {authorization:inspectProjectAuthority(project,{installationRoot}).continuousSync?.state || 'not-granted',state:/CHANGED|CONFLICT|LOCK|DRIFT/u.test(error.code || '') ? 'conflict' : 'failed',pending:initial.pending, error:{code:error.code || 'PROJECT_SYNC_FAILED',message:error.message},summary:committed?'完整事实代已提交，但同步回读失败；保留待核':'源码保留；下次任务或打开时重新核对，不能视为同步最新',mutationPerformed:committed};
   }
+}
+
+// Historical reports remain in the index; only current evidence for this exact
+// owner can support a new review. Another owner's pass cannot lend authority.
+export function currentSemanticEvidence(task,requirementId,assetId,evidenceResults) {
+  return (task.evidenceIndex || []).filter(entry=>entry.subject?.requirementId===requirementId&&entry.subject?.definitionId===assetId&&['source-analysis','browser-observation'].includes(entry.kind)&&evidenceResults?.[entry.evidenceId]?.state==='verified'&&evidenceResults[entry.evidenceId].result==='passed');
 }
 
 // Semantic judgments remain attributable review, not browser or human acceptance.
@@ -289,13 +302,13 @@ export function prepareProjectSemanticReview({project,installationRoot,taskId,as
     const start=Number(match[2]),end=Number(match[3]);if(end<start||end>lines.length)throw new Error('需求来源行范围无效');
     return {...source,path:match[1],startLine:start,endLine:end,sha256:sha256(bytes),excerpt:lines.slice(start-1,end).join('\n')};
   });
-  const evidence=(task.evidenceIndex || []).filter(e=>e.subject?.requirementId===requirementId&&['source-analysis','browser-observation'].includes(e.kind));
+  const delivery=inspectProjectDeliveryFiles({project,installationRoot});
+  const evidence=currentSemanticEvidence(task,requirementId,assetId,delivery.evidenceResults);
   if(!evidence.some(e=>e.kind==='source-analysis')||!evidence.some(e=>e.kind==='browser-observation'))throw new Error('语义核验必须引用已持久化的定义与实际运行证据');
   // The same delivery reader checks receipts, inputs, build, environment and versions.
-  const delivery=inspectProjectDeliveryFiles({project,installationRoot});
   for(const entry of evidence)if(delivery.evidenceResults?.[entry.evidenceId]?.state!=='verified'||delivery.evidenceResults[entry.evidenceId].result!=='passed')throw new Error('语义核验的实现或运行证据未通过当前输入核验');
   const covered=[...new Set(requirement.factIds)].sort();
-  const inventory=inspectProjectStructure(project);
+  const inventory=inspectProjectStructure(project,{installationRoot});
   const structureCoverage=inspectStructureCoverage(facts,inventory);
   if(structureCoverage.state!=='structurally-recorded')throw new Error('语义审阅前存在实现对象未登记或旧定位；先同步当前结构');
   if(structureCoverage.semanticCoverage?.state==='pending')throw new Error('语义审阅前仍缺结构化事件、状态分支或关系；先同步有来源的语义模型');

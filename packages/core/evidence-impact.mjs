@@ -1,3 +1,4 @@
+import {prepareMotionScene} from './motion-scene.mjs';
 import {captureProjectRoundInputs,projectRuntimeDigest} from './project-context-round.mjs';
 import {prepareSourceScene} from './source-scene.mjs';
 import fs from 'node:fs';
@@ -22,7 +23,17 @@ export function evidenceInputFingerprint(inputs) {
   return sha256(canonicalStringify(inputs));
 }
 export function factImplementationInputs(asset) {
-  return asset?.assetModel?.implementationInputs || (asset?.sourceStructure && asset.implementationMapping ? (asset.previewBinding?.inputs || [{path:asset.implementationMapping,sha256:asset.implementationSha256}]).map(input=>({kind:'source',from:asset.id,to:input.path,sha256:input.sha256,coverage:'complete',discovery:'exact-page-source'})) : []);
+  return asset?.animationName&&asset.implementationMapping?[{kind:'style',from:asset.id,to:asset.implementationMapping,sha256:asset.implementationSha256,coverage:'complete',discovery:'motion-source'}]:asset?.assetModel?.implementationInputs || (asset?.sourceStructure && asset.implementationMapping ? (asset.previewBinding?.inputs || [{path:asset.implementationMapping,sha256:asset.implementationSha256}]).map(input=>({kind:'source',from:asset.id,to:input.path,sha256:input.sha256,coverage:'complete',discovery:'exact-page-source'})) : []);
+}
+export function browserRequirementDigest(scope,requirementId) {
+ return sha256(canonicalStringify({schemaVersion:scope.schemaVersion,taskId:scope.taskId,revision:scope.revision,platform:scope.platform,layoutPolicy:scope.layoutPolicy,requirement:scope.items.find(item=>item.requirementId===requirementId)}));
+}
+export function browserConfigurationInputs(project) {
+ return captureProjectRoundInputs(project).files.filter(item=>!item.path.startsWith('src/')&&!item.path.startsWith('dist/')&&!item.path.startsWith('build/')&&!item.path.startsWith('.foundation/')&&/\.(?:json|[cm]?[jt]s)$/u.test(item.path)).map(({path,sha256})=>({path,sha256}));
+}
+export function currentEvidenceInputs(project,asset) {
+ if(asset?.animationName)return [{kind:'motion-definition',path:asset.implementationMapping,sha256:prepareMotionScene({project,asset}).digest}];
+ return factImplementationInputs(asset).map(edge=>({kind:edge.kind,path:edge.to,sha256:sha256(fs.readFileSync(resolveProjectFile(project,edge.to,'验证输入')))}));
 }
 export function evidenceSubjectFingerprint(asset) {
   return sha256(canonicalStringify({id:asset?.id || null,implementationMapping:asset?.implementationMapping || null,sourceStructure:asset?.sourceStructure || null,assetModel:asset?.assetModel || null,composes:asset?.composes || [],usageLocations:asset?.usageLocations || []}));
@@ -49,9 +60,12 @@ export function inspectEvidenceReport({project,installationRoot,evidence,expecte
     const bytes=fs.readFileSync(file);
     if(sha256(bytes)!==evidence.report.sha256)throw new Error('报告字节摘要不匹配');
     const report=JSON.parse(bytes);
-    if(expectedScopeDigest && report.scopeDigest!==expectedScopeDigest)return {state:'stale',reason:'任务范围的实际内容已变化'};
+    const scopedBrowser=evidence.kind==='browser-observation'&&evidence.verifierVersion==='foundation-browser-checks/3.0.0';
+    const currentScope=scopedBrowser?readFacts(project).changes.items.find(item=>item.id===evidence.taskId)?.deliveryScope:null;
+    if(scopedBrowser&&(!currentScope||report.scopeDigest!==browserRequirementDigest(currentScope,evidence.subject?.requirementId)))return {state:'stale',reason:'当前验证需求或视口已变化'};
+    if(!scopedBrowser&&expectedScopeDigest && report.scopeDigest!==expectedScopeDigest)return {state:'stale',reason:'任务范围的实际内容已变化'};
     if(expectedSubjectDigest && report.subjectDigest!==expectedSubjectDigest)return {state:'stale',reason:'定义、组成或使用位置已变化'};
-    if(expectedSourceDigest && report.sourceDigest!==expectedSourceDigest)return {state:'stale',reason:'项目源码或样式已变化，保守重验当前运行场景'};
+    if(!scopedBrowser&&expectedSourceDigest && report.sourceDigest!==expectedSourceDigest)return {state:'stale',reason:'项目源码或样式已变化，保守重验当前运行场景'};
     for(const key of ['taskId','scopeRevision','inputFingerprint','artifactDigest','runnerVersion','verifierVersion','kind','result'])if(report[key]!==evidence[key])throw new Error(`报告 ${key} 不匹配`);
     if(canonicalStringify(report.dimensions)!==canonicalStringify(evidence.dimensions)||canonicalStringify(report.checkIds)!==canonicalStringify(evidence.checkIds))throw new Error('报告检查与证据维度不匹配');
     if(canonicalStringify(report.subject)!==canonicalStringify(evidence.subject) || canonicalStringify(report.environment)!==canonicalStringify(evidence.environment))throw new Error('报告对象或运行环境不匹配');
@@ -67,13 +81,15 @@ export function inspectEvidenceReport({project,installationRoot,evidence,expecte
     if(!verifyTrustedPayload(receipt,integrity) || receipt.purpose!=='foundation-evidence-run' || receipt.project!==fs.realpathSync(project) || receipt.reportDigest!==sha256(canonicalStringify(reportContent)))throw new Error('运行收据不可信或未绑定当前报告');
     if(evidence.kind==='human-acceptance')return {state:'external-unverified',reason:'工程执行收据不证明真人接受'};
     if(evidence.kind==='browser-observation') {
-      if(report.projectRuntimeDigest!==projectRuntimeDigest(captureProjectRoundInputs(project)))return {state:'stale',reason:'项目运行输入或配置已变化，旧证据不可接受'};
+      if(!scopedBrowser&&report.projectRuntimeDigest!==projectRuntimeDigest(captureProjectRoundInputs(project)))return {state:'stale',reason:'项目运行输入或配置已变化，旧证据不可接受'};
       if(!installationRoot)return {state:'unknown',reason:'缺当前安装上下文，无法核验浏览器构建代际'};
-      if(report.currentFileSha256!==sha256(fs.readFileSync(path.join(installationRoot,'state/current.json')))||report.previewConfigSha256!==sha256(fs.readFileSync(resolveProjectFile(project,'.foundation/preview.json','预览配置'))))return {state:'stale',reason:'安装或预览配置已变化'};
-      const facts=readFacts(project),asset=facts.components.items.find(item=>item.id===evidence.subject?.definitionId);
+      if(report.currentFileSha256!==sha256(fs.readFileSync(path.join(installationRoot,'state/current.json')))||(!scopedBrowser||!report.sourceScene)&&report.previewConfigSha256!==sha256(fs.readFileSync(resolveProjectFile(project,'.foundation/preview.json','预览配置'))))return {state:'stale',reason:'安装或预览配置已变化'};
+      if(scopedBrowser&&canonicalStringify(report.configurationInputs)!==canonicalStringify(browserConfigurationInputs(project)))return {state:'stale',reason:'运行配置或依赖声明已变化'};
+      const facts=readFacts(project),asset=[...facts.components.items,...facts.motions.items].find(item=>item.id===evidence.subject?.definitionId);
       if(asset?.assetModel){const scenario=asset.assetModel.previewScenarios?.find(item=>item.id===evidence.subject?.scenarioId);let scene;try{scene=prepareSourceScene({project,facts,asset,scenario});}catch(error){return {state:'unknown',reason:error.message};}if(!report.sourceScene || report.sourceScene.digest!==scene.digest)return {state:'stale',reason:'场景没有绑定当前真实导出和配置'};}
+      if(asset?.animationName){const scene=prepareMotionScene({project,asset});if(report.sourceScene?.digest!==scene.digest)return {state:'stale',reason:'动效定义或触发样式已变化'};}
       for(const input of report.artifactFiles || [])if(sha256(fs.readFileSync(resolveProjectFile(project,input.path,'构建证据输入')))!==input.sha256)return {state:'stale',reason:'构建资源已变化'};
-      if(!report.artifactFiles?.length||evidence.runnerVersion!=='foundation-cdp/1.0.0'||!['foundation-browser-checks/1.0.0','foundation-browser-checks/2.0.0'].includes(evidence.verifierVersion))return {state:'unknown',reason:'构建输入或验证器缺失'};
+      if((!report.artifactFiles?.length&&!report.sourceScene)||evidence.runnerVersion!=='foundation-cdp/1.0.0'||!['foundation-browser-checks/1.0.0','foundation-browser-checks/2.0.0','foundation-browser-checks/3.0.0'].includes(evidence.verifierVersion))return {state:'unknown',reason:'构建输入或验证器缺失'};
       if(report.environment.browserExecutable?.sha256!==sha256(fs.readFileSync(report.environment.browserExecutable?.path)))return {state:'stale',reason:'浏览器执行文件已变化'};
       if(report.environment.platform!==process.platform||report.environment.architecture!==process.arch||report.environment.osRelease!==os.release())return {state:'stale',reason:'运行环境已变化'};
     }

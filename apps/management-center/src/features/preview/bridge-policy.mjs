@@ -27,7 +27,7 @@ export function isPreviewMessagePayload(data) {
   if (!data || typeof data !== 'object') return false;
   if (data.kind === 'preview-ready') return text(data.pageId, 128) && text(data.route, 500) && (data.object === undefined || isInspectorObject(data.object));
   if (data.kind === 'component-selected') return text(data.componentId, 128) && text(data.instanceId, 128) && text(data.pageId, 128) && nullableText(data.variant, 128) && nullableText(data.eventId, 128) && eventState(data.eventState);
-  if (data.kind === 'inspect-hovered' || data.kind === 'inspect-selected') return isInspectorObject(data.object);
+  if (data.kind === 'inspect-hovered' || data.kind === 'inspect-selected' || data.kind === 'inspect-updated') return isInspectorObject(data.object);
   if (data.kind === 'inspect-selection-invalidated') return text(data.reason, 128);
   if (data.kind === 'inspect-exit-request') return true;
   return false;

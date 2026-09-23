@@ -4,6 +4,15 @@ All notable changes to AI Product Foundation Kit are documented in this file.
 
 ## [Unreleased]
 
+### 0.2.30 candidate
+
+- 对象定位按源码身份和出生世代解析，支持重复组件和已核验的 SVG 渲染节点；过期、删除及不明确对象给出恢复提示。
+- 资产可用状态绑定当前范围内的实际验证；组件与动效独立预览保留自身源码和样式。
+- 交付收尾选择当前对象的有效证据，保留历史记录并精确登记已替换来源。
+- 修正内部 workspace 版本引用，固定可获取的 Floating UI 工具依赖，确保干净环境可安装构建。
+
+此候选尚未发布。npm 启动器源码未变，计划复用 0.1.13。
+
 ## [0.2.18] - 2026-09-21
 
 ### Changed

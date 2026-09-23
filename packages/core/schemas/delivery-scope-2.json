@@ -258,6 +258,22 @@
                 "attribute": {
                   "type": "string",
                   "maxLength": 80
+                },
+                "reducedMotion": {
+                  "enum": [
+                    "reduce",
+                    "no-preference"
+                  ]
+                },
+                "expectedByViewport": {
+                  "type": "object",
+                  "patternProperties": {
+                    "^[0-9]+x[0-9]+$": {
+                      "type": "string",
+                      "maxLength": 5000
+                    }
+                  },
+                  "additionalProperties": false
                 }
               },
               "required": [

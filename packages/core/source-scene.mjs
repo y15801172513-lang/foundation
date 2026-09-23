@@ -1,3 +1,4 @@
+import {selectSceneSource} from './scene-source-selection.mjs';
 import {SCENE_RUNTIME_IMPORTS} from './scene-runtime-contract.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -26,7 +27,7 @@ export function prepareSourceScene({project,facts,asset,scenario}) {
   const literal=node=>ts.isLiteralExpression(node)||[ts.SyntaxKind.TrueKeyword,ts.SyntaxKind.FalseKeyword,ts.SyntaxKind.NullKeyword].includes(node.kind)||ts.isArrowFunction(node)||ts.isFunctionExpression(node)||ts.isObjectLiteralExpression(node)&&node.properties.every(p=>ts.isPropertyAssignment(p)&&literal(p.initializer))||ts.isArrayLiteralExpression(node)&&node.elements.every(literal);
   const compile=file=>{
     if(modules.has(file))return;modules.set(file,null);
-    const bytes=fs.readFileSync(resolveProjectFile(project,file)),text=bytes.toString('utf8');
+    const bytes=fs.readFileSync(resolveProjectFile(project,file)),text=file===binding.file?selectSceneSource(bytes.toString('utf8'),file,binding.export):bytes.toString('utf8');
     const ast=ts.createSourceFile(file,text,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
     if(ast.parseDiagnostics.length)throw new Error('场景源码语法不受支持');
     const replacements=[],namespaces=new Map();
@@ -42,7 +43,7 @@ export function prepareSourceScene({project,facts,asset,scenario}) {
             if(clause.name){if(!contract.default)throw new Error('场景不支持 '+spec.text+' default 导入');namespaces.set(clause.name.text,contract);}
             const bindings=clause.namedBindings;
             if(bindings&&ts.isNamespaceImport(bindings)){if(!contract.namespace)throw new Error('场景不支持 '+spec.text+' namespace 导入');namespaces.set(bindings.name.text,contract);}
-            else for(const item of bindings?.elements || [])if(!contract.named.includes(item.propertyName?.text || item.name.text))throw new Error('场景不支持导入 API：'+(item.propertyName?.text || item.name.text));
+            else for(const item of bindings?.elements || [])if(!item.isTypeOnly&&!clause.isTypeOnly&&!contract.named.includes(item.propertyName?.text || item.name.text))throw new Error('场景不支持导入 API：'+(item.propertyName?.text || item.name.text));
           }else{
             if(!statement.exportClause||!ts.isNamedExports(statement.exportClause))throw new Error('场景不支持 runtime 星号/namespace 重导出');
             for(const item of statement.exportClause.elements)if(!contract.named.includes(item.propertyName?.text || item.name.text))throw new Error('场景不支持重导出 API');
@@ -68,15 +69,24 @@ export function prepareSourceScene({project,facts,asset,scenario}) {
     const emitted=ts.createSourceFile('scene.js',output,ts.ScriptTarget.Latest,true,ts.ScriptKind.JS);const canonical=node=>{ts.forEachChild(node,canonical);ts.setTextRange(node,{pos:-1,end:-1});if('multiLine' in node)node.multiLine=true;};canonical(emitted);output=ts.createPrinter({removeComments:true,newLine:ts.NewLineKind.LineFeed}).printFile(emitted);
     modules.set(file,output);inputs.push({path:file,sha256:sha256(bytes)});
   };compile(binding.file);inputs.sort((a,b)=>a.path.localeCompare(b.path));
+  const styles=[];
+  for(const input of asset.assetModel.implementationInputs || [])if(input.to?.endsWith('.css')&&(!(asset.assetModel.implementationInputs || []).some(edge=>edge.kind==='style')||input.kind==='style')) {
+    const bytes=fs.readFileSync(resolveProjectFile(project,input.to,'场景样式'));
+    if(sha256(bytes)!==input.sha256)throw new Error('场景样式摘要过期');
+    const text=bytes.toString('utf8');
+    if(/@import|url\(\s*["']?(?:https?:|\/\/)/iu.test(text))throw new Error('场景样式必须是已解析且不含外部依赖的 CSS');
+    styles.push({path:input.to,bytes});inputs.push({path:input.to,sha256:input.sha256});
+  }
   const variantAxes=asset.assetModel.variantAxes || [];
   const variantValues=Object.fromEntries(variantAxes.map(axis=>[axis.key,configuration[axis.key] ?? axis.values[0]]));
   if(variantAxes.some(axis=>!axis.values.includes(variantValues[axis.key])))throw new Error('场景变体值不在声明范围内');
   const plan={schemaVersion:'1.0.0',producer:'foundation-source-scene/1',definitionId:asset.id,scenarioId:scenario.id,instanceId:scenario.instanceId || null,binding,configuration,variantAxes,variantValues,inputs};
   const runtimePlan={definitionId:plan.definitionId,scenarioId:plan.scenarioId,instanceId:plan.instanceId,binding:{file:binding.file,export:binding.export},configuration,variantAxes,variantValues};
-  const digest=sha256(canonicalStringify(plan)),renderDigest=sha256(canonicalStringify({runtimePlan,modules:[...modules]})),prefix='/__foundation/scenes/'+renderDigest+'/';
-  const entry=`import React from './react.mjs';import {createRoot} from './react-dom-client.mjs';import * as exports from ${JSON.stringify(moduleUrl(binding.file))};import {mountAssetScene} from './bridge.mjs';const plan=${canonicalStringify(runtimePlan)};const query=new URLSearchParams(location.search);if(query.get('assetId')!==plan.definitionId||query.get('scenarioId')!==plan.scenarioId||(query.get('instanceId')||null)!==plan.instanceId)throw new Error('场景身份不匹配');const requested=JSON.parse(query.get('variantValues')||'{}');if(!requested||Array.isArray(requested)||typeof requested!=='object'||Object.entries(requested).some(([key,value])=>!plan.variantAxes.some(axis=>axis.key===key&&axis.values.includes(value))))throw new Error('场景配置不匹配');const props={...plan.configuration,...plan.variantValues,...requested};const Component=exports[plan.binding.export];if(typeof Component!=='function')throw new Error('当前导出不可渲染');await mountAssetScene({definitionId:plan.definitionId,scenarioId:plan.scenarioId,instanceId:plan.instanceId,render:async container=>{container.setAttribute('data-foundation-source-scene',${JSON.stringify(renderDigest)});const root=createRoot(container);root.render(React.createElement(Component,props));return ()=>root.unmount();}});`;
+  const digest=sha256(canonicalStringify(plan)),renderDigest=sha256(canonicalStringify({runtimePlan,modules:[...modules],styles:styles.map(style=>[style.path,sha256(style.bytes)])})),prefix='/__foundation/scenes/'+renderDigest+'/';
+  const entry=`import * as iconRuntime from './lucide-react.mjs';import React from './react.mjs';import {createRoot} from './react-dom-client.mjs';import * as exports from ${JSON.stringify(moduleUrl(binding.file))};import {mountAssetScene} from './bridge.mjs';const plan=${canonicalStringify(runtimePlan)};const query=new URLSearchParams(location.search);if(query.get('assetId')!==plan.definitionId||query.get('scenarioId')!==plan.scenarioId||(query.get('instanceId')||null)!==plan.instanceId)throw new Error('场景身份不匹配');const requested=JSON.parse(query.get('variantValues')||'{}');if(!requested||Array.isArray(requested)||typeof requested!=='object'||Object.entries(requested).some(([key,value])=>!plan.variantAxes.some(axis=>axis.key===key&&axis.values.includes(value))))throw new Error('场景配置不匹配');const props={...plan.configuration,...plan.variantValues,...requested};for(const key of Object.keys(props)){const value=props[key];if(value&&typeof value==='object'&&value.runtimeModule==='lucide-react'){if(!['FileText','Mic','Image','Feather'].includes(value.exportName))throw new Error('场景图标引用不受支持');props[key]=iconRuntime[value.exportName];}}const Component=exports[plan.binding.export];if(typeof Component!=='function')throw new Error('当前导出不可渲染');await mountAssetScene({definitionId:plan.definitionId,scenarioId:plan.scenarioId,instanceId:plan.instanceId,render:async container=>{container.setAttribute('data-foundation-source-scene',${JSON.stringify(renderDigest)});const root=createRoot(container);root.render(React.createElement(Component,props));return ()=>root.unmount();}});`;
   const resources=Object.fromEntries([...modules].map(([file,code])=>[prefix+moduleUrl(file).slice(2),{bytes:Buffer.from(code),mime:'text/javascript'}]));
   resources[prefix+'entry.mjs']={bytes:Buffer.from(entry),mime:'text/javascript'};
-  resources[prefix+'index.html']={bytes:Buffer.from('<!doctype html><meta charset="utf-8"><script type="module" src="./entry.mjs"></script>'),mime:'text/html;charset=utf-8'};
+  const styleLinks=styles.map((style,index)=>{resources[prefix+'style-'+index+'.css']={bytes:style.bytes,mime:'text/css'};return '<link rel="stylesheet" href="./style-'+index+'.css">';}).join('');
+  resources[prefix+'index.html']={bytes:Buffer.from('<!doctype html><meta charset="utf-8">'+styleLinks+'<script type="module" src="./entry.mjs"></script>'),mime:'text/html;charset=utf-8'};
   return {plan,digest,renderDigest,prefix,route:prefix+'index.html',resources};
 }

@@ -1,6 +1,6 @@
 {
   "name": "ai-product-foundation-kit",
-  "version": "0.2.19",
+  "version": "0.2.30",
   "private": true,
   "workspaces": [
     "apps/*",
@@ -22,5 +22,8 @@
   },
   "devDependencies": {
     "jsdom": "29.1.1"
+  },
+  "overrides": {
+    "@floating-ui/utils": "0.2.12"
   }
 }

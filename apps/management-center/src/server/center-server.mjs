@@ -1,3 +1,5 @@
+import {browserRequirementDigest,browserConfigurationInputs,currentEvidenceInputs} from '@foundation/core';
+import {projectSemanticRevision} from '../../../../packages/core/project-revisions.mjs';
 import {captureProjectRoundInputs, projectRuntimeDigest} from '@foundation/core';
 import {observeWorkbenchCapabilities} from './preview-capability-observer.mjs';
 import {synchronizeProject, inspectSyncSources} from '../../../../packages/core/workspace-host.mjs';
@@ -244,6 +246,9 @@ export function createManagementCenterServer(project, {installationRoot = null, 
         const synchronization = null; // GET never scans or writes facts.
         const data = readFacts(projectRoot);
         data.synchronization = synchronization;
+        const observation = captureProjectRoundInputs(projectRoot);
+        data.semanticRevision = projectSemanticRevision(data, observation.files);
+        data.objectIdentities = (data.project.contextLifecycle?.identities || []).map(identity => ({...identity, state: identity.state === 'active' && observation.files.some(file => file.path === identity.sourceFile && file.physical === identity.sourcePhysical) ? 'active' : 'unverified'}));
         if (installationRoot) {
           // Effective display only: never rewrite the historical identity or
           // project preferences to make them agree with a new runtime.
@@ -310,10 +315,10 @@ export async function verifyInstalledProjectBrowser({installationRoot,project,ta
   // after that same transition, so the server can serve the captured revision.
   synchronizeProject({project,installationRoot,trigger:'workbench-open'});
   const facts=readFacts(project),task=facts.changes.items.find(item=>item.id===taskId),scope=task?.deliveryScope;
-  const requirement=scope?.items?.find(item=>item.requirementId===requirementId),asset=[...facts.components.items,...facts.pages.items].find(item=>item.id===assetId);
+  const requirement=scope?.items?.find(item=>item.requirementId===requirementId),asset=[...facts.components.items,...facts.pages.items,...facts.motions.items].find(item=>item.id===assetId);
   const pageTarget=!asset?.assetModel && facts.pages.items.some(page=>page.id===assetId);
   const pageRoute=pageTarget?JSON.parse(fs.readFileSync(path.join(project,'.foundation/preview.json'),'utf8')).routes.find(route=>route.path===asset.preview):null;
-  const scenario=pageTarget && scenarioId==='page' && pageRoute?{id:'page',definitionId:assetId,adapter:pageRoute.file}:asset?.assetModel?.previewScenarios?.find(item=>item.id===scenarioId);
+  const scenario=asset?.animationName&&scenarioId==='motion'?{id:'motion',definitionId:assetId}:pageTarget && scenarioId==='page' && pageRoute?{id:'page',definitionId:assetId,adapter:pageRoute.file}:asset?.assetModel?.previewScenarios?.find(item=>item.id===scenarioId);
   if(scope?.schemaVersion!=='2.0.0'||scope.platform!=='web'||!requirement?.factIds?.includes(assetId)||!scenario||scenario.definitionId!==assetId||!requirement.browserChecks?.length)throw new Error('浏览器验证需要当前 Web 范围、匹配的定义场景和明确行为检查');
   const browserPath=process.platform==='darwin'?'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome':process.platform==='linux'?['/usr/bin/google-chrome','/usr/bin/chromium'].find(file=>fs.existsSync(file)):null;
   if(!browserPath||!fs.existsSync(browserPath)||typeof WebSocket==='undefined')return {state:'blocked',reason:'当前环境没有可用的受控 Chrome/CDP 运行工具；未签发通过收据',mutationPerformed:false};
@@ -324,10 +329,7 @@ export async function verifyInstalledProjectBrowser({installationRoot,project,ta
   const sourceScene=before.sourceScenes[assetId+':'+scenarioId];
   const route=pageTarget?Object.entries(before.routeMap).find(([,file])=>file===scenario.adapter)?.[0]:sourceScene?.route;
   if(!route)throw new Error('场景未由当前导出声明和固定配置生成；自定义回调不能证明组件本体');
-  const inputs=factImplementationInputs(asset).map(edge=>{
-    const file=path.resolve(project,edge.to);if(!file.startsWith(project+path.sep)||fs.realpathSync(file)!==file)throw new Error('验证输入路径不安全');
-    return {kind:edge.kind,path:edge.to,sha256:sha256(fs.readFileSync(file))};
-  });
+  const inputs=currentEvidenceInputs(project,asset);
   if(!inputs.length||factImplementationInputs(asset).some(edge=>edge.coverage!=='complete'))return {state:'blocked',reason:'定义的运行依赖覆盖不完整，保留待核',mutationPerformed:false};
   const runRoot=path.join(installationRoot,'state','evidence-runs',crypto.randomUUID());
   let cursor=installationRoot;
@@ -348,7 +350,9 @@ export async function verifyInstalledProjectBrowser({installationRoot,project,ta
       const url=new URL(route,instance.url);url.searchParams.set('revision',before.revision);url.searchParams.set('projectId',state.project.projectId);url.searchParams.set('channel',crypto.randomUUID());for(const [key,value]of Object.entries({foundationAssetPreview:'1',assetId,scenarioId,instanceId:scenario.instanceId || '',state:scenario.state || '',variantValues:JSON.stringify(scenario.variantValues || {})}))url.searchParams.set(key,value);
       await devtools.call('Page.navigate',{url:url.href});
       for(let n=0;n<100;n++){if(await evaluate(devtools,'document.readyState === "complete"'))break;await new Promise(resolve=>setTimeout(resolve,50));}
-      for(const check of requirement.browserChecks) {
+      for(const declaredCheck of requirement.browserChecks) {
+        const check={...declaredCheck,expected:declaredCheck.expectedByViewport?.[`${viewport.width}x${viewport.height}`] ?? declaredCheck.expected};
+        await devtools.call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:check.reducedMotion || 'no-preference'}]});
         const expression=`(()=>{const c=${JSON.stringify(check)},nodes=[...document.querySelectorAll(c.selector)],e=nodes[0];if(c.action==='count')return {actual:String(nodes.length),passed:String(nodes.length)===c.expected};if(!e)return {actual:null,passed:false};if(c.action==='click'){e.click();return {actual:'clicked',passed:true};}if(c.action==='fill'){const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;if(setter)setter.call(e,c.expected);else e.value=c.expected;e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}));return {actual:e.value,passed:e.value===c.expected};}if(c.action==='visible'){const r=e.getBoundingClientRect(),s=getComputedStyle(e);return {actual:{width:r.width,height:r.height,display:s.display,visibility:s.visibility},passed:r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none'};}const actual=c.action==='css'?getComputedStyle(e).getPropertyValue(c.attribute):c.action==='attribute'?e.getAttribute(c.attribute):e.textContent;return {actual,passed:actual===c.expected};})()`;
         let observed;
         for(let n=0;n<40;n++){observed=await evaluate(devtools,expression);if(observed.passed||['click','fill'].includes(check.action))break;await new Promise(resolve=>setTimeout(resolve,50));}
@@ -360,14 +364,14 @@ export async function verifyInstalledProjectBrowser({installationRoot,project,ta
       const screenshot=(await devtools.call('Page.captureScreenshot',{format:'png'})).data;
       observations.push({viewport,layout,screenshotSha256:sha256(Buffer.from(screenshot,'base64'))});
     }
-    const page=facts.pages.items.find(page=>requirement.factIds.includes(page.id)) || facts.pages.items.find(page=>(asset.usageLocations || []).some(usage=>usage.pageId===page.id));
+    const page=facts.pages.items.find(page=>requirement.factIds.includes(page.id)) || facts.pages.items.find(page=>(asset.usageLocations || []).some(usage=>usage.pageId===page.id)) || facts.pages.items.find(page=>asset.pageIds?.includes(page.id));
     const assetUrl=new URL(route,instance.url);for(const [key,value]of Object.entries({projectId:state.project.projectId,revision:before.revision,channel:crypto.randomUUID(),assetId,scenarioId,foundationAssetPreview:'1',instanceId:scenario.instanceId || '',state:scenario.state || '',variantValues:JSON.stringify(scenario.variantValues || {})}))assetUrl.searchParams.set(key,value);
     checks.push(...await observeWorkbenchCapabilities({devtools,devtoolsPort:port,sourceSceneDigest:sourceScene?.renderDigest,workbenchUrl:instance.url,projectId:state.project.projectId,revision:before.revision,pageId:page?.id,assetUrl:pageTarget?null:assetUrl.href}));
     checks.push({id:'runtime-errors',result:devtools.events.some(event=>event.method==='Runtime.exceptionThrown')?'failed':'passed'});
     const after=prepareWorkbenchSnapshot({installationRoot,project});
     if(after.revision!==before.revision||sourceDigest!==sha256(canonicalStringify(inspectSyncSources(project))))throw new Error('运行期间输入、构建或任务发生变化；未签发证据');
     const result=checks.some(check=>check.result==='failed')?'failed':'passed';
-    const report={projectRuntimeDigest:projectRuntimeDigest(captureProjectRoundInputs(project)),...(sourceScene?{sourceScene}:{ }),kind:'browser-observation',taskId,scopeRevision:scope.revision,scopeDigest:sha256(canonicalStringify(scope)),subjectDigest:evidenceSubjectFingerprint(asset),sourceDigest,subject:{definitionId:assetId,scenarioId,requirementId,...(scenario.instanceId?{instanceId:scenario.instanceId}:{})},inputFingerprint:evidenceInputFingerprint(inputs),artifactDigest:before.buildDigest,currentFileSha256:sha256(fs.readFileSync(path.join(installationRoot,'state/current.json'))),previewConfigSha256:sha256(fs.readFileSync(path.join(project,'.foundation/preview.json'))),artifactFiles:[...new Set(Object.values(before.routeMap))].map(file=>({path:file,sha256:sha256(fs.readFileSync(path.join(project,file)))})),environment:{browser:browserVersion,browserExecutable:{path:browserPath,sha256:sha256(fs.readFileSync(browserPath))},platform:process.platform,architecture:process.arch,osRelease:os.release(),viewports},runnerVersion:'foundation-cdp/1.0.0',verifierVersion:'foundation-browser-checks/2.0.0',dimensions:['runtime','layout'],checkIds:checks.map(check=>check.id),checks,result,observations,revision:before.revision,artifactInputs:Object.entries(before.resourceBytes).map(([url,entry])=>({url,sha256:entry.sha256})),limitations:['只覆盖当前范围声明的检查与视口，不代表真人接受或范围外行为']};
+    const report={configurationInputs:browserConfigurationInputs(project),projectRuntimeDigest:projectRuntimeDigest(captureProjectRoundInputs(project)),...(sourceScene?{sourceScene}:{ }),kind:'browser-observation',taskId,scopeRevision:scope.revision,scopeDigest:browserRequirementDigest(scope,requirementId),subjectDigest:evidenceSubjectFingerprint(asset),sourceDigest,subject:{definitionId:assetId,scenarioId,requirementId,...(scenario.instanceId?{instanceId:scenario.instanceId}:{})},inputFingerprint:evidenceInputFingerprint(inputs),artifactDigest:before.buildDigest,currentFileSha256:sha256(fs.readFileSync(path.join(installationRoot,'state/current.json'))),previewConfigSha256:sha256(fs.readFileSync(path.join(project,'.foundation/preview.json'))),artifactFiles:(sourceScene?[]:[...new Set(Object.values(before.routeMap))]).map(file=>({path:file,sha256:sha256(fs.readFileSync(path.join(project,file)))})),environment:{browser:browserVersion,browserExecutable:{path:browserPath,sha256:sha256(fs.readFileSync(browserPath))},platform:process.platform,architecture:process.arch,osRelease:os.release(),viewports},runnerVersion:'foundation-cdp/1.0.0',verifierVersion:'foundation-browser-checks/3.0.0',dimensions:['runtime','layout'],checkIds:checks.map(check=>check.id),checks,result,observations,revision:before.revision,artifactInputs:Object.entries(before.resourceBytes).map(([url,entry])=>({url,sha256:entry.sha256})),limitations:['只覆盖当前范围声明的检查与视口，不代表真人接受或范围外行为']};
     const receipt={purpose:'foundation-evidence-run',project:realProject(project),reportDigest:sha256(canonicalStringify(report))};
     const signed={...report,foundationReceipt:{...receipt,integrity:signTrustedPayload(receipt)}};
     const reportText=JSON.stringify(signed,null,2)+'\n';

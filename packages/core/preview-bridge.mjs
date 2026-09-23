@@ -1,4 +1,4 @@
-import {resolveObjectLocator} from './object-identity.mjs';
+import {resolveObjectLocator,shortObjectName,renderedIconPart} from './object-identity.mjs';
 export const PREVIEW_NAMESPACE = 'ai-product-foundation-preview';
 const contexts=new WeakMap();
 const incarnationElements=new WeakMap();
@@ -36,15 +36,11 @@ function roleOf(element) {
   return safeText(element.getAttribute('role')) || ({BUTTON: 'button', A: 'link', INPUT: 'input', TEXTAREA: 'textbox', SELECT: 'select', MAIN: 'main', HEADER: 'header', FOOTER: 'footer', NAV: 'navigation', SECTION: 'section', ARTICLE: 'article', FORM: 'form'}[element.tagName] || element.tagName.toLowerCase());
 }
 
+function sourceDisplayKey(element) {const part=renderedIconPart(element);return part?part.root.getAttribute('data-foundation-object-id')+'#'+part.mapping.name+':'+part.key:element.getAttribute('data-foundation-object-id');}
 function nameInfo(element) {
-  const registered=safeText(element.getAttribute('data-foundation-label'));
-  const accessible=safeText(element.getAttribute('aria-label'));
-  const ownText=safeText([...element.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent).join(' '),72);
-  const usable=text=>/[\p{L}\p{N}]/u.test(text);
-  let name=registered||accessible||(usable(ownText)?ownText:'');
-  let state=name?'declared':'inferred';
-  if(!name)name=element.getAttribute('aria-hidden')==='true'?'装饰对象（用途待命名）':`${roleOf(element)}（待命名）`;
-  return {name,state,source:registered?'source-annotation':accessible?'accessible-name':usable(ownText)?'own-text':'role-inference'};
+  const source=renderedIconPart(element)?.root || element,id=source.getAttribute('data-foundation-object-id');
+  const peers=id?[...element.ownerDocument.querySelectorAll('[data-foundation-object-id]')].filter(item=>item.getAttribute('data-foundation-object-id')===id):[...(element.parentElement?.children || [])];
+  return shortObjectName({label:element.getAttribute('data-foundation-label'),accessible:element.getAttribute('aria-label'),role:roleOf(element),decorative:element.getAttribute('aria-hidden')==='true',instanceKey:instanceOf(element),peerInstanceKeys:peers.map(instanceOf),objectKey:sourceDisplayKey(element),peerObjectKeys:[...(element.parentElement?.children || [])].filter(item=>roleOf(item)===roleOf(element)).map(sourceDisplayKey),text:[...element.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent).join(' ')});
 }
 function nameOf(element) {return nameInfo(element).name;}
 
@@ -56,19 +52,24 @@ function structuralSegment(element) {
   return siblings.length > 1 ? `${tag}:${siblings.indexOf(element) + 1}` : tag;
 }
 
+function instanceOf(element) {
+  return element.getAttribute('data-foundation-instance-id') || element.closest('[data-foundation-instance-key]')?.getAttribute('data-foundation-instance-key') || null;
+}
 function identityOf(element,doc) {
-  const declared=safeText(element.getAttribute('data-foundation-object-id'),128);
+  const part=renderedIconPart(element),sourceElement=part?.root || element;
+  const rootId=safeText(sourceElement.getAttribute('data-foundation-object-id'),128);
+  const declared=part&&rootId?rootId+'#'+part.mapping.name+':'+part.key:rootId;
   const componentId=safeText(element.getAttribute('data-foundation-component-id'),128);
-  const instanceId=safeText(element.getAttribute('data-foundation-instance-id'),128);
+  const instanceId=safeText(instanceOf(element),128);
   const candidate=declared || (componentId && instanceId ? `component:${componentId}:${instanceId}` : null);
-  const duplicates=candidate?[...doc.querySelectorAll('[data-foundation-object-id],[data-foundation-component-id]')].filter(e=>(e.getAttribute('data-foundation-object-id') || (e.getAttribute('data-foundation-component-id')&&e.getAttribute('data-foundation-instance-id')?`component:${e.getAttribute('data-foundation-component-id')}:${e.getAttribute('data-foundation-instance-id')}`:null))===candidate).length:0;
+  const duplicates=part ? (part.root.getAttribute('data-foundation-object-id') ? [...doc.querySelectorAll('[data-foundation-object-id]')].filter(e=>e.getAttribute('data-foundation-object-id')===rootId&&(instanceOf(e)||null)===(instanceId||null)).length : 0) : candidate?[...doc.querySelectorAll('[data-foundation-object-id],[data-foundation-component-id]')].filter(e=>(e.getAttribute('data-foundation-object-id') || (e.getAttribute('data-foundation-component-id')&&e.getAttribute('data-foundation-instance-id')?`component:${e.getAttribute('data-foundation-component-id')}:${e.getAttribute('data-foundation-instance-id')}`:null))===candidate&&(instanceOf(e) || null)===(instanceId || null)).length:0;
   if(!ephemeralObjects.has(element))ephemeralObjects.set(element,++ephemeralSequence);
   const persistentId=duplicates===1?candidate:null;
   const history=contexts.get(doc.defaultView)?.identityHistory || [];
-  const incarnation=element.getAttribute('data-foundation-incarnation');
-  const registered=history.filter(item=>item.incarnation===incarnation&&Boolean(incarnation)&&item.persistentId===persistentId && (item.instanceKey || null)===(instanceId || null) && item.state==='active');
+  const incarnation=sourceElement.getAttribute('data-foundation-incarnation');
+  const registered=history.filter(item=>item.incarnation===incarnation&&Boolean(incarnation)&&item.persistentId===(part?rootId:persistentId) && ((item.instanceKey || null)===(instanceId || null)||!item.instanceKey&&Boolean(element.closest('[data-foundation-instance-key]'))) && item.state==='active');
   let identityGeneration=registered.length===1?registered[0].generation:null;
-  if(identityGeneration){if(!incarnationElements.has(doc))incarnationElements.set(doc,new Map());const seen=incarnationElements.get(doc),old=seen.get(identityGeneration);if(old&&old!==element){seen.set(identityGeneration,false);identityGeneration=null;}else if(old===false)identityGeneration=null;else seen.set(identityGeneration,element);}
+  if(identityGeneration){if(!incarnationElements.has(doc))incarnationElements.set(doc,new Map());const seen=incarnationElements.get(doc),birthKey=JSON.stringify([identityGeneration,instanceId,persistentId]),old=seen.get(birthKey);if(old&&old!==element){seen.set(birthKey,false);identityGeneration=null;}else if(old===false)identityGeneration=null;else seen.set(birthKey,element);}
   return {projectId:envelope(doc.defaultView).projectId,persistentId,identityGeneration,identity:{kind:persistentId?'persistent':'temporary',persistentId,session:session(doc),revision:envelope(doc.defaultView).revision,reason:duplicates>1?'duplicate-identity':persistentId?'explicit-source-identity':'no-persistent-key'},session:session(doc),revision:envelope(doc.defaultView).revision,sourceLocation:element.getAttribute('data-foundation-source')?{file:element.getAttribute('data-foundation-source'),anchor:declared || instanceId,source:'source-annotation'}:null};
 }
 function inspectorIdOf(element,doc) {
@@ -78,7 +79,7 @@ function inspectorIdOf(element,doc) {
 
 function descriptor(element, doc) {
   if (!element) return null;
-  return {...identityOf(element,doc),nameQuality:nameInfo(element),inspectorId: inspectorIdOf(element, doc), name: nameOf(element), role: roleOf(element), componentId: element.getAttribute('data-foundation-component-id') || null, instanceId: element.getAttribute('data-foundation-instance-id') || null, registeredComponent: Boolean(element.getAttribute('data-foundation-component-id'))};
+  return {...identityOf(element,doc),nameQuality:nameInfo(element),inspectorId: inspectorIdOf(element, doc), name: nameOf(element), role: roleOf(element), componentId: element.getAttribute('data-foundation-component-id') || null, instanceId: instanceOf(element), registeredComponent: Boolean(element.getAttribute('data-foundation-component-id'))};
 }
 
 function inspectorTree(doc) {
@@ -94,7 +95,7 @@ function inspectorTree(doc) {
 
 function inspectableElement(target, doc) {
   if (!(target instanceof doc.defaultView.Element) || target.closest('[data-foundation-inspector-overlay]')) return null;
-  return target.closest('[data-foundation-component-id]') || target;
+  return target;
 }
 
 function inspectionObject(element, win) {
@@ -112,7 +113,7 @@ function inspectionObject(element, win) {
     name: nameOf(element),
     role: roleOf(element),
     componentId: element.getAttribute('data-foundation-component-id') || null,
-    instanceId: element.getAttribute('data-foundation-instance-id') || null,
+    instanceId: instanceOf(element),
     variant: element.getAttribute('data-foundation-variant') || null,
     eventId: element.getAttribute('data-foundation-event-id') || null,
     eventState: element.getAttribute('data-foundation-event-state') || null,
@@ -156,7 +157,7 @@ export function createInspectorBridge({win = window, doc = win.document} = {}) {
     return matches.length===1?matches[0]:null;
   };
   function scheduleOverlayUpdate(refreshObject = false) {
-    if (destroyed || (!active && !previewed)) return;
+    if (destroyed || (!active && !previewed && !locked)) return;
     refreshObjectOnFrame ||= refreshObject;
     if (frameId !== null) return;
     const request = win.requestAnimationFrame?.bind(win) || ((callback) => win.setTimeout(callback, 16));
@@ -172,14 +173,14 @@ export function createInspectorBridge({win = window, doc = win.document} = {}) {
         refreshObjectOnFrame = false; return;
       }
       draw(target);
-      if (target === locked && refreshObjectOnFrame) sendObject('inspect-selected', locked);
+      if (target === locked && refreshObjectOnFrame) sendObject('inspect-updated', locked);
       refreshObjectOnFrame = false;
     });
   }
   const setActive = (next) => {
-    active = Boolean(next); locked = null; clearOverlay();
+    active = Boolean(next); if(active){locked = null; clearOverlay();}
     doc.documentElement.classList.toggle('foundation-inspecting', active);
-    if (!active) post('inspect-selection-invalidated', {reason: 'mode-exited'});
+    if (!active && locked) draw(locked);
   };
   const onMessage = (event) => {
     if (event.source !== win.parent || event.origin !== win.location.origin || event.data?.namespace !== PREVIEW_NAMESPACE) return;
@@ -200,27 +201,27 @@ export function createInspectorBridge({win = window, doc = win.document} = {}) {
       else clearOverlay();
     }
     if (event.data.kind === 'inspect-navigate') {
-      const resolved=event.data.locator?resolveObjectLocator(event.data.locator,[doc.body,...doc.body.querySelectorAll('*')].map(element=>({...identityOf(element,doc),instanceId:element.getAttribute('data-foundation-instance-id'),inspectorId:inspectorIdOf(element,doc),element})),{...envelope(win),session:session(doc)}):null;
+      const resolved=event.data.locator?resolveObjectLocator(event.data.locator,[doc.body,...doc.body.querySelectorAll('*')].map(element=>({...identityOf(element,doc),instanceId:instanceOf(element),inspectorId:inspectorIdOf(element,doc),element})),{...envelope(win),session:session(doc)}):null;
       const next = event.data.locator ? resolved?.object?.element : event.data.inspectorId ? byInspectorId(event.data.inspectorId) : event.data.direction === 'parent' ? locked?.parentElement : event.data.direction === 'child' && Number.isInteger(event.data.index) ? locked?.children[event.data.index] : null;
-      if (next) { previewed = null; locked = next; hovered = next; observeTarget(next); draw(next); sendObject('inspect-selected', next); }
+      if (next) { active=false; doc.documentElement.classList.remove('foundation-inspecting'); previewed = null; locked = next; hovered = next; observeTarget(next); draw(next); sendObject('inspect-selected', next); }
       else post('inspect-selection-invalidated',{reason:'locator-expired-or-ambiguous'});
     }
   };
   const onOver = (event) => {
     if (!active || locked) return;
-    const element = inspectableElement(event.target, doc); if (!element) return;
+    const element = inspectableElement(event.composedPath?.().find(node=>node instanceof doc.defaultView.Element) || event.target, doc); if (!element) return;
     previewed = null; hovered = element; observeTarget(element); draw(element); sendObject('inspect-hovered', element);
   };
   const block = (event) => {
     if (!active) return;
     event.preventDefault(); event.stopPropagation(); event.stopImmediatePropagation?.();
     if (event.type === 'click') {
-      const element = inspectableElement(event.target, doc);
-      if (element) { previewed = null; locked = element; hovered = element; observeTarget(element); draw(element); sendObject('inspect-selected', element); }
+      const element = inspectableElement(event.composedPath?.().find(node=>node instanceof doc.defaultView.Element) || event.target, doc);
+      if (element) { active=false; doc.documentElement.classList.remove('foundation-inspecting'); previewed = null; locked = element; hovered = element; observeTarget(element); draw(element); sendObject('inspect-selected', element); }
     }
   };
   const onKey = (event) => {
-    if (!active) return;
+    if (!active && !(locked && event.key==='Escape')) return;
     if (event.key !== 'Escape') return block(event);
     event.preventDefault(); event.stopPropagation();
     if (locked) { locked = null; clearOverlay(); post('inspect-selection-invalidated', {reason: 'escape-lock'}); return; }

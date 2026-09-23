@@ -57,7 +57,7 @@ export function advanceProjectObservation(previous,observation,{origin='read'}={
 export function projectRuntimeDigest(observation){return digest(observation.files.filter(file=>!nonRuntime(file)).map(({path,sha256})=>({path,sha256})));}
 export function inspectProjectRound(facts,observation,{taskId=null}={}) {
   const lifecycle=advanceProjectObservation(facts.project?.contextLifecycle,observation),current=lifecycle.rounds?.find(round=>round.id===lifecycle.currentRoundId);
-  const records=['pages','components','interactions','motions','design-tokens','relations'].flatMap(kind=>facts[kind]?.items || []),known=new Set(records.flatMap(record=>[record.implementationMapping,...(record.sourceStructure?.inputs || []).map(input=>input.path),...(record.assetModel?.implementationInputs || []).map(edge=>edge.to)]).filter(Boolean));
+  const records=['pages','components','interactions','motions','design-tokens','relations'].flatMap(kind=>facts[kind]?.items || []),known=new Set(records.flatMap(record=>[record.implementationMapping,...(record.sourceStructure?.inputs || []).map(input=>input.path),...(record.assetModel?.implementationInputs || []).map(edge=>edge.to),...(record.previewBinding?.inputs || []).map(input=>input.path)]).filter(Boolean));
   for(const file of observation.previewResources || [])known.add(file);
   const unaccounted=observation.files.filter(file=>!nonRuntime(file)&&file.kind!=='runtime-config'&&!known.has(file.path));
   const changes=current?diffRoundInputs(current.baseline,observation):[];
@@ -73,11 +73,11 @@ export function prepareRoundTransition({project,facts,taskId,action,identityActi
   const lifecycle=advanceProjectObservation(previous,observation,{origin:action==='begin'?'preflight':action}),current=lifecycle.rounds.find(round=>round.id===lifecycle.currentRoundId);
   if(action==='begin') {
     if(current?.state==='active'){if(current.taskId!==taskId)throw new Error('另一轮任务尚未结束，不能覆盖其基线');if(identityActions.length)throw new Error('已有 round 起点；身份意图不能事后追加');}
-    else {const round={id:crypto.randomUUID(),taskId,state:'active',baseline:observation,startedAt:new Date(now).toISOString()};lifecycle.rounds.push(round);lifecycle.currentRoundId=round.id;lifecycle.identities=beginObjectLifetimes(finishObjectLifetimes(lifecycle.identities || [],inspectProjectStructure(project).objects,observation.files),identityActions);}
+    else {const round={id:crypto.randomUUID(),taskId,state:'active',baseline:observation,startedAt:new Date(now).toISOString()};lifecycle.rounds.push(round);lifecycle.currentRoundId=round.id;lifecycle.identities=beginObjectLifetimes(finishObjectLifetimes(lifecycle.identities || [],inspectProjectStructure(project,{installationRoot}).objects,observation.files),identityActions);}
   } else if(action==='finish') {
     if(identityActions.length)throw new Error('身份连续性意图必须在 round 开始时声明，不能事后补造');
     if(!current||current.taskId!==taskId)throw new Error('结束前缺匹配的 round 起点');
-    if(current.end?.physicalDigest!==observation.physicalDigest||current.state!=='observed'){current.end=observation;current.changes=diffRoundInputs(current.baseline,observation);current.state='observed';current.observedAt=new Date(now).toISOString();lifecycle.identities=finishObjectLifetimes(lifecycle.identities || [],inspectProjectStructure(project).objects,observation.files);}
+    if(current.end?.physicalDigest!==observation.physicalDigest||current.state!=='observed'){current.end=observation;current.changes=diffRoundInputs(current.baseline,observation);current.state='observed';current.observedAt=new Date(now).toISOString();lifecycle.identities=finishObjectLifetimes(lifecycle.identities || [],inspectProjectStructure(project,{installationRoot}).objects,observation.files);}
   }
   if(action==='observe'){
     const evaluated=inspectProjectDeliveryFiles({project,installationRoot});

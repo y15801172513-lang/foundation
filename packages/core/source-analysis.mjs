@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import {createRequire} from 'node:module';
 import {Worker} from 'node:worker_threads';
 
-export const analyzerVersion = 'foundation-source/1.2.0;ts-morph/26.0.0;typescript/5.8.3';
+export const analyzerVersion = 'foundation-source/1.3.0;ts-morph/26.0.0;typescript/5.8.3';
 const hash = value => crypto.createHash('sha256').update(value).digest('hex');
 const jobs = new Map();
 const caches = new Map();
@@ -137,11 +137,21 @@ export function analyzeSourcesInWorker(options) {
     const target = jsx ? node.getTagNameNode() : node.getExpression();
     if (!jsx && target.getKind() === SyntaxKind.ImportKeyword) {diagnostics.push({code:'DYNAMIC_IMPORT',file:relative(node),coverage:'unknown'});continue;}
     if (jsx && /^[a-z]/u.test(target.getText()) && !target.getText().includes('.')) continue;
-    let symbol = target.getSymbol();
+    const declaredSymbol = target.getSymbol();
+    let symbol = declaredSymbol;
     try { symbol = symbol?.getAliasedSymbol() || symbol; } catch { /* non-alias symbol */ }
     const matched = (symbol?.getDeclarations() || []).map(d=>byNode.get(d)).filter(Boolean);
     if (!matched.length) {
-      if (jsx) diagnostics.push({code:'UNRESOLVED_JSX',file:relative(node),name:target.getText(),coverage:'unknown'});
+      if (jsx) {
+        const declarations=declaredSymbol?.getDeclarations() || [];
+        const input=declarations.some(declaration=>Node.isParameterDeclaration(declaration)||Node.isBindingElement(declaration)&&declaration.getFirstAncestorByKind(SyntaxKind.Parameter));
+        const external=declarations.some(declaration=>{
+          const entry=declaration.getFirstAncestorByKind(SyntaxKind.ImportDeclaration);
+          const specifier=entry?.getModuleSpecifierValue();
+          return specifier&&!specifier.startsWith('.')&&!specifier.startsWith('/');
+        });
+        diagnostics.push({code:'UNRESOLVED_JSX',file:relative(node),start:node.getStart(),name:target.getText(),coverage:'unknown',bindingSource:input?'component-input':external?'external-module':'unresolved'});
+      }
       continue;
     }
     for (const definitionId of matched) usages.push({bindingId:`use:${relative(node)}:${node.getStart()}`,definitionId,file:relative(node),line:node.getStartLineNumber(),kind:jsx?'jsx-use':'call-site',role:/(^|[\/.-])(preview|previews|stories)([\/.-]|$)/u.test(relative(node))?'preview-only':'source-use',expression:target.getText(),coverage:'static-not-runtime'});
@@ -158,9 +168,13 @@ export function analyzeSourcesInWorker(options) {
     const relevant=diagnostics.filter(d=>{
       if(!d.file)return true;
       if(!files.has(d.file))return false;
-      if(d.code==='UNRESOLVED_MODULE')return d.specifier.startsWith('.') || d.specifier.startsWith('/');
+      if(d.code==='UNRESOLVED_MODULE')return !/\.(?:css|scss|sass|less)$/u.test(d.specifier)&&(d.specifier.startsWith('.') || d.specifier.startsWith('/'));
       // Missing external declarations do not erase a compiler-resolved local symbol.
-      if(d.code==='TS2307')return false;
+      if(['TS2307','TS7026','TS2875'].includes(d.code))return false;
+      // Imported renderers and explicit component inputs remain runtime gaps;
+      // they do not erase the compiler-resolved local declaration and calls.
+      if(d.code==='UNRESOLVED_JSX'&&['component-input','external-module'].includes(d.bindingSource))return false;
+      if(d.code==='UNRESOLVED_JSX'&&d.file===definition.file&&d.start!==undefined)return d.start>=node.getStart()&&d.start<node.getEnd();
       if(d.code.startsWith('TS')&&d.file===definition.file&&d.start!==undefined)return d.start>=node.getStart()&&d.start<node.getEnd();
       return true;
     });

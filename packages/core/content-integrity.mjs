@@ -11,6 +11,7 @@ export function inspectContentIntegrity(facts = {}, {requireCoverage = false,act
   const add = (object, field, state = 'missing') => issues.push({id: `content:${object.id || object.assetId || 'task'}:${field}:${state}`, objectId: object.id || object.assetId || 'task', field, state, impact: '本次内容交付未就绪', nextStep: `补充或复核 ${field}`, message: `${object.name || object.id || '任务'}：${field} ${state === 'missing' ? '尚未登记' : state}`});
   const rows = kind => list(facts[kind]?.items);
   const pages = rows('pages'), pageIds = new Set(pages.map(x => x.id));
+  if(pages.some(page=>page.preview&&(!activeTaskId||(affectedIds || []).includes(page.id)))&&!rows('design-tokens').length)add({id:'project'},'applicable-design-tokens');
   const all = Object.values(facts).flatMap(x => list(x?.items));
   const byId = new Map(all.map(x => [x.id, x]));
   const relevant=item=>!activeTaskId || item.id===activeTaskId || (affectedIds || []).includes(item.id);
@@ -26,6 +27,7 @@ export function inspectContentIntegrity(facts = {}, {requireCoverage = false,act
       if (!usages.length && !na(item.usageApplicability)) add(item, 'usageLocations');
       for (const usage of usages) if (!pageIds.has(usage.pageId) || !text(usage.location || usage.selector || usage.instanceId)) add(item, 'usageLocations', 'unknown');
       if (!list(item.variants).length && !item.variant && !item.assetModel?.variantAxes && !na(item.variantsApplicability)) add(item, 'variantsApplicability');
+      if(pages.some(page=>page.preview)&&!item.previewRoute&&!item.assetModel?.previewScenarios?.length)add(item,'real-preview-scenario');
       if (item.previewRequirement === 'independent' && !item.previewRoute) add(item, 'previewRoute');
     }
     if (kind === 'pages') {
@@ -33,6 +35,7 @@ export function inspectContentIntegrity(facts = {}, {requireCoverage = false,act
       if (!rows('relations').some(r => r.from === item.id || r.to === item.id) && !na(item.navigationApplicability)) add(item, 'navigationApplicability');
       if (!list(item.states).length && !na(item.statesApplicability)) add(item, 'statesApplicability');
     }
+    if(kind==='motions'&&pages.some(page=>page.preview)&&!item.previewRoute)add(item,'real-motion-scene');
     if (kind === 'interactions') {
       if (!list(item.pageIds).some(id => pageIds.has(id)) && !(item.scope === 'cross-page' && text(item.scopeReason))) add(item, 'pageIds');
       for (const field of ['trigger', 'initialState', 'targetState', 'description']) if (!text(item[field])) add(item, field);

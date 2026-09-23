@@ -94,7 +94,7 @@ copy('apps/management-center/package.json');
 copy('apps/management-center/package.json', 'node_modules/@foundation/management-center/package.json');
 if(fs.realpathSync(MANAGEMENT_DIST)!==MANAGEMENT_DIST || !MANAGEMENT_DIST.startsWith(ROOT+path.sep))throw new Error('工作台构建输入必须是本项目真实目录');
 copyTree(MANAGEMENT_DIST,path.join(SOURCE,'app/node_modules/@foundation/management-center/dist'));
-const analysisDependencies=productionDependencyClosure(ROOT,['ts-morph']);
+const analysisDependencies=productionDependencyClosure(ROOT,['ts-morph','postcss']);
 for(const dependency of analysisDependencies) {
   copy(dependency.relative,dependency.relative,(_file,entry)=>entry.name!=='node_modules');
   bundledInputs.add(`${dependency.relative}/package.json`);

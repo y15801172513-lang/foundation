@@ -123,7 +123,7 @@ export function validateFacts(facts, {previewConfig, projectRoot} = {}) {
   const pages = facts.pages?.items || [];
   const pageIds = new Set(pages.map((page) => page.id));
   const componentIds = new Set((facts.components?.items || []).map((component) => component.id));
-  const assetIds = new Set(assetDocuments(facts).flatMap(([, document]) => document?.items || []).map((asset) => asset.id));
+  const assetIds = new Set([...assetDocuments(facts).flatMap(([, document]) => document?.items || []),...(facts['design-tokens']?.items || [])].map((asset) => asset.id));
   const figmaIds = new Set((facts.figma?.items || []).map((mapping) => mapping.id));
   if (pages.length && pages.filter((page) => page.entry === true).length !== 1) errors.push('pages.json 存在页面时必须恰有一个 entry=true 的入口页');
   for (const [index, relation] of (facts.relations?.items || []).entries()) {

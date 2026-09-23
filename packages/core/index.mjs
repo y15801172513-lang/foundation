@@ -75,3 +75,7 @@ export {captureProjectRoundInputs, projectRuntimeDigest} from './project-context
 export {projectObjectRelations} from './project-coverage.mjs';
 export {projectSemanticRevision} from './project-revisions.mjs';
 export {prepareSourceScene} from './source-scene.mjs';
+export {projectDeliveryIdentity, assertDeliveryIdentity} from './delivery-identity.mjs';
+export {browserRequirementDigest, browserConfigurationInputs} from './evidence-impact.mjs';
+export {prepareMotionScene} from './motion-scene.mjs';
+export {currentEvidenceInputs} from './evidence-impact.mjs';

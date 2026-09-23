@@ -2,6 +2,8 @@ import {sourceSemanticDigest} from './source-syntax.mjs';
 import {deriveSourceSemantics} from './source-semantics.mjs';
 import {reconcileObjectHistory} from './object-identity.mjs';
 import fs from 'node:fs';
+import path from 'node:path';
+import {inspectLocalLifecycle} from './lifecycle-manager.mjs';
 import {createRequire} from 'node:module';
 import {inspectSyncSources} from './source-inventory.mjs';
 import {resolveProjectFile} from './path-boundary.mjs';
@@ -10,14 +12,27 @@ import {sha256,canonicalStringify} from './install-contract.mjs';
 // Independent implementation inventory, never a semantic verifier. Tokens are
 // source locations within these bytes; only explicit IDs can persist across edits.
 const inventories=new Map();
-export function inspectProjectStructure(project) {
+export function inspectProjectStructure(project,{installationRoot=null}={}) {
   const sources=inspectSyncSources(project),objects=[],obligations=[],programs=[],semanticSources=[],limitations=[];
-  const digest=sha256(canonicalStringify(sources));
+  const runtimeSources=[];
+  if(installationRoot) {
+    const state=inspectLocalLifecycle({installationRoot,project,operationRequirement:'lifecycle-inspect'});
+    if(state.bridge?.installationHealth?.code!=='FOUNDATION_HEALTHY'||!state.project?.agreement)throw new Error('语义运行时分类需要健康安装与当前项目绑定');
+    const artifactRoot=path.join(installationRoot,state.installation.current.appPath,'artifacts/preview');
+    for(const name of ['preview-bridge.mjs','object-identity.mjs']) {
+      const artifact=path.join(artifactRoot,name);
+      if(fs.realpathSync(artifact)!==artifact||!artifact.startsWith(fs.realpathSync(installationRoot)+path.sep))throw new Error('语义运行时材料路径不安全');
+      const digest=sha256(fs.readFileSync(artifact));
+      for(const source of sources)if(source.sha256===digest)runtimeSources.push({...source,artifact:name,reason:'exact-current-foundation-runtime; remains a verified runtime dependency'});
+    }
+  }
+  const digest=sha256(canonicalStringify({sources,runtimeSources}));
   if(inventories.get(project)?.sourceDigest===digest)return structuredClone(inventories.get(project));
   const {ts}=createRequire(import.meta.url)('ts-morph');
   for(const source of sources) {
     const text=fs.readFileSync(resolveProjectFile(project,source.path),'utf8');
     semanticSources.push({path:source.path,sha256:source.sha256,semanticSha256:sourceSemanticDigest(source.path,Buffer.from(text))});
+    if(runtimeSources.some(input=>input.path===source.path))continue;
     if(!/\.(html|[cm]?[jt]sx?)$/u.test(source.path))continue;
     const obligation=(kind,start,excerpt)=>obligations.push({key:`${source.path}:${start}:${kind}`,kind,file:source.path,sha256:source.sha256,line:text.slice(0,start).split('\n').length,offset:start,excerpt});
     const scriptInventory=(input,offset=0)=>{
@@ -66,7 +81,7 @@ export function inspectProjectStructure(project) {
       if(file.parseDiagnostics.length)limitations.push({file:source.path,reason:'语法诊断；结构可能不完整'});
     }
   }
-  const result={schemaVersion:'1.0.0',sourceDigest:digest,sources,semanticSources,objects,obligations,programs,limitations,semanticState:'not-reviewed'};
+  const result={schemaVersion:'1.0.0',sourceDigest:digest,sources,runtimeSources,semanticSources,objects,obligations,programs,limitations,semanticState:'not-reviewed'};
   inventories.set(project,result);while(inventories.size>2)inventories.delete(inventories.keys().next().value);
   return structuredClone(result);
 }
@@ -87,7 +102,11 @@ export function attachObservedStructure(payload,inventory,facts={}) {
   const result=structuredClone(payload);
   for(const document of result.documents || [])for(const record of document.upserts || []) {
     if(!['pages','components'].includes(document.kind))continue;
-    const objects=inventory.objects.filter(object=>object.file===record.implementationMapping);
+    const declared=new Map((result.sources || []).map(input=>[input.path,input.sha256]));
+    const bound=new Set([record.implementationMapping,...(record.previewBinding?.inputs || []).map(input=>input.path),...(record.assetModel?.implementationInputs || []).map(input=>input.to)]);
+    // Dependencies belong here only with an explicit owner and exact batch bytes.
+    // Merely importing a file never transfers its objects to every consumer.
+    const objects=inventory.objects.filter(object=>object.file===record.implementationMapping || object.ownerId===record.id&&bound.has(object.file)&&declared.get(object.file)===object.sha256);
     const source=inventory.sources.find(source=>source.path===record.implementationMapping);
     if(!source)continue;
     if(!result.sources?.some(input=>input.path===source.path && input.sha256===source.sha256))continue;

@@ -92,6 +92,7 @@ export function contextPlainText(record) {
 export function contextHumanView(record) {
   const isAsset = record.scope === 'component' || record.scope === 'asset';
   const subject = isAsset ? record.asset : record.page;
+  if(isAsset&&subject)return assetHumanView(record,subject);
   const title = subject?.name || (isAsset ? '未选择资产' : '未选择页面');
   const purpose = hasPurpose(subject) ? subject.responsibility || subject.description || subject.summary : '用途尚未登记。';
   const status = humanLabel('status', subject?.status);
@@ -134,6 +135,33 @@ export function contextHumanView(record) {
       {id: 'technical', title: '技术信息', items: technical, collapsed: true}
     ]
   };
+}
+
+function assetHumanView(record,asset) {
+  const token=asset.assetType==='design-token';
+  const definition=asset.assetModel?.binding;
+  const purpose=asset.responsibility || asset.description || asset.summary;
+  const usages=(asset.usedByPages || asset.usageLocations || []).map(usage=>usage.description || `页面：${pageLabel(record,usage.pageId)}`);
+  const sections=[];
+  if(usages.length)sections.push({id:'related',title:'实际使用位置',items:[...new Set(usages)]});
+  const instructions=[];
+  if(token&&asset.cssVariable)instructions.push(`通过 var(${asset.cssVariable}) 引用；当前值 ${asset.value}。`);
+  if(definition)instructions.push(`定义：${definition.file} 中的 ${definition.export || definition.anchor}。`);
+  if(asset.implementationPath&&!definition)instructions.push(`定义位置：${asset.implementationPath}`);
+  for(const prop of asset.assetModel?.configuration || [])instructions.push(`可配置 ${prop.key}${prop.description?`：${prop.description}`:''}`);
+  if(asset.assetType==='page'&&(asset.route || asset.preview))instructions.push(`页面路径：${asset.route || asset.preview}`);
+  if(asset.assetType==='motion'&&asset.animationName)instructions.push(`动效定义：${asset.animationName}${asset.previewRoute?`；运行样例：${asset.previewRoute}`:''}`);
+  if(instructions.length)sections.push({id:'definition',title:token?'如何使用变量':'如何使用与定义',items:instructions});
+  const axes=asset.assetModel?.variantAxes || [];
+  if(axes.length)sections.push({id:'variants',title:'组件变体',items:axes.map(axis=>`${axis.name || axis.key}：${(axis.values || []).length} 种（${(axis.values || []).join('、')}）`)});
+  const modes=Array.isArray(asset.modeValues)?asset.modeValues:Object.values(asset.modeValues || {});
+  if(token&&modes.length>1)sections.push({id:'modes',title:'变量模式',items:[`${modes.length} 个登记模式`,...modes.map(value=>typeof value==='object'?`${value.name || value.mode}：${value.value}`:String(value))]});
+  const decisions=(asset.reuseSummary?.decisions || []).filter(item=>item.state==='registered'&&item.decision?.reason);
+  if(decisions.length)sections.push({id:'reuse',title:'入库与复用依据',items:decisions.map(item=>item.decision.reason)});
+  const issues=[...(asset.admission?.reasons || []),...(asset.contentIssues || []).map(issue=>issue.message),...(asset.missing || []),...(asset.conflicts || []),...(asset.pending || [])];
+  if(!purpose)issues.push('用途说明缺失；制作同步时补充本资产的用途和实际使用位置。');
+  if(issues.length)sections.push({id:'gaps',title:'需要处理',items:[...new Set(issues)]});
+  return {identity:{title:asset.name,summary:purpose || `${asset.name} · ${humanLabel('assetType',asset.assetType)}`,status:humanLabel('status',asset.status)},sections};
 }
 
 export function contextHumanText(record) {

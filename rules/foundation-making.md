@@ -24,7 +24,7 @@
 
 页面负责组织和布局，交互逻辑负责状态与转换，数据层负责对象、读取和持久化。不要将这三者混成难以定位的大文件，也不为拆分而增加无用层。准确位置至少包含项目、页面/路由、组件或对象、实例/变体及源码定位。
 
-样式优先项目已有 token 和局部基础控件；颜色、间距、字号不因一次需求散落复制。确需偏离时记录原因、位置、范围和验证，不覆盖其他项目的 token。Foundation 自身的字体和 shadcn 制作细则不是所有用户项目的强制前提。
+第一版即使仅一行文字，也必须从实际实现提取适用的文字/背景颜色、字号等基础变量，真实引用并登记值、源码与使用关系；不得以空表或闲置声明交付。不机械变量化所有数值或虚构不存在能力。样式优先项目已有 token 和局部基础控件；颜色、间距、字号不因一次需求散落复制。确需偏离时记录原因、位置、范围和验证，不覆盖其他项目的 token。Foundation 自身的字体和 shadcn 制作细则不是所有用户项目的强制前提。
 
 交互和动效先查现有实现。明确触发、初始/进行/完成/取消/失败状态、打断与恢复、键盘和减少动态效果需求。可复用行为以真实模块被至少两个使用处调用；登记名称或复制相同代码不证明复用。未知参数标记待确认，不虚构已获用户认可的时长或曲线。
 
@@ -98,7 +98,7 @@ project verify-definition --root <安装根> --project <项目> --entry-roots-js
 
 预览桥接的产品模块是 packages/core/preview-bridge.mjs（工程载荷 artifacts/preview/preview-bridge.mjs），静态页面以 ES module 接入，React 在挂载后创建并在清理时 destroy。bindPreviewContext(window,{pageId}) 明确页面身份；父工作台传入 projectId/revision/channel/pageId。完成实际 DOM 后调用 announcePreview；createInspectorBridge 响应状态探测、检查选择与失效。普通桥接仅声明页面与对象检查能力，独立资产场景仍需既有隔离适配器，不能用隐藏其他页面区域冒充独立定义。
 
-显示名称优先 data-foundation-label，其次有效无障碍名称和节点自身文字；不拼接全部后代文本。装饰保持原字符和 aria-hidden，需命名时使用源码语义标注，不为检查器添加读屏名称。持久标识使用显式 data-foundation-object-id，复用既有组件/实例标识；重命名、移动时保留 ID，删除不复用。data-foundation-source 提供源码位置；动态重复对象无持久 key 时保留 session/revision 临时句柄，不承诺跨刷新稳定。复制内容必须保留身份类型、修订、来源和缺口；仅名称相似是关系候选。
+显示名称优先 data-foundation-label，其次有效无障碍名称，再用语义角色或中性结构名；不使用整段正文或待命名占位。基础名最多20字素，消歧名称最多28字素，正文摘要最多80字素，实例键与身份独立展示。装饰保持原字符和 aria-hidden，需命名时使用源码语义标注，不为检查器添加读屏名称。持久标识使用显式 data-foundation-object-id，复用既有组件/实例标识；重命名、移动时保留 ID，删除不复用。data-foundation-source 提供源码位置；动态重复对象无持久 key 时保留 session/revision 临时句柄，不承诺跨刷新稳定。复制内容必须保留身份类型、修订、来源和缺口；仅名称相似是关系候选。
 
 交付统一 assessment 派生结构覆盖和可视任务必检维度；旧收据缺工作台握手、定位、重开或适用资产 ready 时维持待核。配置存在不等于运行通过；不能通过遗漏 browserChecks、require-preview 或填 N/A 让已实现页面整体通过。静态结构和受控观察分别报告，真人接受及新任务自然发现独立留门。
 
@@ -126,3 +126,22 @@ sourceStructure.identityHistory 随同一批次保留对象世代和删除墓碑
 持久对象在修改前随 begin 提交 `--identity-actions-json`：create 创建不可复用 incarnation；retain 声明受控保留；move 明确新 owner 与 sourceFile；retire 明确失效。create 返回的 incarnation 写入 `data-foundation-incarnation`，对象或其祖先用 `data-foundation-owner-id` 明确 owner；两者均为源码语义标注，不改变 aria 语义。结束时程序核对来源。没有可观测连续性的外部重建必须失效，不能沿用名称或相同 ID 猜测。临时对象只能在 session/revision 内定位。
 
 业务 semanticRevision、资源字节 resourceRevision、观察 observationRevision 分开。可以证明等价的 JS 格式变化保持业务版本；精确字节证据仍失效。资源字节不变时面板绑定新 envelope 并保留预览；资源本身变化时按新资源代重新加载。不得声称任意格式都能免刷新。
+
+
+### 052 可移植检查与旧项目补齐
+
+一次开启检查后，选择即释放捕获、保留对象并复制定位信息；复制失败可重试，不妨碍页面逻辑页签。名称不提供身份。跨浏览器复制使用 project/page/objectId/instanceKey/incarnation/contentVersion；session handle 仅诊断。保存任一类复制文本至当前项目内文件后，以 `project resolve-object --root <安装根> --project <项目根> --input <项目相对文件>` 只读补取当前关联源码及样式。resolved 对象、mapped 源码与实时 DOM 绑定分别报告；stale/removed/ambiguous 不得自动重绑或猜测。恢复在来源浏览器的明确项目与页面刷新重选。
+
+程序 update 保留旧项目与绑定，不代表项目内旧 bridge 自动更新。旧项目先生成 `project inspector-plan --root <安装根> --project <项目根>` 只读计划，核对精确文件摘要、现有用户改动与未支持动态实例。源码写入依照现有任务授权；身份先用同一 sync round begin/create 生成 incarnation，写入精确标注，再 finish 同步，保留旧 facts ID 和已有 adoption 例外。项目 bridge 使用当前载荷 artifacts/preview 模块；旧副本只在核对精确差异后替换，已改写副本必须合并，不静默覆盖。
+
+可视交付逐类对照实际实现：页面路由、组件真实独立场景、实际动效与重播/reduced-motion、变量值/样例/引用均提供证据。registered/configured 不是 ready；缺场景、映射或运行证明保持 pending，不隐藏漏登记资产。首版变量与旧项目补齐经相同 facts 事务保存，最终载荷重开核验传播。
+
+#### 052R2 对象与资产完成责任
+
+新制作、源码迁移与每轮同步均检查普通 JSX/HTML 子节点，不以组件根代替内部选中对象。源码节点身份与组件定义、实例键、出生世代、内容版本分别保留。静态调用点保存明确实例身份；重复模板只使用可核验的业务 key。没有 key 的局部模板单独列出原因和补齐方式，不阻断同文件其他定义与静态节点。禁止从 DOM 顺序、坐标或正文推导稳定身份。旧 temporary 信封信息不足时不能恢复原对象，也不能猜其源码。
+
+Codex 对本次适用的页面、组件、动效、变量主动完成用途定义、真实引用与运行验证；无需用户逐项审核资产。组件验证定义及真实调用，变量验证声明、引用和实际使用值，动效验证实际触发与减少动态效果，页面验证正常操作和所需状态。复用依据说明本次定义边界与实际使用位置，变量不能套组件复用模板。正常交付先运行 `project verify-delivery --root <安装根> --project <项目> --task-id <任务>`，按当前范围主动枚举定义和全部真实场景；缺断言或场景时补齐并重试。返回的 verify-definition、verify-browser 真实报告随同一精确事实批次提交；不把 unverified 文本直接改为 verified。
+
+可用资产与待处理记录分开显示，保留用户既有记录。缺证据由本次制作任务主动补验；失败记录明确影响、原因和恢复动作。源码或依赖改变后，只让受影响证据失效并重验。交付前重开同项目核对可用清单、用途、使用位置及真实样例；仍有适用失败时不能称交付完成。组件变体与变量模式分别显示；没有变体时隐藏变体专属区，保留有意义的基础预览。
+
+交付读回必须使用 `project delivery-identity --root <安装根> --project <项目>`，将 projectId、真实 root、candidateHash、factsRevision、evidenceRevision 与实际工作台模型 deliveryIdentity 逐项比较。项目显示名相同不能替代路径核对；所有成果计数绑定这个元组。迁移中断时读取保存的精确计划及 begin 世代，逐文件只接受 beforeSha256 或已经完成的 afterSha256；其他字节漂移停止续写，不能重新生成身份掩盖冲突。

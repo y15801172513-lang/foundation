@@ -1,3 +1,4 @@
+import {validateHistoricalSourceDisposition} from './historical-source.mjs';
 import {businessFact} from './project-revisions.mjs';
 import {verifyRoundTransition} from './project-context-round.mjs';
 import {inspectContentIntegrity} from './content-integrity.mjs';
@@ -248,7 +249,8 @@ function normalizeAssetBatch(project, payload) {
         if(item.implementationMapping && item.implementationMapping!==item.assetModel.binding.file)throw coded('PROJECT_HANDLER_PAYLOAD_INVALID','声明绑定与实现路径冲突');
         item.implementationMapping=item.assetModel.binding.file;
       }
-      if (!item || typeof item.id !== 'string' || !/^[a-zA-Z0-9_-]+$/u.test(item.id) || ids.has(item.id) || typeof item.implementationMapping !== 'string' || !seen.has(item.implementationMapping)) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '每项资产需唯一 ID 及绑定实际源码证据的 implementationMapping');
+      const historical=document.kind==='changes'&&item?.sourceDisposition ? validateHistoricalSourceDisposition({project,record:item,previous:items.find(prior=>prior.id===item.id),facts,sources}) : false;
+      if (!item || typeof item.id !== 'string' || !/^[a-zA-Z0-9_-]+$/u.test(item.id) || ids.has(item.id) || typeof item.implementationMapping !== 'string' || !seen.has(item.implementationMapping)&&!historical) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '每项资产需唯一 ID 及绑定实际源码证据的 implementationMapping');
       ids.add(item.id);
       if (!['unverified', 'verified'].includes(item.verificationStatus)) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '资产验证状态必须明确');
       if (item.verificationStatus === 'verified' && (typeof item.verificationEvidence !== 'string' || !seen.has(item.verificationEvidence))) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '已验证资产需绑定实际验证证据文件；文件摘要不等于真人验收');
@@ -259,7 +261,7 @@ function normalizeAssetBatch(project, payload) {
         if(checked.state==='invalid' || item.verificationStatus==='verified' && checked.state!=='verified')throw coded('PROJECT_HANDLER_PAYLOAD_INVALID',checked.reason || '未经独立核验的报告不能标记 verified');
       }
       const index = items.findIndex(existingItem => existingItem.id === item.id);
-      const next = {...(index < 0 ? {} : items[index]), ...item, implementationSha256: sources.find(source => source.path === item.implementationMapping).sha256, updatedAt: payload.generatedAt};
+      const next = {...(index < 0 ? {} : items[index]), ...item, implementationSha256: historical?item.implementationSha256:sources.find(source => source.path === item.implementationMapping).sha256, updatedAt: payload.generatedAt};
       if(index>=0) {
         const withoutTime=record=>{const {updatedAt,...content}=record;return content;};
         const semanticInputs=record=>record.sourceStructure?.semanticInputs?.length?canonicalStringify(record.sourceStructure.semanticInputs.map(({path,semanticSha256})=>({path,semanticSha256})).sort((a,b)=>a.path.localeCompare(b.path))):null;
@@ -303,7 +305,13 @@ function normalizeAssetBatch(project, payload) {
   if(payload.roundTransition){const transition=verifyRoundTransition(project,payload.roundTransition);facts.project=transition.content;documents.push({path:'.foundation/facts/project.json',content:JSON.stringify(transition.content,null,2)+'\n'});}
   const validation = validateFacts(facts, {projectRoot: project, previewConfig: preview});
   if (validation.length) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', `资产批次引用或格式无效：${validation.join('；')}`);
-  const decisions=payload.documents.flatMap(document=>document.kind==='changes'?document.upserts.flatMap(item=>item.reuseDecisions || []):[]);
+  // Carrying unchanged historical decisions during source invalidation does not
+  // assert that they were made against this round. New or changed decisions
+  // still require controlled before/after observations.
+  const decisions=payload.documents.flatMap(document=>document.kind==='changes'?document.upserts.flatMap(item=>{
+    const previous=migrationBefore.changes.items.find(record=>record.id===item.id);
+    return (item.reuseDecisions || []).filter(decision=>!previous?.reuseDecisions?.some(old=>old.id===decision.id&&canonicalStringify(old)===canonicalStringify(decision)));
+  }):[]);
   const reuseInspection=[];
   if(decisions.length || payload.analysis) {
     let before,after;

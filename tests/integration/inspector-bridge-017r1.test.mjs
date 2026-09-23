@@ -118,10 +118,10 @@ test('锁定高亮通过 rAF 跟随滚动与尺寸变化，销毁后释放 obser
   assert.deepEqual({left: overlay.style.left, top: overlay.style.top, width: overlay.style.width}, {left: '44px', top: '62px', width: '140px'});
   resizeObservers[0].callback([]);
   await new Promise((resolve) => dom.window.setTimeout(resolve, 24));
-  assert.equal(sent.filter((message) => message.kind === 'inspect-selected').at(-1).object.layout.width, '140px');
+  assert.equal(sent.filter((message) => ['inspect-selected','inspect-updated'].includes(message.kind)).at(-1).object.layout.width, '140px');
   button.append(dom.window.document.createElement('span'));
   await new Promise((resolve) => dom.window.setTimeout(resolve, 24));
-  assert.ok(sent.filter((message) => message.kind === 'inspect-selected').at(-1).object.tree[0].children[0].children.length > 0);
+  assert.ok(sent.filter((message) => ['inspect-selected','inspect-updated'].includes(message.kind)).at(-1).object.tree[0].children[0].children.length > 0);
   bridge.destroy();
   assert.equal(resizeObservers[0].disconnected, true);
   assert.equal(dom.window.document.querySelector('[data-foundation-inspector-overlay]'), null);

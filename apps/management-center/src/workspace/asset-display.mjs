@@ -81,6 +81,14 @@ export function selectAssetScenario(asset,selection={},fallbackId='') {
 export function assetPreviewContract(asset,{scenario}={}) {
   if (!asset) return {status: 'missing-context', reason: '尚未选择资产。'};
   if(asset.assetType==='design-token')return {status:'token',reason:'专用设计变量样例'};
+  if(asset.assetType==='page') {
+    const route=asset.preview || asset.route;
+    return typeof route==='string'&&route.startsWith('/')&&!route.startsWith('//')&&!/[?#\s\\]/u.test(route)?{status:'page',route}:{status:'missing-context',reason:'页面缺少实际路由'};
+  }
+  if(asset.assetType==='motion') {
+    const route=asset.previewRoute;
+    return typeof route==='string'&&route.startsWith('/')&&!route.startsWith('//')&&!/[?#\s\\]/u.test(route)?{status:'iframe',route}:{status:'missing-context',reason:'动效尚未登记真实运行场景；保留缺口，不能视为已交付'};
+  }
   if (asset.assetType !== 'component') return {status: 'unsupported', reason: `${ASSET_TYPE_CAPABILITIES[asset.assetType]?.label || '此类资产'}当前没有可安全运行的组件预览。`};
   if(asset.assetModel && (!scenario || scenario.definitionId!==asset.assetId || scenario.kind==='instance' && !asset.usageLocations?.some(usage=>usage.instanceId===scenario.instanceId)))return {status:'missing-context',reason:'该定义未登记匹配的隔离预览场景；请在页面中查看实际使用。'};
   if (!asset.implementationPath) return {status: 'missing-context', reason: '组件尚未登记实现路径，无法确认真实实现。'};
@@ -98,7 +106,7 @@ export function tokenDisplayContract(asset, assets = []) {
     if(!current)return {state:'unknown',reason:'变量别名目标不存在'};
   }
   const type=current?.tokenType || current?.type;
-  if(!['color','font-family','spacing'].includes(type)||typeof current?.value!=='string'||!current.value.trim())return {state:'unknown',reason:'变量类型或实际值尚未登记'};
+  if(!['color','font-family','spacing','font-size','line-height','radius','duration'].includes(type)||typeof current?.value!=='string'||!current.value.trim())return {state:'unknown',reason:'变量类型或实际值尚未登记'};
   if(/var\(|url\(|[;{}]/u.test(current.value))return {state:'unknown',reason:'主题或资源依赖未解析，需在页面环境核验'};
   return {state:'sample',type,value:current.value,source:current.source || '来源待核',semantic:visited.size>0};
 }
