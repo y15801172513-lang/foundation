@@ -84,6 +84,6 @@ HTML、心跳或 npm 不能唤醒已结束的 Codex 任务。平台/用户中断
 
 0.2.19 维护入口：稳定 `bin/foundation-kit maintenance status --binding <注册生成的 foundation-installation.json>` 只读核验注册线索与当前安装身份，再汇合本账户固定获取缓存和独立维护目录。记录不是批准；明确继续时调用 `maintenance resume --install-id <核验身份>`，有歧义才选择 `--operation-id`。原进程仍活跃、原计划 pending/executing/consumed、安装身份变化均拒绝并发恢复。卸载后直接只读保存的操作记录和独立卸载回执，不启动已删程序，不自动重装 Skill。
 
-自然更新使用经正式说明核验的 npm 获取入口 `summon foundation --update --root <已核验安装根>`；可选 `--version` 固定目标，否则先查询正式发行并固定版本。获取器负责可信下载与同页更新/Skill 接续，不要求用户预先提供 candidate。安装内 `maintenance update` 无 candidate 时返回获取环境交接说明；离线或无可信获取环境时明确停在获取条件，不能宣称更新完成，不能裸运行不核验的 npx。旧正式入口的参数以其自身帮助为准。新版离线卸载不依赖 npm 获取器。上述能力要求 Foundation 0.2.19 与 npm 0.1.13；旧正式载荷不因说明变化获得这些能力。
+自然更新使用经正式说明核验的 npm 获取入口 `summon foundation --update --root <已核验安装根>`；可选 `--version` 固定目标，否则先查询正式发行并固定版本。获取器负责可信下载与同页更新/Skill 接续，不要求用户预先提供 candidate。Foundation 0.2.33 / npm 0.1.15 起，若既有项目仅设备身份变化，正常更新页会集中列出目录和原同步范围，要求本人重新确认；保留原启用/停用状态和项目资料，再继续程序更新，不让用户逐项手工修绑定。目录替换、身份或签名不一致仍拒绝；设备变化不自动证明目录连续性。安装内 `maintenance update` 无 candidate 时返回获取环境交接说明；离线或无可信获取环境时明确停在获取条件，不能宣称更新完成，不能裸运行不核验的 npx。旧正式入口的参数以其自身帮助为准。新版离线卸载不依赖 npm 获取器。上述能力要求 Foundation 0.2.19 与 npm 0.1.13；旧正式载荷不因说明变化获得这些能力。
 
 054R1：按当前用户规则“自动内容处理与短对象引用”执行 sync → continue → 实读语义材料 → submit-semantic-review / register-evidence → continue，直至 completion.ready 或具体外部阻断。源码适配、真实构建、引用备份恢复依当前任务授权和精确计划执行；具体协议只读当前规则。F-短引用用当前项目 resolve-object --ref 只读解析；旧内容、未同步、缺索引分别处理，不能因工程缺口自行结束。

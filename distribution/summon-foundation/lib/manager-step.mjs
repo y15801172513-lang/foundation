@@ -31,7 +31,7 @@ export function installedClient(root,env,journeyControl=null) {
 
 export async function observePlan(client,requested,onChange) {
   if(!/^foundation-plan-[a-f0-9]{64}$/.test(requested.planRef))throw Error('计划标识无效');
-  const child=spawn(client.launcher,['manager','open-manager','--plan-ref',requested.planRef,...(client.journeyControl?['--journey-channel']:[])],{env:client.env,stdio:['ignore','pipe','pipe',...(client.journeyControl?['ipc']:[])]});
+  const child=spawn(client.launcher,[...(client.managerPrefix||['manager']),'open-manager',...(client.managerOptions||[]),'--plan-ref',requested.planRef,...(client.journeyControl?['--journey-channel']:[])],{env:client.env,stdio:['ignore','pipe','pipe',...(client.journeyControl?['ipc']:[])]});
   client.journeyControl?.attach(child);
   let pending='',json='',finished=false;
   return new Promise((resolve,reject)=>{
@@ -86,4 +86,13 @@ export function discoverRegisteredInstallation(bindingFile,env){
   if(current?.identity?.installId!==binding.installId||inspection.bridge?.currentVersion!==current.version)throw Error('注册位置与当前安装身份或健康不一致');
   if(inspection.supportedLifecycleOptions?.maintenance?.protocol!=='installed-maintenance/1')throw Error('当前安装缺少随包维护能力；请按该版本正式恢复说明处理，不替换旧引擎');
   return {installationRoot:client.root,installId:binding.installId,launcher:client.launcher,currentVersion:current.version,candidateHash:current.candidateHash,inspection,executionAuthority:false};
+}
+
+// Only called after acquisition has verified the immutable candidate. This
+// transport proposes one bounded recovery operation; confirmation stays in UI.
+export function candidateRecoveryClient(candidate,root,installId,env,journeyControl) {
+  const launcher=plainPath(path.join(candidate.path,'foundation-kit'));
+  const managerOptions=['--root',root,'--install-id',installId,'--candidate-hash',candidate.manifestHash];
+  const call=action=>{const r=spawnSync(launcher,['update-projects',...action,...managerOptions],{env,encoding:'utf8',timeout:30000,maxBuffer:4*1024*1024});if(r.status!==0)throw installedCommandFailure(r);return JSON.parse(r.stdout);};
+  return {root,launcher,call,env,journeyControl,managerPrefix:['update-projects'],managerOptions};
 }

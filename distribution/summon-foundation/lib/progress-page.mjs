@@ -45,7 +45,7 @@ export function acquisitionProgress(record) {
     observations.program={state:'completed',evidence:record.sessionId};
   }
   for(const key of ['material','register'])if(record.skillSteps?.[key])observations[key]=record.skillSteps[key];
-  for(const key of ['remove','program'])if(record.maintenanceSteps?.[key])observations[key]=record.maintenanceSteps[key];
+  for(const key of ['remove','revalidate','program'])if(record.maintenanceSteps?.[key])observations[key]=record.maintenanceSteps[key];
   const kind=record.kind||'install';
   const journey=journeyView({id:record.operationId,kind,includeAcquisition:kind!=='uninstall',includeSelection:kind==='install',includeHealth:kind!=='uninstall',includeSkillRemoval:Boolean(observations.remove),observations,skillChoice:record.journeyContext?.skillChoice||'undecided'});
   if(record.terminal&&record.state==='partial'){journey.ended=false;journey.title=record.programState==='completed'?'程序已完成，Codex 接入未完成':'本次操作尚未全部完成';journey.summary=record.next;}

@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+import {activateMaintenanceCandidateAuthority} from '../core/trusted-authority.mjs';
+import {validateCandidate} from '../core/candidate-package.mjs';
+import {inspectProjectIdentityRevalidation} from '../core/project-authority.mjs';
 import {applyInspectorUpgrade,createObjectReferenceBackup,prepareObjectReferenceRestore,restoreObjectReferences} from '../core/workspace-host.mjs';
 import {persistProjectEvidence} from '../core/workspace-host.mjs';
 import {buildProjectWebPreview} from '../core/workspace-host.mjs';
@@ -310,6 +313,23 @@ export function runCli(args = process.argv.slice(2), output = console) {
   // A payload probe reports only its own version/runtime. It neither derives
   // installed authority nor enables any lifecycle operation before current exists.
   if (command === '--foundation-health') return output.log(JSON.stringify({ok: true, version: JSON.parse(fs.readFileSync(path.join(ROOT, 'foundation-kit.json'), 'utf8')).product.version, runtime: process.execPath}));
+  if(command==='update-projects') {
+    const candidateRoot=discoverLaunchedCandidateRoot(),root=option(args,'--root'),candidateHash=option(args,'--candidate-hash');
+    const verified=validateCandidate(candidateRoot,{platform:process.platform,arch:process.arch,requireRuntime:true});
+    if(!verified.ok||verified.manifest.candidateHash!==candidateHash)throw Error('更新恢复候选字节不一致');
+    activateMaintenanceCandidateAuthority(candidateRoot,root);
+    const current=inspectLocalLifecycle({installationRoot:root}).installation?.current;
+    if(current?.identity?.installId!==option(args,'--install-id'))throw Error('更新恢复安装身份不一致');
+    if(args[1]==='inspect')return output.log(JSON.stringify(inspectProjectIdentityRevalidation(root)));
+    if(args[1]==='request-plan')return output.log(JSON.stringify(requestLocalLifecyclePlan({operation:'project-identity-revalidate',parameters:{installationRoot:root}})));
+    const ref=option(args,'--plan-ref');
+    if(!/^foundation-plan-[a-f0-9]{64}$/.test(ref||''))throw Error('恢复计划标识无效');
+    const pendingFile=path.join(root,'state/local-manager/pending',ref+'.json');
+    if(fs.realpathSync(pendingFile)!==pendingFile)throw Error('恢复计划路径不安全');
+    const pending=JSON.parse(fs.readFileSync(pendingFile));
+    if(pending.plan.operation!=='project-identity-revalidate'||pending.plan.installationRoot!==root||pending.plan.installId!==current.identity.installId)throw Error('更新恢复通道不允许其他操作或安装');
+    return runManagerCli(['manager',args[1],'--plan-ref',ref,...(args.includes('--journey-channel')?['--journey-channel']:[])],output);
+  }
   const authority = deriveTrustedLifecycleAuthority();
   if (authority.mode === 'platform-installed-runtime' && command !== '--help' && command !== '--foundation-health') {
     readInstallationScope(authority.installRoot, {cwd: process.cwd(), project: option(args, '--project')});

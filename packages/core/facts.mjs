@@ -8,7 +8,8 @@ import {normalizeRelationHandlerPayload} from './project-mutation-handlers.mjs';
 import {inspectFactExtensions} from './fact-contracts.mjs';
 import {inspectAssetReferences} from './asset-model.mjs';
 
-export const FACT_FILES = ['project', 'pages', 'relations', 'design-tokens', 'components', 'interactions', 'motions', 'changes', 'figma'];
+import {FACT_FILES} from './fact-file-names.mjs';
+export {FACT_FILES} from './fact-file-names.mjs';
 export const now = () => new Date().toISOString();
 export const stableId = (type, key) => `${type}_${crypto.createHash('sha256').update(`${type}:${key}`).digest('hex').slice(0, 12)}`;
 export const emptyFact = (name) => ({schemaVersion: '0.1.0', items: [], kind: name});

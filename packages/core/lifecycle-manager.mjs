@@ -1,3 +1,4 @@
+import {createProjectIdentityRevalidationPlan, authorizationEffectForProjectIdentityRevalidation, validateProjectIdentityRevalidation, applyProjectIdentityRevalidation} from './project-authority.mjs';
 import {inspectProjectPreparation} from './facts.mjs';
 import {readCurrentFoundationRules} from './rules-delivery.mjs';
 import crypto from 'node:crypto';
@@ -143,6 +144,7 @@ function planHash(plan) {
 }
 
 export function managerEffectForPlan(plan) {
+  if(plan.operation==='project-identity-revalidate')return authorizationEffectForProjectIdentityRevalidation(plan);
   if (plan?.operation === 'offer-preference-update') return authorizationEffectForOfferPreferencePlan(plan);
   if (plan?.operation === 'normal-uninstall-project-detach') return authorizationEffectForNormalUninstallProjectPlan(plan);
   if (plan?.operation === 'normal-uninstall') return authorizationEffectForNormalUninstallCompositePlan(plan);
@@ -198,6 +200,8 @@ export function createPendingLocalManagerSession({plan, stateRoot, now = Date.no
     projectId: plan.projectId || null,
     projectPreparation: plan.continuousSync === 'grant' ? {scope:plan.syncScope, includePreview:plan.includePreview, technology:plan.technology, name:path.basename(plan.project), initial:{factsReady:inspectProjectPreparation(plan.project).factsReady, rulesReady:(()=>{try{return readCurrentFoundationRules({project:plan.project,installationRoot:plan.installationRoot}).projectRulesReady;}catch{return false;}})(), enabled:inspectProjectAuthority(plan.project,{installationRoot:plan.installationRoot}).continuousSync?.state === 'active'}} : null,
     synchronizationChoice: plan.continuousSync || null,
+    ...(plan.revalidation ? {projectRevalidation:plan.revalidation, revalidationSemantics:plan.semantics} : {}),
+    ...(plan.identityRevalidation ? {identityRevalidation: plan.identityRevalidation} : {}),
     capabilityId: plan.capabilityId || null,
     capabilityType: plan.capabilityType || null,
     skillRefresh: Boolean(plan.codexIntegration?.refresh),
@@ -293,6 +297,7 @@ export function visibleLocalManagerSession(session, now = Date.now()) {
 
 export function revalidateLocalManagerPlan(plan, {now = Date.now(), consumedEffectHashes = []} = {}) {
   planHash(plan);
+  if(plan.operation==='project-identity-revalidate'){validateProjectIdentityRevalidation(plan,now);return {ok:true};}
   if (now > plan.expiresAt) throw managerError('MANAGER_CONFIRMATION_EXPIRED', 'manager confirmation 已过期');
   if (['project-layout-migrate', 'project-data-purge'].includes(plan.operation)) {
     const current = snapshotProtectedProjectData(plan.project);
@@ -353,6 +358,7 @@ function buildRequestedPlan(operation, parameters) {
     'handlerOperation', 'handlerPayload', 'preserves', 'capabilityIds', 'now', 'ttlMs', 'connectCodex', 'cleanupAcquisition',
   ]);
   const clean = structuredClone(parameters);
+  if(operation==='project-identity-revalidate')return createProjectIdentityRevalidationPlan(clean);
   if (['install', 'update', 'repair', 'rollback', 'uninstall', 'recover'].includes(operation)) {
     const lifecyclePlan = createLifecyclePlan({operation, ...clean});
     if (operation === 'uninstall' && fs.existsSync(path.join(lifecyclePlan.targetRoot, 'state', 'codex-skill-registration.json'))) throw managerError('CODEX_SKILL_DISCONNECT_REQUIRED', '请先单独请求 capability-uninstall 并确认 Codex Skill 停用范围，再卸载 Foundation');

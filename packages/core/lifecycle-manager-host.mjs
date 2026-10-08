@@ -1,3 +1,4 @@
+import {createProjectIdentityRevalidationPlan, authorizationEffectForProjectIdentityRevalidation, validateProjectIdentityRevalidation, applyProjectIdentityRevalidation} from './project-authority.mjs';
 import {synchronizeProject} from './project-sync.mjs';
 import {lifecycleJourney} from './lifecycle-journey.mjs';
 import crypto from 'node:crypto';
@@ -77,6 +78,7 @@ function finalizeBootstrapRecord(record, stateRoot) {
 }
 
 function dispatch(plan, action, stateRoot) {
+  if(plan.operation==='project-identity-revalidate')return applyProjectIdentityRevalidation({plan});
   if (plan.operation === 'offer-preference-update') return applyOfferPreferencePlan({plan});
   if (plan.operation === 'normal-uninstall-project-detach') return applyNormalUninstallProjectPlan({plan, decision: action, transactionStateRoot: stateRoot});
   if (plan.operation === 'normal-uninstall') return applyNormalUninstallCompositePlan({plan, decision: action, transactionStateRoot: stateRoot});

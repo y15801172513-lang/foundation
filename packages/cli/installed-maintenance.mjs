@@ -1,3 +1,5 @@
+import {validateCandidate} from '../core/candidate-package.mjs';
+import {assertTrustedCandidatePath} from '../core/trusted-authority.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import {plainPath} from '../../distribution/summon-foundation/lib/local-path.mjs';
@@ -48,7 +50,9 @@ export async function runInstalledMaintenance({authority,args,output}) {
    next:'使用正式说明核验的获取入口查询并固定目标发行，再从 --update 同页流程下载、核验和独立确认。需要独立获取环境与该缓存的写入权限；不要运行未核验的 npx。离线时保留当前安装，卸载不依赖此环境。'},null,2));return;
  }
  if(kind==='update'&&!previous){
-  const directory=plainPath(option('--candidate'));
+  const directory=assertTrustedCandidatePath(plainPath(option('--candidate')));
+  const verified=validateCandidate(directory,{platform:process.platform,arch:process.arch,requireRuntime:true});
+  if(!verified.ok)throw Error('更新候选字节核验失败：'+verified.error.code);
   const m=JSON.parse(fs.readFileSync(plainPath(path.join(directory,'manifest.json'))));
   candidate={path:directory,manifestHash:m.candidateHash,version:m.productVersion,bytes:m.totalBytes,runtimeHash:m.files.find(f=>f.path===m.runtime.path)?.sha256};
  }

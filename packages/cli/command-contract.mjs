@@ -26,6 +26,7 @@ const lifecycleOptions = {
 };
 
 const routes = [
+  ...['inspect','request-plan','open-manager','status'].map(command=>({path:['update-projects',command],options:{'--root':value(true),'--install-id':value(true),'--candidate-hash':value(true),...(command==='open-manager'||command==='status'?{'--plan-ref':value(true)}:{}),...(command==='open-manager'?{'--journey-channel':flag()}:{})},positionals:{min:0,max:0}})),
   ...['status','uninstall','update','resume'].map(command=>({path:['maintenance',command],options:{'--install-id':value(),'--binding':value(),...(command==='update'?{'--candidate':value()}:{}),...(command==='resume'?{'--record':value(),'--operation-id':value()}:{})},positionals:{min:0,max:0}})),
   {path: [], options: {}, positionals: {min: 0, max: 0}},
   {path: ['--foundation-health'], options: {}, positionals: {min: 0, max: 0}},

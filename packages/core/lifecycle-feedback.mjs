@@ -8,6 +8,7 @@ export function lifecycleFeedback(session) {
   const operation = session.operation === 'enable' && session.synchronizationChoice === 'revoke' ? 'enable-revoke' : session.capabilityId && ['install','register','activate','deactivate','uninstall','recover'].includes(session.operation) ? `capability-${session.operation}` : session.operation === 'recover' && session.projectId === 'project-authority-recovery' ? 'project-authority-recover' : session.operation === 'recover-project-mutation' ? 'project-mutation-recover' : session.operation || '';
   const uninstall = ['uninstall', 'normal-uninstall', 'normal-uninstall-project-detach'].includes(operation);
   const types = {
+    'project-identity-revalidate':['重新确认','更新中的项目目录','project'],
     install:['安装','Foundation 程序','installation'], update:['更新','Foundation 程序','installation'], repair:['修复','Foundation 程序','installation'], rollback:['回退','Foundation 程序','installation'], recover:['恢复','Foundation 安装','installation'], uninstall:['卸载','Foundation 程序','installation'], 'normal-uninstall':['卸载','Foundation 程序','installation'],
     'enable-revoke':['撤销','项目持续同步','project'], enable:['接入','指定项目','project'], disable:['停用','项目 Foundation 管理','project'], 'normal-uninstall-project-detach':['解除','项目接入','project'], 'project-layout-migrate':['迁移','项目资料布局','project'], 'project-data-purge':['删除','明确选择的项目数据','project'], 'project-authority-recover':['恢复','项目接入记录','project'], 'project-mutation-recover':['恢复','项目资料变更','project'],
     'project-rules-adopt':['采用','项目制作规则','project'], 'foundation-skeleton-and-facts-create':['准备','项目事实资料','project'], 'asset-facts-batch':['同步','项目资产与预览登记','project'], 'page-facts-write':['登记','项目页面','project'], 'relation-facts-write':['登记','项目页面关系','project'], 'foundation-facts-upgrade':['升级','项目事实格式','project'], 'extension-shadcn-apply':['接入','项目组件扩展','project'], 'extension-shadcn-remove-owned':['移除','项目组件扩展','project'],
@@ -24,9 +25,10 @@ export function lifecycleFeedback(session) {
   const versionText = category !== 'installation' ? null : state === 'completed' && result.current?.version ? `已安装 ${result.current.version}` : state === 'completed' && uninstall ? '本次程序移除已完成；保留项见结果' : [session.currentVersion ? `当前 ${session.currentVersion}` : '当前版本待核实', session.targetVersion ? `目标 ${session.targetVersion}` : null].filter(Boolean).join(' → ');
   const roots = [...new Set([session.installationRoot, ...(session.targetRoots || [])].filter(Boolean))];
   const target = session.operationTargets || {};
-  const primaryRole = category === 'project' ? 'project' : category === 'capability' && ['capability-register','capability-uninstall'].includes(operation) && session.capabilityType === 'codex-skill' ? 'skill' : 'program';
+  const primaryRole = session.projectRevalidation ? 'program' : category === 'project' ? 'project' : category === 'capability' && ['capability-register','capability-uninstall'].includes(operation) && session.capabilityType === 'codex-skill' ? 'skill' : 'program';
   const roleNames = {program:primaryRole === 'program' ? '程序位置' : '关联程序位置',skill:scope==='project'?'Codex 项目级 Skill 位置':'Codex 对话功能位置',project:'项目位置',records:'操作记录位置',acquisition:'获取缓存位置'};
   const namedTargets = [primaryRole,...Object.keys(roleNames).filter(key=>key!==primaryRole)].map(role=>({role,label:roleNames[role],path:target[role] || (role==='program'?session.installationRoot:null) || null})).filter((item,index)=>index===0 || item.path);
+  if(session.projectRevalidation)for(const entry of session.projectRevalidation.entries)namedTargets.push({role:'project',label:'待重新确认的项目',path:entry.project});
   const knownPaths = new Set(namedTargets.map(item=>item.path));
   for (const root of roots) if (!knownPaths.has(root)) namedTargets.push({role:'other',label:'其他受影响位置（用途待核实）',path:root});
   const preserveNames = {'source-code':'项目源码','user-data':'用户资料','foundation-installation':'Foundation 程序安装','.foundation/identity/project.json':'项目身份记录','all product projects':'全部用户项目','all .foundation/** project data':'全部项目资料与事实数据','all unowned paths':'非 Foundation 所有的文件','project-code':'项目源码','.foundation/identity':'项目身份记录','.foundation/facts':'项目事实数据','.foundation/backups':'项目备份','unknown-and-user-modified-files':'未知文件和用户修改的文件','user product projects':'用户项目','project-owned extension files':'项目自己的扩展文件','uninstall-result.json':'卸载结果回执','project-files':'项目文件','unowned-or-modified-residuals':'未知或已修改的残留文件'};
@@ -38,6 +40,7 @@ export function lifecycleFeedback(session) {
   const labels = {pending:'等待你确认', preview:'等待你确认', executing:`正在${verb}`, consumed:`正在${verb}`, completed:`${verb}完成`, cancelled:'已取消，未执行本次操作', expired:'确认已过期，未执行本次操作', 'shutdown-no-install':'已关闭，未执行本次操作', failed:`${verb}失败`, 'verification-required':'状态待核实', 'not-found':'记录不可用，状态待核实'};
   let detail = '请核对版本、完整路径及重要影响。确认前不会执行目标操作。';
   if(session.usageScope)detail+=session.usageScope.kind==='project'?' 这是原有的项目专属安装；本次不迁移或改动其他安装。':uninstall?' 只处理这份安装，不清空整个文件夹。':' 这台电脑上，你的不同项目都可以使用；项目仍需各自接入。';
+  if(session.projectRevalidation)detail=session.revalidationSemantics;
   let next = '核对后确认，或取消。';
   if (['executing','consumed'].includes(state)) { detail='已记录开始执行；尚未收到最终结果，不代表成功。'; next='等待结果；不要重复提交。'; }
   if (state === 'completed') { detail = uninstall ? `已处理 ${Array.isArray(result.removed) ? result.removed.length+' 个由 Foundation 管理的文件或安装记录' : '计划中的卸载操作'}。普通卸载不是清空目录；保留审计记录和用户文件，逐项结果可展开核验。` : `已完成本次${verb}${session.targetVersion ? '，目标版本 '+session.targetVersion : ''}。${changed}`; next=uninstall?'保留结果回执；重新安装须从已验证发行入口重新确认。':'在原对话说“打开 Foundation”；先核验当前安装，再打开工作台。'; }
@@ -47,6 +50,7 @@ export function lifecycleFeedback(session) {
   if (['cancelled','expired','shutdown-no-install'].includes(state)) {detail='本次未执行目标操作；此前操作与准备缓存不因此撤销或删除。';next='需要继续时重新检查状态并请求新计划。';}
   if (['verification-required','not-found'].includes(state)) {detail='连接中断、进程结束或记录缺失不等于安装失败或成功。可能已有变更，不自动重试。';next='按下方操作标识和记录位置只读核实；需要恢复时另行确认新计划。';}
   if (session.projectPreparation && ['pending','preview'].includes(state)) detail = '首次启用包含本项目缺项准备、规则采用，以及页面、组件、交互、关系、设计事实、源码摘要和受支持预览登记的持续同步。关闭面板、预览或结束对话不撤销；明确停用或撤销才停止。保留源码、技术栈、用户规则和例外，不授权软件安装或其他项目。技术栈：' + (session.projectPreparation.technology === 'preserve' ? '保持现有技术栈' : '适用新 React 项目采用 shadcn 规则（不安装依赖）') + '；预览准备：' + (session.projectPreparation.includePreview ? '已纳入' : '未纳入');
+  if (session.identityRevalidation && ['pending','preview'].includes(state)) detail += ' 原项目登记与当前目录不一致。本次将按你的确认重新绑定所选目录，不能自动认定它仍是原目录。请核对项目位置和内容；持续同步按本次选择重新授权，原停用项目需随后单独停用。';
   if (!type) { detail='无法识别本次操作，请核实原计划与记录；不能据此宣称成功。'; next='只读核实操作类型，不从未知页面继续确认。'; }
   if (type && category !== 'installation' && state === 'completed') { detail=`已完成本次${heading}；位置以本次计划为准。${result.mutationPerformed === false ? '记录明确未改变目标。' : '逐项变更见结果记录。'}`; next=category==='capability'?'在新对话实际检查识别与调用；文件注册不证明宿主已发现。':'重新读取同项目状态与当前规则，再继续相关制作。'; }
   if (operation === 'capability-install') { detail = state === 'completed' ? 'Skill 已准备，还需你确认启用到 Codex。' : detail; next = state === 'completed' ? '下一步：在本页确认“启用对话功能”；项目以后单独接入。' : next; }

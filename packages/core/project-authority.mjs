@@ -11,6 +11,7 @@ import {inventoryExistingProject} from './governance.mjs';
 import {readCurrentFoundationRules} from './rules-delivery.mjs';
 import {foundationUiPolicyRecord} from './ui-policy.mjs';
 import {
+  createAuthorizationEffect,
   authorizationEffectForProjectPlan,
   authorizationEffectForProjectMutationPlan,
   authorizationEffectForProjectMutationRecoveryPlan,
@@ -205,7 +206,7 @@ function registryContext(context) {
 function portableContext(project) {
   const file = path.join(project, ...PORTABLE_RELATIVE.split('/'));
   if (!fs.existsSync(file)) return {file, value: null, hash: null};
-  if (fs.lstatSync(file).isSymbolicLink() || !fs.statSync(file).isFile()) throw new LifecycleError('PROJECT_BINDING_INVALID', 'portable project binding 不是普通文件', {stage: 'project-authority'});
+  if (fs.realpathSync(file) !== file || fs.lstatSync(file).isSymbolicLink() || !fs.statSync(file).isFile()) throw new LifecycleError('PROJECT_BINDING_INVALID', 'portable project binding 不是无符号链接的普通文件', {stage: 'project-authority'});
   const value = readJson(file);
   if (value?.schemaVersion !== '1.0.0' || value?.layoutVersion !== PROJECT_LAYOUT_VERSION || value?.bindingVersion !== PROJECT_BINDING_VERSION || typeof value?.projectId !== 'string' || value?.identity?.scheme !== 'foundation-project-id-v2' || value?.identity?.value !== value.projectId || !['enabled', 'disabled'].includes(value?.state) || 'projectPath' in value || 'absolutePath' in value) throw new LifecycleError('PROJECT_BINDING_INVALID', 'portable project binding schema、stable identity 或可移植性无效', {stage: 'project-authority'});
   return {file, value, hash: sha256(fs.readFileSync(file))};
@@ -288,12 +289,22 @@ export function createProjectAuthorityPlan({operation, project, installationRoot
     }
   }
   const status = fs.existsSync(target) ? inspectProjectAuthority(target, {installationRoot: context.root}) : {state: 'unmanaged'};
+  const priorRecord = (portable.value ? registry.payload.projects[portable.value.projectId] : null) || Object.values(registry.payload.projects).find(record => record.realPath === target);
+  if (priorRecord && (!portable.value || portable.value.projectId !== priorRecord.projectId)) throw new LifecycleError('PROJECT_BINDING_INVALID', '已登记目录的项目绑定缺失或不一致；先恢复有效绑定，不静默覆盖旧登记', {stage:'project-plan'});
+  const identityRevalidation = priorRecord && !recordMatches(priorRecord, target, portable) ? {
+    registeredPath: priorRecord.realPath, registeredIdentity: priorRecord.projectIdentity,
+    selectedPath: target, selectedIdentity: projectIdentity(target),
+    portableBindingMatches: priorRecord.portableBindingHash === portable.hash,
+    semantics: '旧登记不能证明当前目录连续性；本次确认明确授权绑定所选目录，不宣称自动识别为原目录。持续同步按本计划重新选择，原停用项目需要单独恢复停用。',
+  } : null;
+  if (operation === 'enable' && identityRevalidation && !rebind) throw new LifecycleError('PROJECT_IDENTITY_REBIND_REQUIRED', '项目路径、目录身份或绑定已变化；必须显式 rebind 并生成新确认计划', {stage: 'project-plan', details: identityRevalidation});
   if (operation === 'disable' && status.state !== 'enabled') throw new LifecycleError('PROJECT_NOT_ENABLED', '只有 portable binding 与本机 registration 一致的 enabled 项目才能 disable', {stage: 'project-plan'});
   if (operation === 'enable' && portable.value?.state === 'enabled') {
     const existing = registry.payload.projects[portable.value.projectId];
     if (existing && canonicalPath(existing.realPath) !== canonicalPath(target) && !rebind) throw new LifecycleError('PROJECT_MOVE_REQUIRES_EXPLICIT_REBIND', '检测到项目移动/复制；必须显式 rebind 后重新启用', {stage: 'project-plan'});
   }
   const existingIdentity = fs.existsSync(target) && fs.existsSync(path.join(target, ...IDENTITY_RELATIVE.split('/'))) ? readJson(path.join(target, ...IDENTITY_RELATIVE.split('/'))) : null;
+  if (existingIdentity && portable.value && (existingIdentity.projectId !== portable.value.projectId || existingIdentity.identityScheme !== 'foundation-project-id-v2')) throw new LifecycleError('PROJECT_BINDING_INVALID', '项目 identity 与 portable binding 不一致，不能重新绑定', {stage: 'project-plan'});
   const projectId = operation === 'disable' ? status.projectId : (portable.value?.projectId || existingIdentity?.projectId || `project-${crypto.randomUUID()}`);
   const template = createFromTemplate ? installedTemplate(context) : null;
   const changes = operation === 'enable'
@@ -302,10 +313,11 @@ export function createProjectAuthorityPlan({operation, project, installationRoot
   const seed = {
     schemaVersion: '1.0.0', bindingVersion: PROJECT_BINDING_VERSION, operation, project: target, installationRoot: context.root, installId: context.current.identity.installId, projectId,
     createFromTemplate, rebind, continuousSync, syncScope: continuousSync === 'grant' ? CONTINUOUS_SYNC_SCOPE : null, includePreview, technology, createdAt: now, expiresAt: now + ttlMs,
+    ...(identityRevalidation ? {identityRevalidation} : {}),
     projectSnapshot: {exists: fs.existsSync(target), identity: fs.existsSync(target) ? projectIdentity(target) : null, protected: fs.existsSync(target) ? snapshotProtectedProjectData(target) : null},
     templateSnapshot: template ? {path: template.path, hash: template.hash} : null,
     portableBeforeHash: portable.hash, registryBeforeHash: registry.fileHash, currentIntegrityHash: context.currentIntegrityHash,
-    changes,
+    changes: identityRevalidation ? ['explicitly-rebind-selected-project-identity', ...changes] : changes,
     creates: operation === 'enable' ? [IDENTITY_RELATIVE, `${PROJECT_LAYOUT_PATHS.integration}/binding.json`, PROJECT_LAYOUT_PATHS.generatedCache, OWNERSHIP_RELATIVE] : [],
     replacements: operation === 'disable' ? [`${PROJECT_LAYOUT_PATHS.integration}/binding.json`, OWNERSHIP_RELATIVE] : [],
     deletes: [],
@@ -313,7 +325,7 @@ export function createProjectAuthorityPlan({operation, project, installationRoot
     fileCount: fs.existsSync(target) ? snapshotProtectedProjectData(target).fileCount : 0,
     byteCount: fs.existsSync(target) ? snapshotProtectedProjectData(target).byteCount : 0,
     protectedDataHashes: fs.existsSync(target) ? snapshotProtectedProjectData(target).hashes : {},
-    expectedBeforeState: {project: fs.existsSync(target) ? snapshotProtectedProjectData(target) : null, registryHash: registry.fileHash, currentIntegrityHash: context.currentIntegrityHash},
+    expectedBeforeState: {project: fs.existsSync(target) ? snapshotProtectedProjectData(target) : null, registryHash: registry.fileHash, currentIntegrityHash: context.currentIntegrityHash, ...(identityRevalidation ? {identityRevalidation} : {})},
     semantics: operation === 'disable' ? '停止 Foundation 对该项目的管理；不删除项目资料，不卸载 Foundation；保留 disabled integration binding、项目 identity、facts、backups、未知文件和项目代码' : `启用 Foundation 对该项目的显式管理${continuousSync === 'grant' ? '；同页准备缺项并采用规则；授予本项目持续事实、关系、源码摘要及受支持预览登记权限；关闭页面/预览/对话不撤销，不包含源码、软件、其他项目写入' : continuousSync === 'revoke' ? '；撤销持续同步，保留资料且打开不恢复' : ''}`,
   };
   return planIntegrity(seed);
@@ -444,6 +456,78 @@ function writeProjectOwnership(project, projectId, portableFile) {
   const payload = {schemaVersion: '2.0.0', layoutVersion: PROJECT_LAYOUT_VERSION, projectId, ownedLeaves: [{path: `${PROJECT_LAYOUT_PATHS.integration}/binding.json`, kind: 'integration', type: 'file', sha256: sha256(bindingBytes), byteLength: bindingBytes.length}], ownedDirectories: [{path: PROJECT_LAYOUT_PATHS.integration, type: 'directory'}, {path: PROJECT_LAYOUT_PATHS.generatedCache, type: 'directory'}], preserved: [IDENTITY_RELATIVE, PROJECT_LAYOUT_PATHS.facts, '.foundation/backups', 'unknown-and-user-modified-files', 'project-code']};
   const ownership = {...payload, integrity: {algorithm: 'sha256', hash: sha256(canonicalStringify(payload))}};
   writeJsonAtomic(path.join(project, ...OWNERSHIP_RELATIVE.split('/')), ownership);
+}
+
+// A new explicit confirmation binds selected directories; matching portable IDs
+// only narrows eligibility and never proves continuity after a device change.
+export function inspectProjectIdentityRevalidation(installationRoot) {
+  const context = installationContext(installationRoot), registry = registryContext(context);
+  const entries = [];
+  for (const [id, record] of Object.entries(registry.payload.projects)) {
+    const project = assertEligibleProject(record.realPath, context.root);
+    const portable = portableContext(project), identity = projectIdentity(project);
+    const projectDocument = readJson(path.join(project, ...IDENTITY_RELATIVE.split('/')));
+    if (record.projectId !== id || record.canonicalPath !== canonicalPath(project) || !['enabled','disabled'].includes(record.state) || portable.hash !== record.portableBindingHash || portable.value?.projectId !== id || portable.value.state !== record.state || projectDocument.projectId !== id || projectDocument.identityScheme !== 'foundation-project-id-v2') throw new LifecycleError('PROJECT_BINDING_INVALID','项目登记和当前目录的身份资料不一致；不能通过更新恢复覆盖',{stage:'project-revalidation'});
+    if (sameIdentity(record.projectIdentity, identity)) continue;
+    if (record.projectIdentity?.inode !== identity.inode || record.projectIdentity?.kind !== identity.kind) throw new LifecycleError('PROJECT_DIRECTORY_REPLACED','目录已替换；更新不能自动选择新目录，请先明确选择正确项目',{stage:'project-revalidation'});
+    const grant = record.continuousSync;
+    if (!grant || !Number.isSafeInteger(grant.revision) || grant.revision<1 || !['active','revoked','not-granted'].includes(grant.state) || grant.state === 'active' && (record.state !== 'enabled' || grant.installId !== context.current.identity.installId || grant.projectId !== id || canonicalStringify(grant.scope) !== canonicalStringify(CONTINUOUS_SYNC_SCOPE))) throw new LifecycleError('PROJECT_SYNC_SCOPE_INVALID','原同步权限无法核实；更新不能扩大或猜测权限',{stage:'project-revalidation'});
+    entries.push({projectId:id, project, registeredIdentity:record.projectIdentity, selectedIdentity:identity, state:record.state, continuousSync:structuredClone(grant), portableHash:portable.hash, protected:snapshotProtectedProjectData(project)});
+  }
+  return {installationRoot:context.root, installId:context.current.identity.installId, currentIntegrityHash:context.currentIntegrityHash, registryHash:registry.fileHash, entries};
+}
+
+export function createProjectIdentityRevalidationPlan({installationRoot, now=Date.now(), ttlMs=15*60*1000}) {
+  const snapshot = inspectProjectIdentityRevalidation(installationRoot);
+  if (!snapshot.entries.length) throw new LifecycleError('PROJECT_REVALIDATION_NOT_REQUIRED','项目目录无需重新确认',{stage:'project-revalidation'});
+  return planIntegrity({schemaVersion:'1.0.0',bindingVersion:PROJECT_BINDING_VERSION,operation:'project-identity-revalidate',installationRoot:snapshot.installationRoot,installId:snapshot.installId,projectId:'update-project-bindings',createdAt:now,expiresAt:now+ttlMs,revalidation:snapshot,
+    changes:['重新绑定本页明确列出的当前目录','保持每个项目原启用或停用状态','对原持续同步范围重新授权；不新增范围'],creates:[],replacements:['state/projects.json'],deletes:[],preserves:['source-code','.foundation/facts','project-files','原停用状态','未授予或已撤销的同步权限'],
+    semantics:'设备身份已变化，程序不能证明目录仍是原项目。确认表示你选择下列当前目录，并重新授予列出的原同步范围。停用项目保持停用；不会准备、同步或改写项目内容。完成后继续独立确认程序更新。'});
+}
+
+export function authorizationEffectForProjectIdentityRevalidation(plan) {
+  return createAuthorizationEffect({operationClass:'foundation-project-authority',operation:plan.operation,planId:plan.planId,planHash:plan.integrity.hash,installId:plan.installId,targets:[{kind:'foundation-installation',path:plan.installationRoot},...plan.revalidation.entries.map(e=>({kind:'product-project',id:e.projectId,path:e.project,identity:e.selectedIdentity}))],actions:plan.changes,changes:plan.replacements,deletes:[],preserves:plan.preserves,expectedBeforeState:plan.revalidation});
+}
+
+export function validateProjectIdentityRevalidation(plan, now=Date.now()) {
+  const {integrity,...unsigned}=plan;
+  if(plan.operation!=='project-identity-revalidate'||integrity?.hash!==sha256(canonicalStringify(unsigned))||now>plan.expiresAt)throw new LifecycleError('PROJECT_REVALIDATION_PLAN_INVALID','重新确认计划已过期或被改写');
+  if(canonicalStringify(inspectProjectIdentityRevalidation(plan.installationRoot))!==canonicalStringify(plan.revalidation))throw new LifecycleError('MANAGER_PLAN_STATE_DRIFT','确认后项目内容、目录或登记发生变化，旧确认失效');
+}
+
+export function applyProjectIdentityRevalidation({plan,now=Date.now()}) {
+  validateProjectIdentityRevalidation(plan,now);
+  const context=installationContext(plan.installationRoot);
+  if(inspectProjectAuthorityRecovery(context.root).status!=='clean')throw new LifecycleError('PROJECT_AUTHORITY_RECOVERY_REQUIRED','先处理未完成的项目登记事务');
+  const effect=authorizationEffectForProjectIdentityRevalidation(plan),reservation=reserveExactManagerConfirmationAtBoundary(effect),authorization=publicManagerConfirmationEvidence(reservation);
+  const guards=[];let intent,guard,journal,journalFile,consumed=false;
+  try {
+    const registry=registryContext(context),before={registry:fileSnapshot(registry.file)};
+    intent=writeTrustedPreIntent({intentId:plan.planId,operationClass:effect.operationClass,operation:plan.operation,effect,authorization,planHash:plan.integrity.hash,target:context.root,beforeState:plan.revalidation,now});
+    guards.push(acquireTrustedTargetGuard(intent));
+    for(const entry of plan.revalidation.entries)guards.push(acquireTrustedTargetGuard(intent,{target:entry.project}));
+    guard=acquireProjectGuard(context,plan.planId,authorization);
+    validateProjectIdentityRevalidation(plan,now);
+    consumeExactManagerConfirmationAtBoundary(reservation,{effectHash:effect.effectHash,intentId:plan.planId,intentPathHash:intent.fileHash});consumed=true;
+    updateTrustedPreIntent(intent,'consumed',{consumedAt:now});
+    journal={schemaVersion:'1.0.0',operationId:plan.planId,operation:plan.operation,project:context.root,projectId:null,effectHash:effect.effectHash,authorization,plan,before,status:'planned',outcome:null,steps:[]};
+    journalFile=path.join(projectTransactionPaths(context).journals,plan.planId+'.json');writeProjectJournal(journalFile,journal);
+    const payload=structuredClone(registry.payload);
+    for(const entry of plan.revalidation.entries){
+      const record=payload.projects[entry.projectId];record.projectIdentity=entry.selectedIdentity;
+      record.confirmationEvidence={confirmationId:authorization.confirmationId||authorization.authorizationId,effectHash:authorization.effectHash,planId:plan.planId,confirmedAt:now};
+      if(record.continuousSync.state==='active')record.continuousSync={...record.continuousSync,revision:record.continuousSync.revision+1,planId:plan.planId,grantedAt:now};
+    }
+    writeJsonAtomic(registry.file,{...payload,integrity:signTrustedPayload(payload)});
+    journal.outcome='completed';writeProjectJournal(journalFile,journal,'completed','registry-revalidated');
+    updateTrustedPreIntent(intent,'completed',{completedAt:Date.now(),outcome:'completed'});
+    return {ok:true,state:'revalidated',projects:plan.revalidation.entries.map(e=>({project:e.project,state:e.state,continuousSync:e.continuousSync.state})),preserved:plan.preserves,mutationPerformed:true};
+  }catch(error){
+    if(journal){try{restoreFileSnapshot(path.join(context.root,'state/projects.json'),journal.before.registry);journal.outcome='rolled-back';writeProjectJournal(journalFile,journal,'completed','rollback-complete');updateTrustedPreIntent(intent,'completed',{outcome:'rolled-back'});}catch(recoveryError){writeProjectJournal(journalFile,journal,'manual-action-required','rollback-failed');updateTrustedPreIntent(intent,'manual-action-required',{errorCode:recoveryError.code});}}
+    else if(!consumed){try{failExactManagerConfirmationAtBoundary(reservation,{code:error.code||'PROJECT_REVALIDATION_FAILED',intentWritten:false,intentId:plan.planId});if(intent)updateTrustedPreIntent(intent,'cancelled',{errorCode:error.code});}catch{}}
+    else if(consumed&&intent)updateTrustedPreIntent(intent,'completed',{outcome:'no-target-write',errorCode:error.code});
+    throw error;
+  }finally{releaseProjectGuard(guard);for(const entry of guards.reverse())releaseTrustedTargetGuard(entry);}
 }
 
 export function applyProjectAuthorityPlan({plan, now = Date.now()}) {
@@ -664,7 +748,7 @@ export function applyProjectAuthorityRecoveryPlan({plan, now = Date.now()}) {
       const file = path.join(context.root, ...entry.path.split('/'));
       const journal = signedPayload(readJson(file), 'PROJECT_AUTHORITY_JOURNAL_INVALID', `project journal ${entry.operationId}`);
       if (sha256(fs.readFileSync(file)) !== entry.fileHash || journal.effectHash !== entry.effectHash || journal.operationId !== entry.operationId) throw new LifecycleError('PROJECT_RECOVERY_SCOPE_CHANGED', 'project journal bytes/effect 已变化', {stage: 'project-recovery'});
-      restoreFileSnapshot(path.join(journal.project, ...PORTABLE_RELATIVE.split('/')), journal.before.portable);
+      if(journal.operation!=='project-identity-revalidate') restoreFileSnapshot(path.join(journal.project, ...PORTABLE_RELATIVE.split('/')), journal.before.portable);
       restoreFileSnapshot(path.join(context.root, 'state', 'projects.json'), journal.before.registry);
       restoreCreatedProjectSnapshot(journal.project, journal.before);
       journal.outcome = 'rolled-back';

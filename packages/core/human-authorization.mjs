@@ -94,7 +94,7 @@ export function authorizationEffectForProjectPlan(plan, extra = {}) {
     changes: plan.changes || [],
     deletes: [],
     preserves: plan.preserves || [],
-    expectedBeforeState: {projectSnapshot: plan.projectSnapshot, portableBeforeHash: plan.portableBeforeHash, registryBeforeHash: plan.registryBeforeHash, installationIntegrityHash: plan.currentIntegrityHash},
+    expectedBeforeState: {projectSnapshot: plan.projectSnapshot, portableBeforeHash: plan.portableBeforeHash, registryBeforeHash: plan.registryBeforeHash, installationIntegrityHash: plan.currentIntegrityHash, ...(plan.identityRevalidation ? {identityRevalidation: plan.identityRevalidation} : {})},
     ...extra,
   });
 }

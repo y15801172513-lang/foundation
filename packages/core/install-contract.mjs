@@ -1,6 +1,8 @@
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import path from 'node:path';
-import {assertTrustedCandidatePath, deriveTrustedLifecycleAuthority, snapshotTrustedTarget} from './trusted-authority.mjs';
+import {assertTrustedCandidatePath, deriveTrustedLifecycleAuthority, snapshotTrustedTarget, verifyTrustedPayload} from './trusted-authority.mjs';
+import {assertRetainedProjectCapabilities} from './project-compatibility.mjs';
 import {currentRuntimeIdentity} from './runtime-surface.mjs';
 import {snapshotUpdateInputs} from './update-input-inventory.mjs';
 import {readInstallationScope, verifyInstallationScope} from './installation-scope.mjs';
@@ -89,6 +91,16 @@ export function createLifecyclePlan({operation, profile = 'core', mode = null, t
   const sandbox = sandboxRoot ? path.resolve(sandboxRoot) : authority.trustedRootRealPath;
   let acquisitionSnapshot=null;
   if (candidate?.path) assertTrustedCandidatePath(candidate.path, authority,{captureAcquisition:operation==='update'?snapshot=>{acquisitionSnapshot=snapshot;}:null});
+  let compatibilityApp = candidate?.path ? path.join(candidate.path, 'payload/app') : null;
+  if (operation === 'rollback') {
+    const {integrity, ...installed} = JSON.parse(fs.readFileSync(path.join(target, 'state/installations.json')));
+    if (!verifyTrustedPayload(installed, integrity)) throw new LifecycleError('INSTALLATIONS_INTEGRITY_INVALID', '保留版本登记签名无效');
+    const relative = installed.versions?.[targetVersion]?.appPath;
+    if (!relative || path.isAbsolute(relative) || relative.split(/[\\/]/u).includes('..')) throw new LifecycleError('ROLLBACK_VERSION_MISSING', '没有可核验的回退版本');
+    compatibilityApp = path.join(target, relative);
+  }
+  const retainedProjects = compatibilityApp && ['install', 'update', 'repair', 'rollback'].includes(operation)
+    ? assertRetainedProjectCapabilities(target, compatibilityApp, {operation, currentVersion, targetVersion}) : null;
   const selectedExtensions = [...(extensions ?? LIFECYCLE_PROFILES[profile].extensions)].sort();
   const selectedAiBridge = profile === 'recommended' ? true : profile === 'core' ? false : aiBridge === true;
   const installId = `install-${sha256(canonicalStringify({targetRelative: trustedTarget.targetRelative, platform, arch, installIdentity})).slice(0, 24)}`;
@@ -128,6 +140,7 @@ export function createLifecyclePlan({operation, profile = 'core', mode = null, t
     selection: {privateRuntime: true, foundationCore: true, managementCenter: true, aiBridge: selectedAiBridge, extensions: selectedExtensions},
     actions: actionsFor({operation, mode, extensions: selectedExtensions, aiBridge: selectedAiBridge}),
     recoverySnapshot,
+    ...(retainedProjects ? {retainedProjects} : {}),
     ...(cleanupAcquisition ? {hostCleanup:snapshotUpdateInputs(candidate,target)} : {}),
     impact: {
       diskBytes: Number(candidate?.bytes || 0),

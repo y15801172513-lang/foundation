@@ -1,3 +1,4 @@
+import {bindMaintenanceManagerRoot} from './runtime-surface.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -10,6 +11,15 @@ import {snapshotAcquisitionCandidate} from './update-input-inventory.mjs';
 const WINDOWS_ABSOLUTE = /^(?:[a-z]:[\\/]|\\\\)/iu;
 let activeFirstInstallCandidateRoot = null;
 let activeFirstInstallDestination = null;
+export function activateMaintenanceCandidateAuthority(candidateRoot, installationRoot) {
+  const key=path.join(installationRoot,"state/.foundation-lifecycle-authority");
+  if(!fs.existsSync(key)||fs.realpathSync(key)!==key||!fs.statSync(key).isDirectory())throw new LifecycleError("UPDATE_RECOVERY_AUTHORITY_INVALID","更新恢复只能使用现有安装的可信授权记录");
+  activateFirstInstallBootstrapAuthority(candidateRoot,{destination:installationRoot});
+  const authority=deriveTrustedLifecycleAuthority();
+  if(!authority.reuseInstalledAuthority||authority.installRoot!==installationRoot)throw new LifecycleError("UPDATE_RECOVERY_AUTHORITY_INVALID","更新恢复安装身份不一致");
+  bindMaintenanceManagerRoot(path.join(installationRoot,"state/local-manager"));
+}
+
 
 function hasLocalSourceMarker(root) {
   const marker = path.join(root, 'SOURCE_BASELINE.json');

@@ -2,8 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {isDeepStrictEqual} from 'node:util';
 import {plainPath} from './local-path.mjs';
-import {installedClient,observePlan} from './manager-step.mjs';
+import {installedClient,observePlan,candidateRecoveryClient} from './manager-step.mjs';
 import {followSelectedSkill} from './skill-handoff.mjs';
+import {operationFailure} from './operation-failure.mjs';
 
 // The running owned engine emits the result body; disk additionally stores its
 // integrity envelope. Bind every body field to that live result, not to the
@@ -62,10 +63,30 @@ const event=await observePlan(client,requested,observation=>onChange({phase:obse
     parameters.candidate=candidate;
     if(before.supportedLifecycleOptions?.update?.includes('cleanupAcquisition'))parameters.cleanupAcquisition=true;
   }
+  if(kind==='update' && candidate.version.split('.').map(Number).reduce((n,v,i)=>n||Math.sign(v-[0,2,33][i]),0)>=0) {
+    const recovery=candidateRecoveryClient(candidate,root,current.identity.installId,env,journeyControl);
+    const inspected=recovery.call(['inspect']);
+    if(inspected.entries.length){
+      const requested=recovery.call(['request-plan']);
+      steps.revalidate={state:'pending',evidence:{planRef:requested.planRef}};
+      onChange({phase:'awaiting-confirmation',maintenanceSteps:{...steps},currentPlanRef:requested.planRef,terminal:false});
+      const event=await observePlan(recovery,requested,observation=>onChange({phase:observation.state==='pending'?'awaiting-confirmation':'executing',...(observation.state!=='pending'?{installationWrites:'possible'}:{}),maintenanceSteps:{...steps,revalidate:{state:observation.state,evidence:{planRef:requested.planRef,sessionId:observation.sessionId}}}}));
+      const result=recovery.call(['status','--plan-ref',requested.planRef]);
+      if(result.sessionId!==event.sessionId||result.state!==event.state)throw Error('项目重新确认结果与本次会话不一致');
+      steps.revalidate={state:result.state,evidence:{planRef:requested.planRef,sessionId:result.sessionId},result:result.result};
+      onChange({maintenanceSteps:{...steps},projectRecovery:result});
+      if(result.state!=='completed')return {state:'partial',terminal:true,phase:'finished',programState:'not-started',next:'项目重新确认未完成，程序尚未更新。取消不会改变登记；失败保留本次恢复结果。可从正常更新入口重新发起新确认。'};
+      if(recovery.call(['inspect']).entries.length)throw Error('项目重新确认后仍有身份不一致，程序未更新');
+      previousPlanRef=requested.planRef;
+    }
+  }
   const result=await run('program',kind,parameters);
   const payload=result.result?.lifecycleResult||result.result||{};
   onChange({programState:result.state,sessionId:result.sessionId,runtimeHealth:payload.stableLauncherHealth||'unknown',programResult:payload,phase:'runtime-ended'});
-  if(result.state!=='completed')return {state:'partial',terminal:true,phase:'finished',next:'程序操作未完成；保留结果和恢复记录，不自动补做。先核验程序与 Codex 各自状态。'};
+  if(result.state!=='completed'){
+    const diagnostic=operationFailure(result.failure);
+    return {state:'partial',terminal:true,phase:'finished',errorCode:diagnostic.code,errorStage:diagnostic.stage,retryable:diagnostic.retryable,diagnostic,next:diagnostic.next};
+  }
   if(kind==='uninstall'){
     const file=plainPath(path.join(root,'uninstall-result.json')),receipt=JSON.parse(fs.readFileSync(file));
     if(!matchesUninstallResult(receipt,payload,current.identity.installId))throw Error('卸载独立回执与本次已安装引擎结果不一致');
