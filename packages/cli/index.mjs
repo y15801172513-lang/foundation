@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+import {applyInspectorUpgrade,createObjectReferenceBackup,prepareObjectReferenceRestore,restoreObjectReferences} from '../core/workspace-host.mjs';
+import {persistProjectEvidence} from '../core/workspace-host.mjs';
+import {buildProjectWebPreview} from '../core/workspace-host.mjs';
 import {deliveryVerificationPlan, projectDeliveryIdentity, prepareInspectorUpgradePlan, resolveProjectObject, resolveProjectFile} from '../core/workspace-host.mjs';
 import {runInstalledMaintenance} from './installed-maintenance.mjs';
 import {synchronizeProject, inspectProjectSync, analyzeProjectSources, verifyProjectDefinition, prepareProjectSemanticReview, submitProjectSemanticReview} from '../core/workspace-host.mjs';
@@ -65,6 +68,7 @@ function readPlan(file) {
 
 function runManagerCli(args, output) {
   const command = args[1];
+
   if (CLI_ROUTE_GROUPS.managerForbidden.includes(command)) throw new Error('manager 只支持 inspect|request-plan|open-manager|status；不存在 confirm/apply/recover/purge 命令');
   if (command === 'inspect') return output.log(JSON.stringify(inspectLocalLifecycle({installationRoot: option(args, '--root'), project: option(args, '--project')}), null, 2));
   if (command === 'request-plan') {
@@ -125,6 +129,56 @@ export function upgradeProject(project, {plan} = {}) {
 
 function runProjectCli(args, output) {
   const command = args[1];
+  if(command==='build-preview') {
+    const result=buildProjectWebPreview({project:option(args,'--project'),installationRoot:option(args,'--root'),pageId:option(args,'--page-id'),buildAuthorized:args.includes('--build-authorized')});
+    output.log(JSON.stringify(result,null,2));if(['failed','conflict'].includes(result.state))process.exitCode=2;return;
+  }
+  if(command==='register-evidence') {
+    const project=option(args,'--project'),installationRoot=option(args,'--root');
+    const value=JSON.parse(fs.readFileSync(resolveProjectFile(project,option(args,'--report'),'签名报告'),'utf8'));
+    const result=persistProjectEvidence({project,installationRoot,result:value.report?value:{report:value}});
+    output.log(JSON.stringify(result,null,2));if(['failed','conflict'].includes(result.state))process.exitCode=2;return;
+  }
+  if(command==='continue')return (async()=>{
+    const project=option(args,'--project'),installationRoot=option(args,'--root'),common={project,installationRoot};
+    const sync=synchronizeProject(common),results=[],attempted=new Set(),reviews=[];
+    if(['failed','conflict','stopped','in-progress'].includes(sync.state)){output.log(JSON.stringify(sync,null,2));process.exitCode=2;return;}
+    if(args.includes('--source-write-authorized')) {
+      const plan=prepareInspectorUpgradePlan(common),reviewedBridgeFiles=JSON.parse(option(args,'--reviewed-bridge-files-json') || '[]');
+      const adapted=applyInspectorUpgrade({...common,sourceWriteAuthorized:true,expectedPlan:plan,reviewedBridgeFiles});
+      results.push({step:'inspector-apply',state:adapted.state,pending:adapted.pending});
+    }
+    if(args.includes('--build-authorized')) {
+      const pages=[...new Set(inspectProjectSync(common).workQueue.filter(item=>item.step==='build-preview').map(item=>item.pageId))];
+      for(const pageId of pages)try{results.push({step:'build-preview',pageId,result:buildProjectWebPreview({...common,pageId,buildAuthorized:true})});}catch(error){results.push({step:'build-preview',pageId,state:'failed',reason:error.message});}
+    }
+    for(;;) {
+      const status=inspectProjectSync(common);
+      const item=status.workQueue.find(item=>['verify-definition','verify-browser'].includes(item.step)&&!attempted.has(item.idempotencyKey)&&!item.prerequisites.some(step=>status.workQueue.some(previous=>previous.step===step&&previous.taskId===item.taskId&&previous.assetId===item.assetId&&previous.requirementId===item.requirementId)));
+      if(!item)break;
+      attempted.add(item.idempotencyKey);
+      try {
+        const options={...common,taskId:item.taskId,assetId:item.assetId,requirementId:item.requirementId};
+        const result=item.step==='verify-definition'?await verifyProjectDefinition({...options,entryRoots:item.entryRoots}):await verifyInstalledProjectBrowser({...options,scenarioId:item.scenarioId});
+        const registered=persistProjectEvidence({...common,result});
+        const registrationFailed=['failed','conflict','stopped','in-progress'].includes(registered.state);
+        results.push({request:item,state:registrationFailed?'failed':result.report?.result || result.state,...(registrationFailed?{reason:registered.error?.message || '验证报告登记未完成；按当前同步状态恢复'}:{}),registered});
+      }catch(error){results.push({request:item,state:'failed',reason:error.message});}
+    }
+    const status=inspectProjectSync(common);
+    for(const item of status.workQueue.filter(item=>item.step==='prepare-semantic-review'))try {
+      reviews.push(prepareProjectSemanticReview({...common,taskId:item.taskId,assetId:item.assetId,requirementId:item.requirementId}));
+    }catch(error){results.push({request:item,state:'pending',reason:error.message});}
+    output.log(JSON.stringify({...status,results,reviews,nextStep:reviews.length?'当前任务阅读 reviews 的实际源码和报告，逐项提交语义审阅，再 register-evidence 和 continue 直到适用队列清空':status.nextStep},null,2));
+    if(results.some(item=>item.state==='failed'))process.exitCode=2;
+  })();
+  if(['inspector-apply','reference-backup','reference-restore-plan','reference-restore'].includes(command)) {
+    const project=option(args,'--project'),installationRoot=option(args,'--root');
+    const common={project,installationRoot,sourceWriteAuthorized:args.includes('--source-write-authorized')};
+    const plan=option(args,'--plan')?JSON.parse(fs.readFileSync(resolveProjectFile(project,option(args,'--plan'),'精确计划'),'utf8')):null;
+    const result=command==='inspector-apply'?applyInspectorUpgrade({...common,expectedPlan:plan,reviewedBridgeFiles:JSON.parse(option(args,'--reviewed-bridge-files-json') || '[]')}):command==='reference-backup'?createObjectReferenceBackup(common):command==='reference-restore-plan'?prepareObjectReferenceRestore({...common,backupPath:option(args,'--backup')}):restoreObjectReferences({...common,plan});
+    return output.log(JSON.stringify(result,null,2));
+  }
   if(command==='delivery-identity') {
     const project=option(args,'--project'),installationRoot=option(args,'--root');
     const state=inspectLocalLifecycle({installationRoot,project,operationRequirement:'lifecycle-inspect'});
@@ -140,8 +194,8 @@ function runProjectCli(args, output) {
     const project=option(args,'--project'),installationRoot=option(args,'--root');
     const authority=inspectProjectAuthority(project,{installationRoot});
     if(authority.state!=='enabled'||!authority.agreement)throw new Error('只读对象补取需要当前已核验的项目绑定');
-    const input=fs.readFileSync(resolveProjectFile(project,option(args,'--input'),'复制信封'),'utf8');
-    const result=resolveProjectObject({project,input});output.log(JSON.stringify(result,null,2));
+    const input=option(args,'--ref') || fs.readFileSync(resolveProjectFile(project,option(args,'--input'),'复制信封'),'utf8');
+    const result=resolveProjectObject({project,input,installationRoot});output.log(JSON.stringify(result,null,2));
     if(result.state!=='resolved')process.exitCode=2;return;
   }
   if(command==='verify-delivery')return (async()=>{
@@ -286,7 +340,7 @@ export function runCli(args = process.argv.slice(2), output = console) {
     output.log(`setup OK：Node.js ${process.version}，无外部依赖`);
   } else if (command === 'create') runCreateCli(args, output);
   else if (command === 'manager') runManagerCli(args, output);
-  else if (command === 'project') runProjectCli(args, output);
+  else if (command === 'project') return runProjectCli(args, output);
   else if (command === 'capability') runCapabilityCli(args, output);
   else if (command === 'verify') {
     const result = verify(args[1]); output.log(JSON.stringify(result, null, 2)); if (!result.ok) process.exitCode = 1;

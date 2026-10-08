@@ -10,6 +10,27 @@ import {assertProjectFileAbsent,resolveProjectFile} from './path-boundary.mjs';
 import {verifyTrustedPayload} from './trusted-authority.mjs';
 import {inspectSourceInputIdentity,analyzerVersion} from './source-analysis.mjs';
 
+// A retry can supersede only the same exact target and all prior checks. The
+// verifier signs this link; merely reordering editable evidenceIndex cannot
+// hide failures. Reports and their failed observations remain immutable.
+function sameEvidenceTarget(before,after) {
+  return before.kind===after.kind&&before.taskId===after.taskId&&before.scopeRevision===after.scopeRevision&&before.inputFingerprint===after.inputFingerprint&&canonicalStringify(before.subject)===canonicalStringify(after.subject)&&(before.checkIds || []).every(id=>after.checkIds?.includes(id))&&(before.dimensions || []).every(name=>after.dimensions?.includes(name));
+}
+export function evidenceRetryPredecessors(task,report) {
+  return (task?.evidenceIndex || []).filter(entry=>sameEvidenceTarget(entry,report)).map(entry=>entry.evidenceId);
+}
+export function currentEvidenceEntries(entries,results) {
+  const superseded=new Set();
+  for(const after of entries) {
+    const verified=results?.[after.evidenceId];if(verified?.state!=='verified')continue;
+    for(const id of verified.report?.supersedes || []) {
+      const before=entries.find(entry=>entry.evidenceId===id);
+      if(before&&id!==after.evidenceId&&sameEvidenceTarget(before,after))superseded.add(id);
+    }
+  }
+  return entries.filter(entry=>!superseded.has(entry.evidenceId));
+}
+
 export function verifySourceObservation({project,observation,current=false}) {
   const {observationReceipt,...result}=observation || {};
   const {integrity,...receipt}=observationReceipt || {};

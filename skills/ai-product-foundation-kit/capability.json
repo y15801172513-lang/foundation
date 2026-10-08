@@ -26,9 +26,9 @@
   "files": [
     {
       "path": "SKILL.md",
-      "size": 16224,
-      "sha256": "1775b9afa9b50efb9bfea41d6648f52de719f7f169d46f733300604396732688"
+      "size": 16728,
+      "sha256": "1ae1e5bf00ca535d653cc2ee1feba4cc2e63284f3fa9b7c69e2d8347eb6e63b6"
     }
   ],
-  "contentHash": "7a08fea3f19d874e800efecc119ca92f4d85dcd2d5ece184a67ae06957ac7ed7"
+  "contentHash": "d317ed299b5e9b38e06de346ada38e44dcf0fa5ca84e9ca22574a9787e46396e"
 }

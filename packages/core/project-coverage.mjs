@@ -13,13 +13,13 @@ import {sha256,canonicalStringify} from './install-contract.mjs';
 // source locations within these bytes; only explicit IDs can persist across edits.
 const inventories=new Map();
 export function inspectProjectStructure(project,{installationRoot=null}={}) {
-  const sources=inspectSyncSources(project),objects=[],obligations=[],programs=[],semanticSources=[],limitations=[];
+  const sources=inspectSyncSources(project),objects=[],obligations=[],programs=[],semanticSources=[],limitations=[],definitionImports={},defaultDefinitions={};
   const runtimeSources=[];
   if(installationRoot) {
     const state=inspectLocalLifecycle({installationRoot,project,operationRequirement:'lifecycle-inspect'});
     if(state.bridge?.installationHealth?.code!=='FOUNDATION_HEALTHY'||!state.project?.agreement)throw new Error('语义运行时分类需要健康安装与当前项目绑定');
     const artifactRoot=path.join(installationRoot,state.installation.current.appPath,'artifacts/preview');
-    for(const name of ['preview-bridge.mjs','object-identity.mjs']) {
+    for(const name of ['preview-bridge.mjs','object-identity.mjs','style-variable-usage.mjs']) {
       const artifact=path.join(artifactRoot,name);
       if(fs.realpathSync(artifact)!==artifact||!artifact.startsWith(fs.realpathSync(installationRoot)+path.sep))throw new Error('语义运行时材料路径不安全');
       const digest=sha256(fs.readFileSync(artifact));
@@ -57,8 +57,12 @@ export function inspectProjectStructure(project,{installationRoot=null}={}) {
       // generated nodes require a rendered observation; never call this complete.
       const input=text.replace(/<!--[\s\S]*?-->|<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi,m=>' '.repeat(m.length));
       for(const match of text.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi))scriptInventory(match[1],match.index+match[0].indexOf('>')+1);
-      const stack=[];const tokens=/<\/?([a-z][\w:-]*)\b(?:[^>"']|"[^"]*"|'[^']*')*>/gi;
+      const stack=[];let textStart=0;const tokens=/<\/?([a-z][\w:-]*)\b(?:[^>"']|"[^"]*"|'[^']*')*>/gi;
       for(const match of input.matchAll(tokens)) {
+        const owner=objects.find(object=>object.key===stack.at(-1)?.key);
+        const fragment=input.slice(textStart,match.index);
+        if(owner&&fragment.trim()){owner.textSegments=[...(owner.textSegments || []),{offset:textStart,text:fragment}];owner.ownText=owner.textSegments.map(segment=>segment.text).join('').trim();}
+        textStart=match.index+match[0].length;
         const tag=match[1].toLowerCase();
         if(match[0].startsWith('</')){while(stack.length){if(stack.pop().tag===tag)break;}continue;}
         const attrs={};for(const a of match[0].matchAll(/([\w:-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/g))attrs[a[1]]=a[2]??a[3]??a[4];
@@ -69,6 +73,18 @@ export function inspectProjectStructure(project,{installationRoot=null}={}) {
     } else {
       scriptInventory(text);
       const file=ts.createSourceFile(source.path,text,ts.ScriptTarget.Latest,true,/x$/u.test(source.path)?ts.ScriptKind.TSX:ts.ScriptKind.JS);
+      const imports={};
+      for(const statement of file.statements){if(statement.name&&statement.modifiers?.some(modifier=>modifier.kind===ts.SyntaxKind.DefaultKeyword))defaultDefinitions[source.path]=statement.name.text;if(ts.isExportAssignment(statement)&&ts.isIdentifier(statement.expression))defaultDefinitions[source.path]=statement.expression.text;}
+      for(const statement of file.statements)if(ts.isImportDeclaration(statement)&&ts.isStringLiteral(statement.moduleSpecifier)&&statement.moduleSpecifier.text.startsWith('.')) {
+        const base=path.posix.normalize(path.posix.join(path.posix.dirname(source.path),statement.moduleSpecifier.text));
+        const resolved=[base,base+'.tsx',base+'.jsx',base+'/index.tsx',base+'/index.jsx'].find(file=>sources.some(input=>input.path===file));
+        if(!resolved)continue;
+        const clause=statement.importClause;
+        if(clause?.name)imports[clause.name.text]={file:resolved,name:'default'};
+        if(clause?.namedBindings&&ts.isNamespaceImport(clause.namedBindings))imports[clause.namedBindings.name.text]={file:resolved,name:'*'};
+        if(clause?.namedBindings&&ts.isNamedImports(clause.namedBindings))for(const item of clause.namedBindings.elements)imports[item.name.text]={file:resolved,name:item.propertyName?.text || item.name.text};
+      }
+      definitionImports[source.path]=imports;
       const visit=(node,parent=null)=>{
         if(ts.isJsxElement(node)||ts.isJsxSelfClosingElement(node)) {
           const opening=ts.isJsxElement(node)?node.openingElement:node;
@@ -81,7 +97,8 @@ export function inspectProjectStructure(project,{installationRoot=null}={}) {
       if(file.parseDiagnostics.length)limitations.push({file:source.path,reason:'语法诊断；结构可能不完整'});
     }
   }
-  const result={schemaVersion:'1.0.0',sourceDigest:digest,sources,runtimeSources,semanticSources,objects,obligations,programs,limitations,semanticState:'not-reviewed'};
+  for(const imports of Object.values(definitionImports))for(const value of Object.values(imports))if(value.name==='default')value.name=defaultDefinitions[value.file] || 'default';
+  const result={schemaVersion:'1.0.0',sourceDigest:digest,sources,runtimeSources,semanticSources,objects,obligations,programs,limitations,definitionImports,semanticState:'not-reviewed'};
   inventories.set(project,result);while(inventories.size>2)inventories.delete(inventories.keys().next().value);
   return structuredClone(result);
 }
@@ -154,6 +171,9 @@ export function projectObjectRelations(facts) {
   return Object.values(facts).flatMap(doc=>(doc?.items || []).flatMap(record=>{
     const graph=record.sourceStructure?.semantics;if(!graph)return [];
     const nodes=new Map((graph.nodes || []).map(node=>[node.id,node]));
-    return (graph.relations || []).map(relation=>({...relation,id:`${record.id}:${relation.id}`,ownerId:record.id,fromName:nodes.get(relation.from)?.name || relation.from,toName:nodes.get(relation.to)?.name || relation.to,fromBindings:nodes.get(relation.from)?.objectIds || [],toBindings:nodes.get(relation.to)?.objectIds || [],semanticState:'recorded-not-reviewed',updatedAt:record.updatedAt}));
+    return (graph.relations || []).map(relation=>{
+      const from=nodes.get(relation.from),to=nodes.get(relation.to),event=relation.event || from?.event || to?.event;
+      return {...relation,...(event?{event}:{}),...(event&&relation.type==='data-affects'&&to?.kind==='state'?{result:'更新状态 '+to.name}:{}),id:`${record.id}:${relation.id}`,ownerId:record.id,fromName:from?.name || relation.from,toName:to?.name || relation.to,fromBindings:from?.objectIds || [],toBindings:to?.objectIds || [],semanticState:'recorded-not-reviewed',updatedAt:record.updatedAt};
+    });
   }));
 }

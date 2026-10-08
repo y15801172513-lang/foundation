@@ -13,13 +13,13 @@ function scopeFields(value){
 export function createJourneyControl(readRecord, changed) {
   const children=new Map();let active=null,origin=null,choice=null,resolveChoice,rejectChoice,choiceTimer,viewRevision=0,submitting=0;
   const headers=owner=>({origin,'content-type':'application/json','x-foundation-journey':owner.token,'x-foundation-operation':readRecord().operationId});
-  const request=async(owner,route,body)=>{
+  const request=async(owner,route,body,timeoutMs=body?120000:5000)=>{
     if(owner.child.exitCode!==null||owner.child.signalCode)throw Error('确认服务已退出，结果待核实');
     const ended=new AbortController();
     const onClose=()=>ended.abort(Error('确认服务已退出，结果待核实'));
     owner.child.once('close',onClose);
     try {
-      const response=await fetch(owner.url+route,{method:body?'POST':'GET',headers:headers(owner),...(body?{body:JSON.stringify(body)}:{}),redirect:'error',signal:AbortSignal.any([ended.signal,AbortSignal.timeout(body?120000:5000)])});
+      const response=await fetch(owner.url+route,{method:body?'POST':'GET',headers:headers(owner),...(body?{body:JSON.stringify(body)}:{}),redirect:'error',signal:AbortSignal.any([ended.signal,AbortSignal.timeout(timeoutMs)])});
       return {status:response.status,body:await response.json()};
     } finally { owner.child.removeListener('close',onClose); }
   };
@@ -92,7 +92,11 @@ export function createJourneyControl(readRecord, changed) {
         Object.assign(readRecord(),{environment});changed({environment});
         if(environment.state!=='ready')throw Error('执行前环境复检未通过；没有提交确认，请核实当前工具环境');
       }
-      const result=await request(a.owner,'__foundation/manager/confirm',{operationId:body.operationId,sessionId:s.sessionId,planHash:s.planHash,managerNonce:body.managerNonce,action:body.action});
+      // The installed manager may still verify and clean inputs after committing
+      // an update. Match observePlan's bounded lifetime; an unrelated 120s
+      // deadline can abort its final response after the mutation has succeeded.
+      const responseTimeout=Number.isSafeInteger(s.expiresAt)?Math.max(1,Math.min(16*60*1000,s.expiresAt-Date.now()+1000)):120000;
+      const result=await request(a.owner,'__foundation/manager/confirm',{operationId:body.operationId,sessionId:s.sessionId,planHash:s.planHash,managerNonce:body.managerNonce,action:body.action},responseTimeout);
       if(active===a&&result.body.state)a.view.session={...s,...result.body};changed();return result;
       }finally{submitting--;}
     }

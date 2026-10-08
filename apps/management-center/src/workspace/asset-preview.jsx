@@ -16,6 +16,12 @@ function PreviewMessage({title, description, status}) {
   return <div className="asset-preview-state" data-preview-status={status} role="status"><ImportantText as="strong">{title}</ImportantText><ContentDescription as="span">{description}</ContentDescription></div>;
 }
 
+function DurationSample({value}) {
+  const sample=useRef(null);
+  const replay=()=>{if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;for(const animation of sample.current.getAnimations())animation.cancel();sample.current.animate([{transform:'translateX(0)'},{transform:'translateX(80px)'}],{duration:parseFloat(getComputedStyle(sample.current).animationDuration)*1000,fill:'none'});};
+  return <div className="flex flex-col gap-4"><div ref={sample} style={{animationDuration:value}} className="size-8 rounded-md bg-primary" aria-label={'时长样例 '+value}/><Button variant="outline" onClick={replay}>播放时长样例</Button><MetadataText>遵循系统减少动态效果设置。</MetadataText></div>;
+}
+
 function TokenSample({asset,assets}) {
   const token=tokenDisplayContract(asset,assets);
   const [fontState,setFontState]=useState('字体加载待核');
@@ -29,7 +35,7 @@ function TokenSample({asset,assets}) {
   const property={color:'color',spacing:'width','font-size':'font-size','line-height':'line-height',radius:'border-radius',duration:'animation-duration'}[token.type];
   const valid=token.type==='font-family'||CSS.supports(property,token.value);
   if(!valid)return <PreviewMessage status="error" title="变量值不可用" description="当前浏览器无法解析此值，请核对来源。"/>;
-  return <section className="flex flex-col gap-4 p-4" data-token-type={token.type}><SectionTitle>设计变量样例</SectionTitle>{token.type==='color'?<div className="size-16 rounded-md border" style={{backgroundColor:token.value}} aria-label={'色样 '+token.value}/>:token.type==='spacing'?<div className="h-4 bg-primary" style={{width:token.value}} aria-label={'间距 '+token.value}/>:<p className="text-base leading-relaxed" style={{...(['font-family','font-size','line-height'].includes(token.type)?{[{ 'font-family':'fontFamily','font-size':'fontSize','line-height':'lineHeight'}[token.type]]:token.value}:{})}}>产品设计 Aa 0123</p>}<MetadataText>{token.value} · {token.source}</MetadataText>{token.type==='font-family'?<MetadataText role="status">{fontState}</MetadataText>:null}<ContentDescription>样例展示登记值；页面主题与继承环境需另行核验。</ContentDescription></section>;
+  return <section className="flex flex-col gap-4 p-4" data-token-type={token.type}><SectionTitle>设计变量样例</SectionTitle>{token.type==='color'?<div className="size-16 rounded-md border" style={{backgroundColor:token.value}} aria-label={'色样 '+token.value}/>:token.type==='spacing'?<div className="h-4 bg-primary" style={{width:token.value}} aria-label={'间距 '+token.value}/>:token.type==='radius'?<div className="size-16 border-2 bg-muted" style={{borderRadius:token.value}} aria-label={'圆角 '+token.value}/>:token.type==='duration'?<DurationSample value={token.value}/>:<p className="text-base leading-relaxed" style={{...(['font-family','font-size','line-height'].includes(token.type)?{[{ 'font-family':'fontFamily','font-size':'fontSize','line-height':'lineHeight'}[token.type]]:token.value}:{})}}>产品设计 Aa 0123</p>}<MetadataText>{token.value} · {token.source}</MetadataText>{token.type==='font-family'?<MetadataText role="status">{fontState}</MetadataText>:null}<ContentDescription>样例展示登记值；页面主题与继承环境需另行核验。</ContentDescription></section>;
 }
 
 function TokenModes({asset,assets}) {
@@ -37,7 +43,7 @@ function TokenModes({asset,assets}) {
   const [selected,setSelected]=useState('0');
   useEffect(()=>setSelected('0'),[asset.assetId]);
   if(modes.length<2)return <TokenSample asset={asset} assets={assets}/>;
-  const items=modes.map((mode,index)=>({value:String(index),label:typeof mode==='object'?(mode.name || mode.mode || `模式 ${index+1}`):`登记值 ${index+1}`}));
+  const items=modes.map((mode,index)=>{const value=typeof mode==='object'?mode.value:mode;const definition=asset.styleEvidence?.definitions?.find(item=>item.value===value);const condition=definition?.conditions?.map(item=>'@'+item.name+' '+item.params).join(' · ');return {value:String(index),label:typeof mode==='object'?(mode.name || mode.mode || `模式 ${index+1}`):`${condition || definition?.selector || '默认'} · ${value}`};});
   const mode=modes[Number(selected)] ?? modes[0];
   return <section className="flex flex-col gap-4"><Select items={items} value={selected} onValueChange={setSelected}><SelectTrigger aria-label="变量模式"><SelectValue/></SelectTrigger><SelectContent><SelectGroup>{items.map(item=><SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectGroup></SelectContent></Select><TokenSample asset={{...asset,value:typeof mode==='object'?mode.value:mode}} assets={assets}/></section>;
 }

@@ -1,5 +1,5 @@
 import {requiredFactCapabilities} from './asset-model.mjs';
-import {continueProjectPreparation} from './project-sync.mjs';
+import {continueProjectPreparation,synchronizeProject} from './project-sync.mjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import {readInstallationScope} from './installation-scope.mjs';
@@ -531,6 +531,10 @@ export function applyProjectAuthorityPlan({plan, now = Date.now()}) {
     releaseProjectGuard(guard); guard = null;
     releaseTrustedTargetGuard(trustedGuard); trustedGuard = null;
     const preparation = plan.continuousSync === 'grant' ? continueProjectPreparation({project:plan.project, installationRoot:plan.installationRoot}) : null;
+    if(preparation?.ok) {
+      try {preparation.contentProcessing=synchronizeProject({project:plan.project,installationRoot:plan.installationRoot,trigger:'project-enabled'});}
+      catch(error){preparation.contentProcessing={state:'failed',error:{code:error.code || 'PROJECT_SYNC_FAILED',message:error.message},preserved:'项目接入及准备已提交；重新读取当前输入后接续'};}
+    }
     return {ok: !preparation || preparation.ok, preparation, operation: plan.operation, project: plan.project, projectId: plan.projectId, state: plan.operation === 'enable' ? 'enabled' : 'disabled', preserved: plan.preserves, semantics: plan.semantics, authorization: {authorizationId: authorization.authorizationId, effectHash: authorization.effectHash}};
   } catch (error) {
     if (!consumed) {

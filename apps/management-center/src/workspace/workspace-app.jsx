@@ -78,6 +78,11 @@ export function WorkspaceApp() {
   const [relationState, setRelationState] = useState({items: model.relations || [], version: model.relationsVersion || null});
   const workspaceModel = {...model, preview:{...model.preview,revision:model.revision,projectId:model.project.projectId,channel}, relations: relationState.items, relationsVersion: relationState.version};
   const [bridge, setBridge] = useState({label: '等待预览就绪…', route: null, connected: false});
+  useEffect(() => {
+    if (!bridge.route || bridge.connected) return;
+    const timer = setTimeout(() => setBridge(current => current.connected ? current : {...current, label: '预览尚未连接检查器：请刷新工作台；仍未连接时，让当前 Codex 任务检查预览桥接与版本。'}), 4000);
+    return () => clearTimeout(timer);
+  }, [bridge.route, bridge.connected]);
   const [inspector, setInspector] = useState({active: false, phase: 'inactive', object: null});
   const [defaultInspectedObject, setDefaultInspectedObject] = useState(null);
   const iframeRef = useRef(null);
@@ -104,7 +109,7 @@ export function WorkspaceApp() {
   const postToPreview = (message) => iframeRef.current?.contentWindow?.postMessage({namespace: 'ai-product-foundation-preview', projectId:workspaceModelRef.current.preview.projectId,revision:workspaceModelRef.current.preview.revision,channel:workspaceModelRef.current.preview.channel,identityHistory:(workspaceModelRef.current.objectIdentities || []).map(identity=>({...identity,persistentId:identity.objectId,generation:identity.incarnation})),...message}, window.location.origin);
 
   useEffect(() => { inspectorRef.current = inspector; workspaceModelRef.current = workspaceModel; }, [inspector, workspaceModel]);
-  useEffect(()=>{const previous=boundRevision.current;boundRevision.current=model.revision;if(previous&&previous!==model.revision){setDefaultInspectedObject(null);postToPreview({kind:'snapshot-rebound',fromRevision:previous,nextRevision:model.revision});postToPreview({kind:'preview-status-request'});const selected=inspectorRef.current.object;if(selected?.locator){setInspector(current=>({...current,phase:current.active?'hover':'inactive',object:null}));postToPreview({kind:'inspect-navigate',locator:selected.locator});}}},[model.revision]);
+  useEffect(()=>{const previous=boundRevision.current;boundRevision.current=model.revision;if(previous&&previous!==model.revision){setDefaultInspectedObject(null);postToPreview({kind:'snapshot-rebound',fromRevision:previous,nextRevision:model.revision});postToPreview({kind:'preview-status-request'});const selected=inspectorRef.current.object;if(selected?.locator){setInspector(current=>({...current,phase:current.active?'hover':'inactive',object:null}));postToPreview({kind:'inspect-navigate',locator:selected.locator,automaticRestore:true});}}},[model.revision]);
 
   useEffect(() => {
     themeRef.current = theme;
@@ -133,7 +138,7 @@ export function WorkspaceApp() {
         inspectorRef.current=next;setInspector(next);
         postToPreview({kind:'inspect-mode-changed',active:false});
         const current=workspaceModelRef.current;
-        void copyContext(buildInspectorCopyPayload({project:current.project,page:current.pages.find(page=>page.id===selected.pageId),object:selected,category:'identity'}));
+        if(!event.data.automaticRestore)void copyContext(buildInspectorCopyPayload({project:current.project,page:current.pages.find(page=>page.id===selected.pageId),object:selected,category:'identity'}));
         const object=event.data.object;
         if(object?.componentId)dispatch({type:'set-component',componentId:object.componentId,instanceId:object.instanceId,pageId:object.pageId,eventId:object.eventId,eventState:object.eventState,variant:object.variant});
         else dispatch({type:'clear-component'});
@@ -149,12 +154,24 @@ export function WorkspaceApp() {
   const copyContext = async (content) => {
     const sequence=++copySequence.current;
     setCopyNotice({message:'正在复制定位信息…',content,pending:true});
-    const result = await selectionCopier.current(content);
+    let result;
+    const reference=content.match(/\bF-[A-Za-z0-9_-]{22}(?![A-Za-z0-9_-])/u)?.[0];
+    try {
+      if(content.includes('（页面快照无法核实）'))throw new Error('页面快照无法核实；当前任务需绑定实际构建或动态数据版本后重新选择');
+      if(content.includes('（对象索引尚未就绪）'))throw new Error('对象索引尚未就绪；请完成当前项目同步后重试');
+      if(reference) {
+        const response=await fetch('/__foundation/object-reference',{method:'POST',headers:{'content-type':'application/json','x-foundation-write-nonce':window.__FOUNDATION_WRITE_NONCE__},body:JSON.stringify({reference})});
+        const checked=await response.json();
+        if(!response.ok||checked.state!=='resolved')throw new Error(checked.state==='stale'?'内容已更新，请刷新后重新选择并复制':checked.recovery || checked.reason || '暂时无法核实对象引用，请重试');
+      }
+      if(sequence!==copySequence.current)return;
+      result=await selectionCopier.current(content);
+    }catch(error){result={ok:false,message:error.message};}
     if(sequence!==copySequence.current)return;
     setCopyNotice({message:result.message,content,pending:false,failed:!result.ok});
-    setBridge((current) => ({...current, label: result.message}));
   };
   const toggleInspector = () => {
+    if (!bridge.connected) return;
     const active = !inspector.active;
     const next = {active, phase: inspector.object ? 'locked' : active ? 'hover' : 'inactive', object: inspector.object};
     inspectorRef.current = next;
@@ -178,7 +195,7 @@ export function WorkspaceApp() {
   };
   const relationSaved = (relation, version) => setRelationState((current) => ({items: [...current.items, relation], version}));
   const relationsRefreshed = (items, version) => setRelationState({items, version});
-  const panelProps = {model: workspaceModel, state, dispatch, page, component, selectedEvent: state.eventId ? {id: state.eventId, state: state.eventState} : null, inspectedObject: inspector.phase === 'locked' ? inspector.object : defaultInspectedObject, onNavigateInspector: navigateInspector, onPreviewInspector: (navigation) => postToPreview(navigation ? {kind: 'inspect-preview', ...navigation} : {kind: 'inspect-preview-ended'}), onCopyInspector: copyContext, pageContextRecord, componentContextRecord, pageContext, componentContext, onCopyPage: () => copyContext(pageContext), onCopyComponent: () => copyContext(componentContext)};
+  const panelProps = {inspectorConnected: bridge.connected, model: workspaceModel, state, dispatch, page, component, selectedEvent: state.eventId ? {id: state.eventId, state: state.eventState} : null, inspectedObject: inspector.phase === 'locked' ? inspector.object : defaultInspectedObject, onNavigateInspector: navigateInspector, onPreviewInspector: (navigation) => postToPreview(navigation ? {kind: 'inspect-preview', ...navigation} : {kind: 'inspect-preview-ended'}), onCopyInspector: copyContext, pageContextRecord, componentContextRecord, pageContext, componentContext, onCopyPage: () => copyContext(pageContext), onCopyComponent: () => copyContext(componentContext)};
   const content = state.workspaceArea === 'building' && state.buildingMode === 'logic'
     ? <WorkspaceChunkBoundary title="逻辑搭建"><Suspense fallback={<LogicWorkspaceLoading />}><InformationLogicWorkspace model={workspaceModel} pageId={state.pageId} theme={theme} onSelectPage={(pageId) => dispatch({type: 'set-page', pageId})} onOpenPage={openPageBuilding} onRelationSaved={relationSaved} onRelationsRefreshed={relationsRefreshed} /></Suspense></WorkspaceChunkBoundary>
     : state.workspaceArea === 'assets'

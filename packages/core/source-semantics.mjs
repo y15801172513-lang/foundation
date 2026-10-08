@@ -16,7 +16,8 @@ export function deriveSourceSemantics(inventory,file) {
     const expression=obligation.excerpt.slice(obligation.excerpt.indexOf('=')+1).replace(/^\{|\}$/gu,'').trim();
     const matches=programs.filter(item=>item.kind==='handler'&&item.name===expression);
     const body=matches.length===1?matches[0].body:expression;
-    const event=node(obligation.key,'interaction',object.name || object.ownText || obligation.excerpt.split('=')[0],[obligation.key],{objectIds:[object.persistentId,object.htmlId].filter(Boolean)});edge('triggers',owner,event,[obligation.key]);
+    const eventName=obligation.excerpt.match(/^\s*on([A-Za-z]+)\s*=/u)?.[1]?.toLowerCase() || null;
+    const event=node(obligation.key,'interaction',object.name || object.ownText || obligation.excerpt.split('=')[0],[obligation.key],{objectIds:[object.persistentId,object.htmlId].filter(Boolean),...(eventName?{event:eventName}:{})});edge('triggers',owner,event,[obligation.key]);
     if(matches.length===1)eventHandlers.push({handler:matches[0],event});
     let supported=false;
     for(const [setter,state]of stateNodes)if(new RegExp(`\\b${setter}\\s*\\(`,'u').test(body)){edge('data-affects',event,state,[obligation.key]);supported=true;}

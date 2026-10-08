@@ -4,12 +4,16 @@ const {ts}=createRequire(import.meta.url)('ts-morph');
 // Offsets locate edits within the checked input bytes, never object identities.
 export function inspectorSyntax(text,fileName) {
   const file=ts.createSourceFile(fileName,text,ts.ScriptTarget.Latest,true,ts.ScriptKind.TSX);
-  const objects=new Map(),definitions=new Map(),imports=new Map();
+  const objects=new Map(),definitions=new Map(),imports=new Map(),mounts=[];
   for(const node of file.statements)if(ts.isImportDeclaration(node))for(const item of node.importClause?.namedBindings?.elements || [])imports.set(item.name.text,{module:node.moduleSpecifier.text,export:item.propertyName?.text || item.name.text});
   const arrays=new Map();
   const scan=node=>{if(ts.isVariableDeclaration(node)&&ts.isIdentifier(node.name)&&node.initializer&&ts.isArrayLiteralExpression(node.initializer))arrays.set(node.name.text,node.initializer);ts.forEachChild(node,scan);};scan(file);
   const literal=node=>ts.isStringLiteral(node)||ts.isNumericLiteral(node)?node.text:null;
   const visit=node=>{
+    if(ts.isCallExpression(node)&&ts.isPropertyAccessExpression(node.expression)&&node.expression.name.text==='render'&&node.arguments[0]&&(ts.isJsxElement(node.arguments[0])||ts.isJsxSelfClosingElement(node.arguments[0]))) {
+      const root=node.expression.expression;
+      if(ts.isCallExpression(root)&&ts.isIdentifier(root.expression)&&imports.get(root.expression.text)?.module==='react-dom/client'&&imports.get(root.expression.text)?.export==='createRoot')mounts.push(node.arguments[0].getStart(file));
+    }
     if(ts.isJsxElement(node)||ts.isJsxSelfClosingElement(node)) {
       let definition=null,repetition=null;
       for(let parent=node.parent;parent;parent=parent.parent) {
@@ -49,7 +53,7 @@ export function inspectorSyntax(text,fileName) {
     ts.forEachChild(node,visit);
   };
   visit(file);
-  return {objects,definitions,imports,valid:file.parseDiagnostics.length===0};
+  return {objects,definitions,imports,mounts,valid:file.parseDiagnostics.length===0};
 }
 
 export function inspectorSourceOwner(facts,object,syntax) {
@@ -58,6 +62,6 @@ export function inspectorSourceOwner(facts,object,syntax) {
   if(bound.length)return bound.length===1?bound[0]:null;
   // Unbound component definitions cannot be guessed from display names.
   if(components.some(item=>!item.assetModel?.binding))return null;
-  const pages=facts.pages.items.filter(item=>item.implementationMapping===object.file || item.previewBinding?.inputs?.some(input=>input.path===object.file));
+  const pages=facts.pages.items.filter(item=>item.implementationMapping===object.file || item.previewBinding?.inputs?.some(input=>input.path===object.file)||item.sourceStructure?.inputs?.some(input=>input.path===object.file));
   return pages.length===1?pages[0]:null;
 }

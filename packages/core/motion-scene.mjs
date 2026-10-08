@@ -5,8 +5,10 @@ import {sha256} from './install-contract.mjs';
 const postcss=createRequire(import.meta.url)('postcss');
 export function prepareMotionScene({project,asset}) {
  if(!/^[\w-]+$/u.test(asset.id || ''))throw new Error('动效身份格式不安全');
- const file=asset.implementationMapping;if(!file?.endsWith('.css')||!/^[\w-]+$/u.test(asset.animationName || ''))throw new Error('动效隔离需要明确 CSS keyframes 定义');
- const bytes=fs.readFileSync(resolveProjectFile(project,file,'动效定义')),source=postcss.parse(bytes.toString(),{from:file}),output=postcss.root(),uses=[];
+ const file=asset.implementationMapping;if(!/\.(?:css|html|vue|svelte)$/u.test(file || '')||!/^[\w-]+$/u.test(asset.animationName || ''))throw new Error('动效隔离需要明确 CSS keyframes 定义');
+ const bytes=fs.readFileSync(resolveProjectFile(project,file,'动效定义')),text=bytes.toString();
+ const cssSource=file.endsWith('.css')?text:[...text.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/giu)].map(match=>match[1]).join('\n');
+ const source=postcss.parse(cssSource,{from:file}),output=postcss.root(),uses=[];
  const append=(node,original)=>{let copy=node;for(let parent=original.parent;parent?.type==='atrule';parent=parent.parent){const wrapper=parent.clone({nodes:[]});wrapper.append(copy);copy=wrapper;}output.append(copy);};
  source.walkAtRules('keyframes',node=>{if(node.params===asset.animationName)append(node.clone(),node);});
  source.walkRules(rule=>{
@@ -15,7 +17,7 @@ export function prepareMotionScene({project,asset}) {
   if(animation.some(node=>new RegExp('(?:^|[ ,])'+asset.animationName+'(?:$|[ ,])').test(node.value))){
     for(const selector of rule.selector.split(',').map(value=>value.trim())) {
     const index=uses.length;uses.push({selector});append(postcss.rule({selector:'.foundation-motion-sample-'+index,nodes:animation.map(node=>node.clone())}),rule);
-    source.walkRules(other=>{if(other!==rule&&selector===other.selector.trim()){const overrides=other.nodes.filter(node=>node.type==='decl'&&/^animation-/u.test(node.prop));if(overrides.length)append(postcss.rule({selector:'.foundation-motion-sample-'+index,nodes:overrides.map(node=>node.clone())}),other);}});
+    source.walkRules(other=>{if(other!==rule&&selector===other.selector.trim()){const overrides=other.nodes.filter(node=>node.type==='decl'&&/^animation(?:-|$)/u.test(node.prop));if(overrides.length)append(postcss.rule({selector:'.foundation-motion-sample-'+index,nodes:overrides.map(node=>node.clone())}),other);}});
     }
   }
  });

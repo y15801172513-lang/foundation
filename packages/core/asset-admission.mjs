@@ -1,11 +1,12 @@
+import {currentEvidenceEntries} from './evidence-impact.mjs';
 // Admission consumes current verifier results, never a manually assigned status.
 export function assetAdmission(asset,facts,{contentIssues=[]}={}) {
   const reasons=contentIssues.map(issue=>issue.message);
   if(!(asset.assetModel?.responsibility || asset.responsibility || asset.description || asset.summary))reasons.push('需要补充资产用途');
   const component=Boolean(asset.assetModel),token=Boolean(asset.cssVariable || asset.tokenType),motion=Boolean(asset.animationName);
   const ownerIds=component || !token&&!motion?[asset.id]:[...(motion?[asset.id]:[]),...(asset.pageIds || []),...(asset.usageLocations || []).map(usage=>usage.pageId)];
-  const evidence=(facts.changes?.items || []).flatMap(change=>change.evidenceIndex || []);
   const results=facts.delivery?.evidenceResults || {};
+  const evidence=currentEvidenceEntries((facts.changes?.items || []).flatMap(change=>change.evidenceIndex || []),results);
   const passed=kind=>evidence.some(entry=>{
     const result=results[entry.evidenceId];
     if(!ownerIds.includes(entry.subject?.definitionId)||entry.kind!==kind||result?.state!=='verified'||result.result!=='passed')return false;
@@ -19,6 +20,9 @@ export function assetAdmission(asset,facts,{contentIssues=[]}={}) {
       (token?check.attribute===asset.cssVariable&&check.expected===asset.value:check.attribute==='animation-name'&&check.expected===asset.animationName)&&
       result.report?.checks?.some(observed=>observed.id.startsWith(check.id+'_')&&observed.result==='passed'));
   });
+  const semanticScopes=(facts.changes?.items || []).flatMap(task=>(task.deliveryScope?.items || []).filter(requirement=>requirement.factIds?.includes(asset.id)).map(requirement=>({task,requirement})));
+  const semanticPassed=semanticScopes.length>0&&semanticScopes.every(({task,requirement})=>evidence.some(entry=>entry.kind==='semantic-review'&&entry.taskId===task.id&&entry.scopeRevision===task.deliveryScope.revision&&entry.subject?.requirementId===requirement.requirementId&&ownerIds.includes(entry.subject?.definitionId)&&results[entry.evidenceId]?.state==='verified'&&results[entry.evidenceId].result==='passed'));
+  if(!semanticPassed)reasons.push('需要当前任务完成用途、内容与适用范围的语义核验');
   if(!passed('browser-observation'))reasons.push('需要对实际使用页面或独立场景运行验证');
   if(component&&!passed('source-analysis'))reasons.push('需要核验组件定义、参数和真实调用');
   if(token&&!asset.cssVariable)reasons.push('需要明确变量引用名称');

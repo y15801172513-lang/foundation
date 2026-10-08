@@ -1,3653 +1,1529 @@
 {
-  "schemaVersion": "2.0.0",
-  "exportContractSchemaVersion": "2.0.0",
-  "exportContractSha256": "dc81aca61054c0c441988cf8b6e99123d9e3335dd5587f5786fa5bf125e65860",
-  "sourceCommit": "fa593117daa1ebf9d36e33a34a9459577b88b418",
-  "approvedSourceCommit": "fa593117daa1ebf9d36e33a34a9459577b88b418",
-  "sourceState": "clean-exact-commit-approved",
-  "productVersion": "0.2.31",
-  "licenseStatus": "approved",
-  "scopeReviewStatus": "approved",
-  "publicRepositoryNameStatus": "approved",
-  "publicRepositoryIdentityStatus": "approved",
-  "repositoryCreationStatus": "approved",
-  "publicationEligible": true,
-  "commitBinding": {
-    "schemaVersion": "2.0.0",
-    "approvedCommit": "fa593117daa1ebf9d36e33a34a9459577b88b418",
-    "gitTree": "d506b1fe924766d22a2a4f5e860008d822429afd",
-    "contractSha256": "dc81aca61054c0c441988cf8b6e99123d9e3335dd5587f5786fa5bf125e65860",
-    "expectedTreeHash": "db783df1c325fb64baebc7bedd4362132932d2b05e9e0edcc26691b4adf3e3a2",
-    "fileCount": 449
-  },
-  "fileCount": 451,
-  "privateExportedCount": 449,
-  "generatedPublicCount": 2,
-  "treeHash": "db783df1c325fb64baebc7bedd4362132932d2b05e9e0edcc26691b4adf3e3a2",
-  "inventoryHash": "6c42f471107ea2ee683a0064220a4d6e6ff61e35a600b9cf16b88119842295d4",
+  "schemaVersion": "clean-export/1",
   "files": [
     {
-      "path": ".gitignore",
-      "type": "file",
-      "mode": 420,
-      "bytes": 370,
-      "sha256": "8c838c519b0ad2aa289985ca0c9dcc2ce343745e6426a026080916f3f28a1497",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "CHANGELOG.md",
-      "type": "file",
-      "mode": 420,
-      "bytes": 4641,
-      "sha256": "1db8bfaecb2e89b4637b2b8913e82fd83756c7c6955f08a368596617c23e03c1",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "PUBLIC_PROVENANCE.json",
-      "type": "file",
-      "mode": 420,
-      "bytes": 1082,
-      "sha256": "19bd547a1546f625af245efd84019caffe6686c79ac4b085dbc374e2de26142a",
-      "ownership": "generated-public"
-    },
-    {
       "path": "README.md",
-      "type": "file",
       "mode": 420,
       "bytes": 6384,
-      "sha256": "4eb6ab9d8ac05af5dc66c13f587d9b5c31ee8657d773edc8bf5e6c0c116ca83b",
-      "ownership": "private-exported"
+      "sha256": "30d8010262e7664846aa4d83b5005351f0be2fad9ef8e55552f8b2fe7f147a95"
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
-      "type": "file",
       "mode": 420,
       "bytes": 1494,
-      "sha256": "3e5760cb04b70e7337ee6def3c481f2222c585a1824008902c031a379dee7206",
-      "ownership": "private-exported"
+      "sha256": "3e5760cb04b70e7337ee6def3c481f2222c585a1824008902c031a379dee7206"
     },
     {
       "path": "apps/management-center/build.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 182,
-      "sha256": "613f5800d6191b8e025b302c1d1a1c9cdcccc2b4d2454b27e5f3462aef775a28",
-      "ownership": "private-exported"
+      "sha256": "613f5800d6191b8e025b302c1d1a1c9cdcccc2b4d2454b27e5f3462aef775a28"
     },
     {
       "path": "apps/management-center/components.json",
-      "type": "file",
       "mode": 420,
       "bytes": 517,
-      "sha256": "1f003b0db0265ab424aaff0bd5e3512ac823124ef1cebdb1af52a345a13389c8",
-      "ownership": "private-exported"
+      "sha256": "1f003b0db0265ab424aaff0bd5e3512ac823124ef1cebdb1af52a345a13389c8"
     },
     {
       "path": "apps/management-center/index.html",
-      "type": "file",
       "mode": 420,
       "bytes": 310,
-      "sha256": "22d33b4a4c61a57bb62a4a1620fa3c9f5da8def90821d1c21a9a09383b25be28",
-      "ownership": "private-exported"
+      "sha256": "22d33b4a4c61a57bb62a4a1620fa3c9f5da8def90821d1c21a9a09383b25be28"
     },
     {
       "path": "apps/management-center/jsconfig.json",
-      "type": "file",
       "mode": 420,
       "bytes": 151,
-      "sha256": "ff7916f4c16d7093802dc94e07daa716481be76906d5a6d85bb00e32b08bf292",
-      "ownership": "private-exported"
+      "sha256": "ff7916f4c16d7093802dc94e07daa716481be76906d5a6d85bb00e32b08bf292"
     },
     {
       "path": "apps/management-center/package.json",
-      "type": "file",
       "mode": 420,
       "bytes": 1330,
-      "sha256": "beaf313072818bd52fc20cc86ad847fef8354ac1863380ed79fbd1375cf7155a",
-      "ownership": "private-exported"
+      "sha256": "c00fa3a806f16c9575f357fb5e61cab30c3ae9c3f0419e81c9972fb6c160f87e"
     },
     {
       "path": "apps/management-center/src/components/foundation/content-roles.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 1298,
-      "sha256": "3790a222986dd23c7d910528d813d5cd928a050ffcb3247da25dbdeeacab9697",
-      "ownership": "private-exported"
+      "sha256": "3790a222986dd23c7d910528d813d5cd928a050ffcb3247da25dbdeeacab9697"
     },
     {
       "path": "apps/management-center/src/components/foundation/copy-toast.jsx",
-      "type": "file",
       "mode": 420,
-      "bytes": 1077,
-      "sha256": "5d86a70832845a132c7cb410ef5607c027ee9dd64b6a2b9aec93e39eea1b1f61",
-      "ownership": "private-exported"
+      "bytes": 1366,
+      "sha256": "5c9162cd58d1abc6090d010408546ae85284a7ff33d068aab7b52919c65fc694"
     },
     {
       "path": "apps/management-center/src/components/foundation/delivery-assessment.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 1125,
-      "sha256": "eb74e2184f4c78c990de4d2238f1fb3e0583313cbd81deb355980553ccaecb15",
-      "ownership": "private-exported"
+      "sha256": "eb74e2184f4c78c990de4d2238f1fb3e0583313cbd81deb355980553ccaecb15"
     },
     {
       "path": "apps/management-center/src/components/foundation/icon-button.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 420,
-      "sha256": "8cfaf23b43f9170553fb3ca4dc8194495bee05799078ccf3d5790bb9cb01bcf4",
-      "ownership": "private-exported"
+      "sha256": "8cfaf23b43f9170553fb3ca4dc8194495bee05799078ccf3d5790bb9cb01bcf4"
     },
     {
       "path": "apps/management-center/src/components/ui/button.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 3152,
-      "sha256": "5ad84feafa4dc1b3e4c9ce529f70c96a73974e59ab697b5f60454e0e7b6e4417",
-      "ownership": "private-exported"
+      "sha256": "5ad84feafa4dc1b3e4c9ce529f70c96a73974e59ab697b5f60454e0e7b6e4417"
     },
     {
       "path": "apps/management-center/src/components/ui/card.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 2400,
-      "sha256": "31383722d9d5f59fb506ab3bdffa3410828aa72000d86a9ce83a49c94bfb6bf5",
-      "ownership": "private-exported"
+      "sha256": "31383722d9d5f59fb506ab3bdffa3410828aa72000d86a9ce83a49c94bfb6bf5"
     },
     {
       "path": "apps/management-center/src/components/ui/collapsible.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 500,
-      "sha256": "1061d1a6d78277c8e1500080e047dc4f75f319783da440002e847c3a1961e0c9",
-      "ownership": "private-exported"
+      "sha256": "1061d1a6d78277c8e1500080e047dc4f75f319783da440002e847c3a1961e0c9"
     },
     {
       "path": "apps/management-center/src/components/ui/dialog.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 2978,
-      "sha256": "30d7c374e9e41f50c5717ccd519d188709f92e25f4dce144401200e2386c9d7b",
-      "ownership": "private-exported"
+      "sha256": "30d7c374e9e41f50c5717ccd519d188709f92e25f4dce144401200e2386c9d7b"
     },
     {
       "path": "apps/management-center/src/components/ui/dropdown-menu.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 1883,
-      "sha256": "9a07add84795592d6c002e682083dedbebfc9cde45c5ba5b118328970821c1a8",
-      "ownership": "private-exported"
+      "sha256": "9a07add84795592d6c002e682083dedbebfc9cde45c5ba5b118328970821c1a8"
     },
     {
       "path": "apps/management-center/src/components/ui/empty.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 2141,
-      "sha256": "f68ce146b2c6a2c3cce4d2c17cff034b636077eda5e93e0cfc9a04689820ab00",
-      "ownership": "private-exported"
+      "sha256": "f68ce146b2c6a2c3cce4d2c17cff034b636077eda5e93e0cfc9a04689820ab00"
     },
     {
       "path": "apps/management-center/src/components/ui/field.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 2129,
-      "sha256": "025537153ff0f6e24f6a30753d64635c8eb5d670b5804b6ed705e89e756835a9",
-      "ownership": "private-exported"
+      "sha256": "025537153ff0f6e24f6a30753d64635c8eb5d670b5804b6ed705e89e756835a9"
     },
     {
       "path": "apps/management-center/src/components/ui/input.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 1012,
-      "sha256": "e003cb97caf55bd80be02f1f4be223491de15ac68bb8cc9d06cac7955b8469c9",
-      "ownership": "private-exported"
+      "sha256": "e003cb97caf55bd80be02f1f4be223491de15ac68bb8cc9d06cac7955b8469c9"
     },
     {
       "path": "apps/management-center/src/components/ui/label.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 473,
-      "sha256": "c17fb7987e59019d7f0601d1ab0c54f1cfd9c02dbba60d4b1ab954223026fb8c",
-      "ownership": "private-exported"
+      "sha256": "c17fb7987e59019d7f0601d1ab0c54f1cfd9c02dbba60d4b1ab954223026fb8c"
     },
     {
       "path": "apps/management-center/src/components/ui/navigation-menu.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 1444,
-      "sha256": "7ab3f140f55068641b206415bd60b2bed1aa8cd4efb1a0ac7b43f0b0f4460b40",
-      "ownership": "private-exported"
+      "sha256": "7ab3f140f55068641b206415bd60b2bed1aa8cd4efb1a0ac7b43f0b0f4460b40"
     },
     {
       "path": "apps/management-center/src/components/ui/resizable.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 1503,
-      "sha256": "bef360d371e242a9245fb3ecbe7303aeca0a18f85e66eb5974a3fc7c45925c7a",
-      "ownership": "private-exported"
+      "sha256": "bef360d371e242a9245fb3ecbe7303aeca0a18f85e66eb5974a3fc7c45925c7a"
     },
     {
       "path": "apps/management-center/src/components/ui/scroll-area.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 1516,
-      "sha256": "da3e5a304f86bc2f61dc1983415643be4cc07b3ada263e24627bead12b27a40c",
-      "ownership": "private-exported"
+      "sha256": "da3e5a304f86bc2f61dc1983415643be4cc07b3ada263e24627bead12b27a40c"
     },
     {
       "path": "apps/management-center/src/components/ui/select.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 6132,
-      "sha256": "99878156aafc2ceb6e774a7ee87b561dfc083436565829342af1b0c8d0a8bc50",
-      "ownership": "private-exported"
+      "sha256": "99878156aafc2ceb6e774a7ee87b561dfc083436565829342af1b0c8d0a8bc50"
     },
     {
       "path": "apps/management-center/src/components/ui/separator.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 437,
-      "sha256": "681b0ea73b076fbdbed47bdd867a9f55a3c1d56ab6e98a749ead25ec72ffd0d2",
-      "ownership": "private-exported"
+      "sha256": "681b0ea73b076fbdbed47bdd867a9f55a3c1d56ab6e98a749ead25ec72ffd0d2"
     },
     {
       "path": "apps/management-center/src/components/ui/spinner.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 328,
-      "sha256": "9d7f53803f56ee32cf89ee61a2dc8ff4d4afec4b609f55f57899d23027562efd",
-      "ownership": "private-exported"
+      "sha256": "9d7f53803f56ee32cf89ee61a2dc8ff4d4afec4b609f55f57899d23027562efd"
     },
     {
       "path": "apps/management-center/src/components/ui/tabs.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 3223,
-      "sha256": "6cb21c2f0554da7d4c3a00a05940f7b224891bce3b6ad4240213a61f2aeb555c",
-      "ownership": "private-exported"
+      "sha256": "6cb21c2f0554da7d4c3a00a05940f7b224891bce3b6ad4240213a61f2aeb555c"
     },
     {
       "path": "apps/management-center/src/components/ui/textarea.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 809,
-      "sha256": "0a3da94e2955c4a85642692eca23f6fef390b5306c050f495c4ebdbb411d81f2",
-      "ownership": "private-exported"
+      "sha256": "0a3da94e2955c4a85642692eca23f6fef390b5306c050f495c4ebdbb411d81f2"
     },
     {
       "path": "apps/management-center/src/components/ui/tooltip.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 2577,
-      "sha256": "11e1821e58668ab69ab19e1b3538d19995705acc0cb5642ae7093c5299d70e61",
-      "ownership": "private-exported"
+      "sha256": "11e1821e58668ab69ab19e1b3538d19995705acc0cb5642ae7093c5299d70e61"
     },
     {
       "path": "apps/management-center/src/features/context-panel/context-content.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 2921,
-      "sha256": "88418906c42649c60469990bb6471d6523032963a999709aeffec3a0ea66b42a",
-      "ownership": "private-exported"
+      "sha256": "88418906c42649c60469990bb6471d6523032963a999709aeffec3a0ea66b42a"
     },
     {
       "path": "apps/management-center/src/features/context-panel/context-data-view.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 2361,
-      "sha256": "23504ff609ed1743df83cca4a7ccc2300d6bfa2431aa87693d44b44f4d59d33f",
-      "ownership": "private-exported"
+      "sha256": "23504ff609ed1743df83cca4a7ccc2300d6bfa2431aa87693d44b44f4d59d33f"
     },
     {
       "path": "apps/management-center/src/features/context-panel/context-panel.jsx",
-      "type": "file",
       "mode": 420,
-      "bytes": 3750,
-      "sha256": "47dc462badade807465c20c02c26a6457ec6e227194f6d95c59b7a294584ed69",
-      "ownership": "private-exported"
+      "bytes": 3918,
+      "sha256": "7ad41d69b2f7f5e484d2a2211dba74c602ad19997c6d60c9d2c547b7de92f4b2"
     },
     {
       "path": "apps/management-center/src/features/context-panel/floating-context-panel.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 8737,
-      "sha256": "cb591200efd4ccc456109f554c7a1ff04eeefd37544c18ebfe92de801b0db5f7",
-      "ownership": "private-exported"
+      "sha256": "cb591200efd4ccc456109f554c7a1ff04eeefd37544c18ebfe92de801b0db5f7"
     },
     {
       "path": "apps/management-center/src/features/context-panel/preview-sidebar.jsx",
-      "type": "file",
       "mode": 420,
-      "bytes": 18563,
-      "sha256": "1ce90571de8bb2bad141968915b0ea57df6721497b9e2e3b0d0694ac6ad362f5",
-      "ownership": "private-exported"
+      "bytes": 18417,
+      "sha256": "9d90087066702252f16c633213e71dee5686833f9920a23c60d3ae002582a630"
     },
     {
       "path": "apps/management-center/src/features/preview/asset-preview-policy.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 1898,
-      "sha256": "44a05e66669fa19581d4a421b603869387d318bd17533fe921836485e9610d5f",
-      "ownership": "private-exported"
+      "sha256": "44a05e66669fa19581d4a421b603869387d318bd17533fe921836485e9610d5f"
     },
     {
       "path": "apps/management-center/src/features/preview/bridge-policy.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 4079,
-      "sha256": "24cc446eb5ecf2da96cb3e47dd747c528c2e51aa1f0a71c3e1429b03ed9657f7",
-      "ownership": "private-exported"
+      "sha256": "24cc446eb5ecf2da96cb3e47dd747c528c2e51aa1f0a71c3e1429b03ed9657f7"
     },
     {
       "path": "apps/management-center/src/features/preview/preview-canvas.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 2661,
-      "sha256": "de9028e9ea5832dd876b819cd3fcbcf6991408e600e0c2edc0e7806308d07405",
-      "ownership": "private-exported"
+      "sha256": "de9028e9ea5832dd876b819cd3fcbcf6991408e600e0c2edc0e7806308d07405"
     },
     {
       "path": "apps/management-center/src/features/preview/preview-toolbar.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 1877,
-      "sha256": "aa67c73bf6baf3f439ead7bf558b8e10a66d42f3e442e16edf3326e56b0189f5",
-      "ownership": "private-exported"
+      "sha256": "aa67c73bf6baf3f439ead7bf558b8e10a66d42f3e442e16edf3326e56b0189f5"
     },
     {
       "path": "apps/management-center/src/foundation-font-platform.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 586,
-      "sha256": "4ba4b996d52fc67759232a5ac9c696339f9911cb4cb3a2eb8cff9a5f8d8f183e",
-      "ownership": "private-exported"
+      "sha256": "4ba4b996d52fc67759232a5ac9c696339f9911cb4cb3a2eb8cff9a5f8d8f183e"
     },
     {
       "path": "apps/management-center/src/foundation-geist.css",
-      "type": "file",
       "mode": 420,
       "bytes": 38,
-      "sha256": "a87abf70e019f32809dc446a0b6506a94f5fbb6c8e4fa9c0ecfdee771064ee07",
-      "ownership": "private-exported"
+      "sha256": "a87abf70e019f32809dc446a0b6506a94f5fbb6c8e4fa9c0ecfdee771064ee07"
     },
     {
       "path": "apps/management-center/src/foundation-ui-profile.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 4884,
-      "sha256": "13097ed670ae6ffee8662b739ccccf9193ef2c11fc86104a559915f1969e312f",
-      "ownership": "private-exported"
+      "sha256": "13097ed670ae6ffee8662b739ccccf9193ef2c11fc86104a559915f1969e312f"
     },
     {
       "path": "apps/management-center/src/lib/utils.js",
-      "type": "file",
       "mode": 420,
       "bytes": 137,
-      "sha256": "5ba0ae526d768600bbfb4a4d345c47f6208cb941adbf456de80804a4cf938350",
-      "ownership": "private-exported"
+      "sha256": "5ba0ae526d768600bbfb4a4d345c47f6208cb941adbf456de80804a4cf938350"
     },
     {
       "path": "apps/management-center/src/main.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 361,
-      "sha256": "d904ebdb151221b243b25ad33dc27f55af2c02c6bf2110e47a06bda5860b1c97",
-      "ownership": "private-exported"
+      "sha256": "d904ebdb151221b243b25ad33dc27f55af2c02c6bf2110e47a06bda5860b1c97"
     },
     {
       "path": "apps/management-center/src/scene-react-runtime.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 546,
-      "sha256": "975aaaed33b9d003743012f44ffd1c41ce373bdc29816a276b315644543124dd",
-      "ownership": "private-exported"
+      "sha256": "975aaaed33b9d003743012f44ffd1c41ce373bdc29816a276b315644543124dd"
     },
     {
       "path": "apps/management-center/src/server/center-server.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 32983,
-      "sha256": "c15e286192b4e8855bf61c4ea502c9c31518909d724155407fc10438b6bd71e7",
-      "ownership": "private-exported"
+      "bytes": 40241,
+      "sha256": "ecc943077086088605c3171400f2b1c7f469a6832737dfcbabf2fd77a0e46df9"
     },
     {
       "path": "apps/management-center/src/server/index.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 318,
-      "sha256": "126b527499c030c2111a62817113cb372bf446c6d099552c76b63c295a53c1eb",
-      "ownership": "private-exported"
+      "sha256": "126b527499c030c2111a62817113cb372bf446c6d099552c76b63c295a53c1eb"
     },
     {
       "path": "apps/management-center/src/server/preview-capability-observer.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 8524,
-      "sha256": "acdbf5c1e0702569b4efcd86b3a64662f3bd41ed73cd1ad12a9e98a403a69995",
-      "ownership": "private-exported"
+      "sha256": "acdbf5c1e0702569b4efcd86b3a64662f3bd41ed73cd1ad12a9e98a403a69995"
     },
     {
       "path": "apps/management-center/src/server/view-model.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 2231,
-      "sha256": "81f7b3bc769c04ca20764a801b15c394eba4e71e175c71da832e6d9966738eac",
-      "ownership": "private-exported"
+      "bytes": 2475,
+      "sha256": "cb8e8ead96782d0e3628b24ae29de5385d333c96284fc2755370a9298766912b"
     },
     {
       "path": "apps/management-center/src/server/workbench-snapshot.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 9787,
-      "sha256": "3cc39dd74e2914a7a2a7632b7efd9492cdab72d4f3c1eb8b69f4f9191a0c6a4b",
-      "ownership": "private-exported"
+      "bytes": 11881,
+      "sha256": "44ac42798536feab9fcc0269c2304ada67b5404fd3c39127e1233d139609434f"
     },
     {
       "path": "apps/management-center/src/server/workbench-validation-worker.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 323,
-      "sha256": "da15ff64e831024ce62c4c86c6f38c35b03040586ed1a2f453a8512201342c56",
-      "ownership": "private-exported"
+      "bytes": 511,
+      "sha256": "d2603480b20f136fc9a3c602c0258361c0729beb0cf960dd9810b17b85de7451"
     },
     {
       "path": "apps/management-center/src/server/workspace-assets.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 252,
-      "sha256": "2755b81d868f35d878f09ff6b6d5da245c11a43360dc4217c57daa50b8a42add",
-      "ownership": "private-exported"
+      "sha256": "2755b81d868f35d878f09ff6b6d5da245c11a43360dc4217c57daa50b8a42add"
     },
     {
       "path": "apps/management-center/src/server/workspace-document.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 1524,
-      "sha256": "389d852e62ce38750bb5bfa667960175c442d23df5a3c31700ba341eae443029",
-      "ownership": "private-exported"
+      "sha256": "389d852e62ce38750bb5bfa667960175c442d23df5a3c31700ba341eae443029"
     },
     {
       "path": "apps/management-center/src/state/workspace-state.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 9453,
-      "sha256": "8b9a9a8e8e7a7db3248fab3ef05cd9ea1c3fd68025a69effe07bb7fabf155b9a",
-      "ownership": "private-exported"
+      "sha256": "8b9a9a8e8e7a7db3248fab3ef05cd9ea1c3fd68025a69effe07bb7fabf155b9a"
     },
     {
       "path": "apps/management-center/src/styles.css",
-      "type": "file",
       "mode": 420,
-      "bytes": 30452,
-      "sha256": "b478c09efdc51ec8d432484bcada39a462ce865031962383f7bc205ab622e9a0",
-      "ownership": "private-exported"
+      "bytes": 30467,
+      "sha256": "3ea1e8383db9e61a3664adda995c044f0b3b376e441c357c19cfcb19d1d9d853"
     },
     {
       "path": "apps/management-center/src/theme/workspace-theme.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 959,
-      "sha256": "b462691a1f5d461e395397085c46e13517a68f5364d7440f7b076ec1eb263ab5",
-      "ownership": "private-exported"
+      "sha256": "b462691a1f5d461e395397085c46e13517a68f5364d7440f7b076ec1eb263ab5"
     },
     {
       "path": "apps/management-center/src/workspace/asset-display.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 7863,
-      "sha256": "d40fa39694ac5f42ade02d1500027652b2f164ca004de71907a903ee1306355d",
-      "ownership": "private-exported"
+      "sha256": "d40fa39694ac5f42ade02d1500027652b2f164ca004de71907a903ee1306355d"
     },
     {
       "path": "apps/management-center/src/workspace/asset-management-workspace.jsx",
-      "type": "file",
       "mode": 420,
-      "bytes": 8367,
-      "sha256": "8c9e96110993755a4e6a7a32569a4b45aec2f2ac8e8c445d52b1317b3265e1b4",
-      "ownership": "private-exported"
+      "bytes": 9453,
+      "sha256": "fe8ad5cd2797d35995db05fc39189f49bb4e54b9e78223aa67f8fb780319adc9"
     },
     {
       "path": "apps/management-center/src/workspace/asset-preview.jsx",
-      "type": "file",
       "mode": 420,
-      "bytes": 13510,
-      "sha256": "178206f086b97167e839c8ebf1c03c52efc5193444a3f869eddd1a9cdad8df59",
-      "ownership": "private-exported"
+      "bytes": 14709,
+      "sha256": "a7a6146b29d710f0f66582fd3b51bc0ea39ec3e493f8e3422d262d4503ea8efa"
     },
     {
       "path": "apps/management-center/src/workspace/copy-context.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 816,
-      "sha256": "34327ae632ba4c0839dec8276c36953a6e2ac5b671cd9893da1ef47fb982db40",
-      "ownership": "private-exported"
+      "sha256": "34327ae632ba4c0839dec8276c36953a6e2ac5b671cd9893da1ef47fb982db40"
     },
     {
       "path": "apps/management-center/src/workspace/information-logic-workspace.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 17519,
-      "sha256": "60c46b03183cadddd462db12105486b8033644dd75ba0048ed7e95fe91d7ed83",
-      "ownership": "private-exported"
+      "sha256": "60c46b03183cadddd462db12105486b8033644dd75ba0048ed7e95fe91d7ed83"
     },
     {
       "path": "apps/management-center/src/workspace/inspector-context.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 9545,
-      "sha256": "0f9920df6ccd3f9aa06fb449c06b0a65880a359ed7685e9881deec24b0f86016",
-      "ownership": "private-exported"
+      "bytes": 12081,
+      "sha256": "06cd4214ff42ea2e6ee8117ce945c4922d57884fcddd81c7cbd4ae053eb3ba25"
     },
     {
       "path": "apps/management-center/src/workspace/page-building-workspace.jsx",
-      "type": "file",
       "mode": 420,
       "bytes": 2302,
-      "sha256": "286a1ac6b449dcdc4cccc8ed21536be9c87f4698525fa9466a48bef052e5e079",
-      "ownership": "private-exported"
+      "sha256": "286a1ac6b449dcdc4cccc8ed21536be9c87f4698525fa9466a48bef052e5e079"
     },
     {
       "path": "apps/management-center/src/workspace/relation-client.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 2870,
-      "sha256": "d63baa1b9645619acbeaa07fd4312e96c0de1d1c8ece754c86196edea7e810d8",
-      "ownership": "private-exported"
+      "sha256": "d63baa1b9645619acbeaa07fd4312e96c0de1d1c8ece754c86196edea7e810d8"
     },
     {
       "path": "apps/management-center/src/workspace/workspace-app.jsx",
-      "type": "file",
       "mode": 420,
-      "bytes": 18173,
-      "sha256": "18c8443641f168c2adf5c8e05760123a9c36b49bd8a44ef65debe5824803fb8f",
-      "ownership": "private-exported"
+      "bytes": 19685,
+      "sha256": "e342e57ed555ea69c4f25774a840585cb375e7e92164f7de59a10c2044f593af"
     },
     {
       "path": "apps/management-center/src/workspace/workspace-projections.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 9774,
-      "sha256": "47bc5ebff4206eaf106603f47e54851c006b41296d82cb93e121731bf8d3c95b",
-      "ownership": "private-exported"
+      "sha256": "47bc5ebff4206eaf106603f47e54851c006b41296d82cb93e121731bf8d3c95b"
     },
     {
       "path": "apps/management-center/vite.config.js",
-      "type": "file",
       "mode": 420,
       "bytes": 880,
-      "sha256": "c3039796852226e7cb3b94afff1511871513820e44d997df54bccdd4c7b1df1d",
-      "ownership": "private-exported"
+      "sha256": "c3039796852226e7cb3b94afff1511871513820e44d997df54bccdd4c7b1df1d"
     },
     {
       "path": "distribution/summon-foundation/LICENSE",
-      "type": "file",
       "mode": 420,
       "bytes": 1080,
-      "sha256": "fff444ee4e5e3ff0c55f175e5318561cc178c0d8a2447091f04e9c54a9b477a8",
-      "ownership": "private-exported"
+      "sha256": "fff444ee4e5e3ff0c55f175e5318561cc178c0d8a2447091f04e9c54a9b477a8"
     },
     {
       "path": "distribution/summon-foundation/README.md",
-      "type": "file",
       "mode": 420,
       "bytes": 3605,
-      "sha256": "8f080292314d3580b45ff8baed2b4c4eaa95795877beb8fe990fad69459e776a",
-      "ownership": "private-exported"
+      "sha256": "8f080292314d3580b45ff8baed2b4c4eaa95795877beb8fe990fad69459e776a"
     },
     {
       "path": "distribution/summon-foundation/THIRD_PARTY_NOTICES.txt",
-      "type": "file",
       "mode": 420,
       "bytes": 643,
-      "sha256": "1e8898720f9e21e1eeaab0c8c36d9c2ce64cc6a69e2b5412883b30a17d03f242",
-      "ownership": "private-exported"
+      "sha256": "1e8898720f9e21e1eeaab0c8c36d9c2ce64cc6a69e2b5412883b30a17d03f242"
     },
     {
       "path": "distribution/summon-foundation/bin/prepare-environment.sh",
-      "type": "file",
       "mode": 420,
       "bytes": 5183,
-      "sha256": "df31ff3220fadbf9945903de739b570e4b1e7ffeb1cb94e86b235692f3f8c245",
-      "ownership": "private-exported"
+      "sha256": "df31ff3220fadbf9945903de739b570e4b1e7ffeb1cb94e86b235692f3f8c245"
     },
     {
       "path": "distribution/summon-foundation/bin/summon.mjs",
-      "type": "file",
       "mode": 493,
       "bytes": 18444,
-      "sha256": "c9e4012f61bb7ec43a2d9573f2ad202332b9cd19c9e687e257e4ad29c5c2ae8e",
-      "ownership": "private-exported"
+      "sha256": "c9e4012f61bb7ec43a2d9573f2ad202332b9cd19c9e687e257e4ad29c5c2ae8e"
     },
     {
       "path": "distribution/summon-foundation/lib/acquire.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 15778,
-      "sha256": "04ddea33e2c48d95a6a433dc04897d208577488d653e559fc2454dbf41910b49",
-      "ownership": "private-exported"
+      "sha256": "04ddea33e2c48d95a6a433dc04897d208577488d653e559fc2454dbf41910b49"
     },
     {
       "path": "distribution/summon-foundation/lib/acquisition-task.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 1468,
-      "sha256": "6a0d145f7017f0dfb1fc1f511404bf8e492a068304506999b5dc0a539d304ceb",
-      "ownership": "private-exported"
+      "sha256": "6a0d145f7017f0dfb1fc1f511404bf8e492a068304506999b5dc0a539d304ceb"
     },
     {
       "path": "distribution/summon-foundation/lib/acquisition-worker.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 1449,
-      "sha256": "b6a5fde3cede5c9de8b7709963703c28e42ae7898491c8f721321470bd41d25f",
-      "ownership": "private-exported"
+      "sha256": "b6a5fde3cede5c9de8b7709963703c28e42ae7898491c8f721321470bd41d25f"
     },
     {
       "path": "distribution/summon-foundation/lib/cli-options.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 1937,
-      "sha256": "894baf01c372c5f0e74882fb5c6864bd5becfc26b23e81c3a3aad0e211e9c8e7",
-      "ownership": "private-exported"
+      "sha256": "894baf01c372c5f0e74882fb5c6864bd5becfc26b23e81c3a3aad0e211e9c8e7"
     },
     {
       "path": "distribution/summon-foundation/lib/environment-check.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 4290,
-      "sha256": "50f63aba3e2a653cec6fbcaacd54fd519c866d88a1d92644248a17ef11076f9d",
-      "ownership": "private-exported"
+      "sha256": "50f63aba3e2a653cec6fbcaacd54fd519c866d88a1d92644248a17ef11076f9d"
     },
     {
       "path": "distribution/summon-foundation/lib/journey-control.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 7735,
-      "sha256": "3fe9d5bc88f63b3737be2b4c0ac3a95ac8f7b8523ce49b5c3a284e0f359f5ce2",
-      "ownership": "private-exported"
+      "bytes": 8141,
+      "sha256": "1ddca904db76cb8a568033a8610c8d8221afde313b2f0072edfd42ba283bce85"
     },
     {
       "path": "distribution/summon-foundation/lib/journey-view.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 9223,
-      "sha256": "42c4705d0ce6d01817a28378c11194bbc93149dbbd2e635803a81363f97db0aa",
-      "ownership": "private-exported"
+      "sha256": "42c4705d0ce6d01817a28378c11194bbc93149dbbd2e635803a81363f97db0aa"
     },
     {
       "path": "distribution/summon-foundation/lib/local-path.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 658,
-      "sha256": "7740115896db6df39bd07e7c43fc3669d624e3930b4b31f31b79ef6f5dcaa3ce",
-      "ownership": "private-exported"
+      "sha256": "7740115896db6df39bd07e7c43fc3669d624e3930b4b31f31b79ef6f5dcaa3ce"
     },
     {
       "path": "distribution/summon-foundation/lib/maintenance-handoff.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 7586,
-      "sha256": "a512b59fe261c75c4fd3939cb9abf39080103b3de76312e66e170d676eb7e0f3",
-      "ownership": "private-exported"
+      "sha256": "a512b59fe261c75c4fd3939cb9abf39080103b3de76312e66e170d676eb7e0f3"
     },
     {
       "path": "distribution/summon-foundation/lib/manager-step.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 5708,
-      "sha256": "7286a6e466e6b310538238154d64475d5a75a7e3cf7024323e9d4b277286c99d",
-      "ownership": "private-exported"
+      "sha256": "7286a6e466e6b310538238154d64475d5a75a7e3cf7024323e9d4b277286c99d"
     },
     {
       "path": "distribution/summon-foundation/lib/operation-failure.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 1837,
-      "sha256": "5b99ef265eeb0a5ef058b2e9992c1d98d8bdc981b0c6991c6a2d97ac11a7a518",
-      "ownership": "private-exported"
+      "sha256": "5b99ef265eeb0a5ef058b2e9992c1d98d8bdc981b0c6991c6a2d97ac11a7a518"
     },
     {
       "path": "distribution/summon-foundation/lib/operation-result.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 8552,
-      "sha256": "460680a39daad8a885e24faacbc8f8c30c7a41214e0b53bcc7012f7e41159232",
-      "ownership": "private-exported"
+      "sha256": "460680a39daad8a885e24faacbc8f8c30c7a41214e0b53bcc7012f7e41159232"
     },
     {
       "path": "distribution/summon-foundation/lib/progress-page.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 14925,
-      "sha256": "fab9ae064ed6a07fa4ecf57fc8d1a2c62b80e884e0c6bbab6d0023c86da178ba",
-      "ownership": "private-exported"
+      "sha256": "fab9ae064ed6a07fa4ecf57fc8d1a2c62b80e884e0c6bbab6d0023c86da178ba"
     },
     {
       "path": "distribution/summon-foundation/lib/public-policy.json",
-      "type": "file",
       "mode": 420,
       "bytes": 318,
-      "sha256": "a7fb9b39755f5bb0bfd91bd6dc6a12080925aa03e35436224e40f20436a6c856",
-      "ownership": "private-exported"
+      "sha256": "a7fb9b39755f5bb0bfd91bd6dc6a12080925aa03e35436224e40f20436a6c856"
     },
     {
       "path": "distribution/summon-foundation/lib/release-proof.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 3713,
-      "sha256": "25a26b3f2f53b74ae0b83af58ac95e73e2cc03e8e8f4ad3e954741741e239a26",
-      "ownership": "private-exported"
+      "sha256": "25a26b3f2f53b74ae0b83af58ac95e73e2cc03e8e8f4ad3e954741741e239a26"
     },
     {
       "path": "distribution/summon-foundation/lib/resume-handoff.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 2054,
-      "sha256": "ddb7933a79f79ac9c3e5af84a5a62bfad285fca91c399f5d654f062fda227713",
-      "ownership": "private-exported"
+      "sha256": "ddb7933a79f79ac9c3e5af84a5a62bfad285fca91c399f5d654f062fda227713"
     },
     {
       "path": "distribution/summon-foundation/lib/single-page-style.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 6794,
-      "sha256": "0cda1da6d4344be14071466a9c890ad358183ec4440298fd63cff2865ac01d00",
-      "ownership": "private-exported"
+      "sha256": "0cda1da6d4344be14071466a9c890ad358183ec4440298fd63cff2865ac01d00"
     },
     {
       "path": "distribution/summon-foundation/lib/single-page-view.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 15289,
-      "sha256": "95333a55280dd283f9b4c478f4f45687c3c11f469b4e82870b9c6bb6471af222",
-      "ownership": "private-exported"
+      "sha256": "95333a55280dd283f9b4c478f4f45687c3c11f469b4e82870b9c6bb6471af222"
     },
     {
       "path": "distribution/summon-foundation/lib/skill-handoff.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 6185,
-      "sha256": "f90f7939147a823b2cc79b8f6b9f49ee27df22b6d1a822798beafd4358a6d65b",
-      "ownership": "private-exported"
+      "sha256": "f90f7939147a823b2cc79b8f6b9f49ee27df22b6d1a822798beafd4358a6d65b"
     },
     {
       "path": "distribution/summon-foundation/npm-shrinkwrap.json",
-      "type": "file",
       "mode": 420,
       "bytes": 21856,
-      "sha256": "9ac8811cd223e23f0d3b191e5363ebff703dba126a1ea6b82aee006401aa694f",
-      "ownership": "private-exported"
+      "sha256": "f8f81d9653b881d0fe58cc45e5583fb5befeb5486a27ecfc968ce14825a296dd"
     },
     {
       "path": "distribution/summon-foundation/package.json",
-      "type": "file",
       "mode": 420,
-      "bytes": 801,
-      "sha256": "263d7a9ab7a382aafc66c469f1e775812871289887d6ee606d74e593fc6b9493",
-      "ownership": "private-exported"
+      "bytes": 873,
+      "sha256": "616a2d5db02a4f1da1b956c51da3f1a103dcf7fa2abf93511636bd2228483db3"
     },
     {
       "path": "docs/FOUNDATION_SHADCN_TYPE_SPACING_GOVERNANCE_V01.md",
-      "type": "file",
       "mode": 420,
       "bytes": 6208,
-      "sha256": "05c965ec3fefd71238f4d1e21909eb316d7ababa8f59015f310186e884d8e7e3",
-      "ownership": "private-exported"
+      "sha256": "05c965ec3fefd71238f4d1e21909eb316d7ababa8f59015f310186e884d8e7e3"
     },
     {
       "path": "docs/FOUNDATION_UI_ENGINEERING_STANDARD_V01.md",
-      "type": "file",
       "mode": 420,
       "bytes": 5202,
-      "sha256": "87e74075f41469b898029d72a11afd59c372f996e2507d7e2755645f41fa4255",
-      "ownership": "private-exported"
+      "sha256": "87e74075f41469b898029d72a11afd59c372f996e2507d7e2755645f41fa4255"
     },
     {
       "path": "docs/architecture.md",
-      "type": "file",
       "mode": 420,
-      "bytes": 9539,
-      "sha256": "f6df166c74aafa35dd300a9351f160ed32c2ccb8a53569b1dab9c5f380fb2ed9",
-      "ownership": "private-exported"
+      "bytes": 9588,
+      "sha256": "6364778085553c4ffe9aac23a448d5ede09405e7022805519731c23481aa7bdd"
     },
     {
       "path": "docs/cache-cleanup.md",
-      "type": "file",
       "mode": 420,
       "bytes": 5253,
-      "sha256": "81e2fbf8eb94bce63a78a1923ea856894628017cde06d47ed9756c27ba2335c6",
-      "ownership": "private-exported"
+      "sha256": "81e2fbf8eb94bce63a78a1923ea856894628017cde06d47ed9756c27ba2335c6"
     },
     {
       "path": "docs/cli-reference.md",
-      "type": "file",
       "mode": 420,
       "bytes": 14184,
-      "sha256": "8d7594ab6a66b74882714ea1b8697afda989cc359a6c31afafa58f08aaf71138",
-      "ownership": "private-exported"
+      "sha256": "8d7594ab6a66b74882714ea1b8697afda989cc359a6c31afafa58f08aaf71138"
     },
     {
       "path": "docs/conversation-commands.md",
-      "type": "file",
       "mode": 420,
       "bytes": 4475,
-      "sha256": "399dff78a09b94d462f6f8a351d2b776e851d10d01f408811cabeec5d8a0dc64",
-      "ownership": "private-exported"
+      "sha256": "399dff78a09b94d462f6f8a351d2b776e851d10d01f408811cabeec5d8a0dc64"
     },
     {
       "path": "docs/conversational-install-contract-030r1.md",
-      "type": "file",
       "mode": 420,
       "bytes": 14813,
-      "sha256": "8057bdfd8131a16d94b7508e068ea3be592d1875ef5a70192e530ec1ebf97468",
-      "ownership": "private-exported"
+      "sha256": "8057bdfd8131a16d94b7508e068ea3be592d1875ef5a70192e530ec1ebf97468"
     },
     {
       "path": "docs/current-mutation-handler-coverage.json",
-      "type": "file",
       "mode": 420,
       "bytes": 9904,
-      "sha256": "2a39f301587435200ed0f47ad52c69b37b7ed38e5a8019c7e379e53247ce69e6",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "docs/current-status.md",
-      "type": "file",
-      "mode": 420,
-      "bytes": 16938,
-      "sha256": "817afe8def5344b12f5564f0d0dd01e19e0a4c5c92ab76b5506c3b4ab5de276d",
-      "ownership": "private-exported"
+      "sha256": "2a39f301587435200ed0f47ad52c69b37b7ed38e5a8019c7e379e53247ce69e6"
     },
     {
       "path": "docs/data-contract.md",
-      "type": "file",
       "mode": 420,
       "bytes": 1595,
-      "sha256": "1f3f50039150e05df26d6bde04b2871f69e7de1669ba76c70e0ddb64762f8be5",
-      "ownership": "private-exported"
+      "sha256": "1f3f50039150e05df26d6bde04b2871f69e7de1669ba76c70e0ddb64762f8be5"
     },
     {
       "path": "docs/foundation-workbench-example.png",
-      "type": "file",
       "mode": 420,
       "bytes": 305624,
-      "sha256": "bc2e676b67e02610a2e201b31d7500226763c61d6e91b1a34f723e0070a36add",
-      "ownership": "private-exported"
+      "sha256": "bc2e676b67e02610a2e201b31d7500226763c61d6e91b1a34f723e0070a36add"
     },
     {
       "path": "docs/getting-started.md",
-      "type": "file",
       "mode": 420,
       "bytes": 7147,
-      "sha256": "220f4dd0b05c2d87225a39f81ea4e63e71467cf7c4fa592e38afe045e015d402",
-      "ownership": "private-exported"
+      "sha256": "220f4dd0b05c2d87225a39f81ea4e63e71467cf7c4fa592e38afe045e015d402"
     },
     {
       "path": "docs/install-create-upgrade.md",
-      "type": "file",
       "mode": 420,
       "bytes": 3331,
-      "sha256": "fcb45f9da099b280c070e928e27c3913d6d7995d197096bd317631c9903a772d",
-      "ownership": "private-exported"
+      "sha256": "fcb45f9da099b280c070e928e27c3913d6d7995d197096bd317631c9903a772d"
     },
     {
       "path": "docs/install-platform-024.md",
-      "type": "file",
       "mode": 420,
       "bytes": 9136,
-      "sha256": "03412e4c76ff75e26d193dcff098848b7aa25ec0dd42d28fc7f70c226aae62ec",
-      "ownership": "private-exported"
+      "sha256": "03412e4c76ff75e26d193dcff098848b7aa25ec0dd42d28fc7f70c226aae62ec"
     },
     {
       "path": "docs/install-with-codex.md",
-      "type": "file",
       "mode": 420,
-      "bytes": 26171,
-      "sha256": "33e8ab640d26b332c97cf3a16328ea0d9dcbd5827aecfaaa71fb8e64450b544e",
-      "ownership": "private-exported"
+      "bytes": 26097,
+      "sha256": "f3dd2ae0f55c5ad0e52597eecf34052210b89cdce5daa6d7b842913c03dc792f"
     },
     {
       "path": "docs/rules-and-project-use.md",
-      "type": "file",
       "mode": 420,
       "bytes": 6012,
-      "sha256": "aa4ec63958155cf0e471892d750a667b2824d72e569618e4876b3bf85e5e22e1",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "docs/verification-baseline.md",
-      "type": "file",
-      "mode": 420,
-      "bytes": 20120,
-      "sha256": "6e6d35d899905fcd992148dc306fda809577fd06d117a9fb4818596431b3034c",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/button-two-page/.foundation/facts/changes.json",
-      "type": "file",
-      "mode": 420,
-      "bytes": 390,
-      "sha256": "9693b0d348e43421b1ef1882599b432a3f9d3d0d2846249bb55a444197df474c",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/button-two-page/.foundation/facts/components.json",
-      "type": "file",
-      "mode": 420,
-      "bytes": 874,
-      "sha256": "45d9b2792bd21c138e95bbbbe9f3476fd548a754118d85c3ac14512a38f59f5d",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/button-two-page/.foundation/facts/design-tokens.json",
-      "type": "file",
-      "mode": 420,
-      "bytes": 60,
-      "sha256": "04a3946037fa17714489e84573606b7cf1ec4cb3e858cf80da69d0f0c2c35be8",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/button-two-page/.foundation/facts/figma.json",
-      "type": "file",
-      "mode": 420,
-      "bytes": 52,
-      "sha256": "c31ecd5e2ffea37cf321b3e5c6f81ebc7b32b92b55df20dd67187c9174405e78",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/button-two-page/.foundation/facts/interactions.json",
-      "type": "file",
-      "mode": 420,
-      "bytes": 59,
-      "sha256": "498783b43823c943549a356d72c51d741902fe0814dd77d99009435b993a9891",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/button-two-page/.foundation/facts/motions.json",
-      "type": "file",
-      "mode": 420,
-      "bytes": 54,
-      "sha256": "00a1d0212add183127e09b3180551d9a831542fdd6ae3ad2f38dff2ddbb85b17",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/button-two-page/.foundation/facts/pages.json",
-      "type": "file",
-      "mode": 420,
-      "bytes": 517,
-      "sha256": "23e8e34ebd3c69c31757582aad0406a5f0b5233bd8f92d2d558b096bedf7890a",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/button-two-page/.foundation/facts/project.json",
-      "type": "file",
-      "mode": 420,
-      "bytes": 242,
-      "sha256": "765ff7b4d61e09280c12d8e6bed1cbf7e4dec3d50497090a075ce676549d3f24",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/button-two-page/.foundation/facts/relations.json",
-      "type": "file",
-      "mode": 420,
-      "bytes": 621,
-      "sha256": "a96df8baa16117ee66e9f17d58a7b29e44532d7e6fd1398cf565b7ad7e3a0276",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/button-two-page/.foundation/foundation.json",
-      "type": "file",
-      "mode": 420,
-      "bytes": 199,
-      "sha256": "c882d84f61dfd471de034b566c0cf009965ca1a427ff2e721619d2ffa3aa9451",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/button-two-page/.foundation/preview.json",
-      "type": "file",
-      "mode": 420,
-      "bytes": 472,
-      "sha256": "4e72e8f48e5d47269752ff21d7a05c4364c5b35702f368763f7d88e03c81b4df",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/button-two-page/detail.html",
-      "type": "file",
-      "mode": 420,
-      "bytes": 245,
-      "sha256": "7542fb55348831915a1fbad444e279e072ffe00c8a1f234ddc7ff74f8207dfff",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/button-two-page/home.html",
-      "type": "file",
-      "mode": 420,
-      "bytes": 242,
-      "sha256": "3cec1fc277ede2a453d784cb8c0a9a4c1ac5c957718da23b8789db741a47fbf6",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/button-two-page/src/app.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 600,
-      "sha256": "68f8131e48859ac7b23e6dae8a6566aef2f7ea12df0d5650f3ba1dc50c7ff1cd",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/button-two-page/src/button.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 2074,
-      "sha256": "3a5994b32887cd7dcbb5d9f4e37fc73766d43bf45abf4bf9ab61cc172e9a463c",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/button-two-page/src/pages.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 976,
-      "sha256": "0f65fb195a59249b8c842ab430d2858c47fb91831aed8843585414116d52b598",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/button-two-page/src/preview.css",
-      "type": "file",
-      "mode": 420,
-      "bytes": 1006,
-      "sha256": "5d7235f8d7daf513a311bb366011beeaa1e3530c8b8a090e9ff6c697645b2133",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/.foundation/facts/changes.json",
-      "type": "file",
-      "mode": 420,
-      "bytes": 1290,
-      "sha256": "6f0844cb8f26bd8cfc3510c95b35d00108cb604f711e2e67382e4249820a4325",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/.foundation/facts/components.json",
-      "type": "file",
-      "mode": 420,
-      "bytes": 6627,
-      "sha256": "18aec151e25a1521e2240d268c19211484a9dadbe81e52992cd7f0c4eec7467e",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/.foundation/facts/design-tokens.json",
-      "type": "file",
-      "mode": 420,
-      "bytes": 60,
-      "sha256": "04a3946037fa17714489e84573606b7cf1ec4cb3e858cf80da69d0f0c2c35be8",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/.foundation/facts/figma.json",
-      "type": "file",
-      "mode": 420,
-      "bytes": 1578,
-      "sha256": "1a0063c333d3c9cb53dad332c23aa81b08715d3a34ce99946a3b92539a201a0e",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/.foundation/facts/interactions.json",
-      "type": "file",
-      "mode": 420,
-      "bytes": 583,
-      "sha256": "f760d9bc3d2cd17fd813710f626d9a8d696b105027bcaa0c4969a6a9b753dfb0",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/.foundation/facts/motions.json",
-      "type": "file",
-      "mode": 420,
-      "bytes": 54,
-      "sha256": "00a1d0212add183127e09b3180551d9a831542fdd6ae3ad2f38dff2ddbb85b17",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/.foundation/facts/pages.json",
-      "type": "file",
-      "mode": 420,
-      "bytes": 814,
-      "sha256": "629a11d22f74eb1c18a7896bc25d39495e47a501d9facd4c5a525cbee51fe922",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/.foundation/facts/project.json",
-      "type": "file",
-      "mode": 420,
-      "bytes": 262,
-      "sha256": "5d3ac8048627d09804e68de7989903e524820a36803911b0a160674d8bb0bb0f",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/.foundation/facts/relations.json",
-      "type": "file",
-      "mode": 420,
-      "bytes": 1629,
-      "sha256": "0d99e4c4fc3e620f1d88699fa451093e26edd47225cb460277db99ccd294aab8",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/.foundation/foundation.json",
-      "type": "file",
-      "mode": 420,
-      "bytes": 423,
-      "sha256": "78b38ed5a819b6586569ce5776dc273cd36eb39c17cc685b63cfadac48b3c7d7",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/.foundation/preview.json",
-      "type": "file",
-      "mode": 420,
-      "bytes": 417,
-      "sha256": "099f7c34ff5ee1b62604095b24295c56446581e836f09b7df043d1f55b63b409",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/README.md",
-      "type": "file",
-      "mode": 420,
-      "bytes": 565,
-      "sha256": "a4fb9caa00406bd779763f29aedf4690d35881f7b8e6f625ce74cb053a1a6b4d",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/components.json",
-      "type": "file",
-      "mode": 420,
-      "bytes": 366,
-      "sha256": "6bcabb7870c5c5634cf69e9138a782ca7242f00cfc94e2cc3de981dc84cb6f6b",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/fact-contract.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 716,
-      "sha256": "b5b7e85df7ba98119f4c8c4cd910805e6a42c272c198dfa45f373e7ce79d3222",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/index.html",
-      "type": "file",
-      "mode": 420,
-      "bytes": 308,
-      "sha256": "89d16119c8a9667fb6dda1e73be76bd3033cf40dc4b5e983e4df47d0ec3bf8e2",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/package-lock.json",
-      "type": "file",
-      "mode": 420,
-      "bytes": 71031,
-      "sha256": "2fe152c42d97409b3a254d7e8815eaddb41111ff678c07d63ff978a10e069ca6",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/package.json",
-      "type": "file",
-      "mode": 420,
-      "bytes": 565,
-      "sha256": "e4d9265c3df8c067e4f9323e5f26016f0822c3c122d0d74136314473648bc911",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/src/asset-preview-protocol.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 1256,
-      "sha256": "128b9e1696056e520c03cc2d026e7c7f4bcc26c66442177dcdf9e7f4ebf5e050",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/src/asset-preview.css",
-      "type": "file",
-      "mode": 420,
-      "bytes": 462,
-      "sha256": "ae8c5392258be2fcd59a2f1e342b29f1787f711618d6f5eb69013eb0941b7931",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/src/asset-preview.jsx",
-      "type": "file",
-      "mode": 420,
-      "bytes": 5295,
-      "sha256": "12ecd23e1d278d5ace062534cdc8a229dab2149133bc61701eafedabf781b111",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/src/bridge.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 1670,
-      "sha256": "64d6a2c73fa2ac2e525cce20dccf22346ca7e6a19e76e6254e33719df65b0641",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/src/components/event-action.jsx",
-      "type": "file",
-      "mode": 420,
-      "bytes": 971,
-      "sha256": "e057cb658a847d58d508b7cb15f9f0221a86f30c7e84ed785f237cfb6303978c",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/src/components/event-card.jsx",
-      "type": "file",
-      "mode": 420,
-      "bytes": 1997,
-      "sha256": "ca58566698ccc3d9e95b5ee8fef2bfbc9423caf6003070dfc6464fd3e2107f65",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/src/components/event-form-dialog.jsx",
-      "type": "file",
-      "mode": 420,
-      "bytes": 2193,
-      "sha256": "631f648235f096adcde9589e8b19541c074c6da890dccf0959ec30c57fab9f48",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/src/components/event-quick-select.jsx",
-      "type": "file",
-      "mode": 420,
-      "bytes": 1087,
-      "sha256": "8d4292ac803626fca2d9dee9291df2b79031c0ef2d87f51ca2c95306d472d309",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/src/components/event-status.jsx",
-      "type": "file",
-      "mode": 420,
-      "bytes": 1202,
-      "sha256": "8774d7d07fbf503bf52a5a9bcdfd6aa499191a29c6c7d2fdfc4f36378a71cf7a",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/src/components/ui/badge.tsx",
-      "type": "file",
-      "mode": 420,
-      "bytes": 1925,
-      "sha256": "968b0403af74a785c9408ca69a677235e49d0c80b2c27fb9858ad421a8778c7d",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/src/components/ui/button.tsx",
-      "type": "file",
-      "mode": 420,
-      "bytes": 3234,
-      "sha256": "aac4d68a3772390d0068ab586a31d5009b1b81ddfd5ae7e5c965ece67f91724c",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/src/components/ui/card.tsx",
-      "type": "file",
-      "mode": 420,
-      "bytes": 2630,
-      "sha256": "d8113cbf964f8d1aadf2649d2944d8bbc6e3cfd49d36746f76868cbc4dde3cfe",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/src/components/ui/dialog.tsx",
-      "type": "file",
-      "mode": 420,
-      "bytes": 4059,
-      "sha256": "82c7fa6c6b88205b221b19d027b72167256ae99d454ba0dd5b5b4fef7b42c482",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/src/components/ui/field.tsx",
-      "type": "file",
-      "mode": 420,
-      "bytes": 6266,
-      "sha256": "3c2272fd6ca7d1b478a48d9a9b796862541cfe0882b76899dfe1bcad25bd18be",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/src/components/ui/input.tsx",
-      "type": "file",
-      "mode": 420,
-      "bytes": 1040,
-      "sha256": "f7d6ecff9a4d631feeaf401c02bb87e26ddb38131c55d15a43b9290747390847",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/src/components/ui/label.tsx",
-      "type": "file",
-      "mode": 420,
-      "bytes": 504,
-      "sha256": "fc58859ab5ee622b2fe853a6501a0ed8008d022ab34a4f0bf98bb7324c5b3619",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/src/components/ui/select.tsx",
-      "type": "file",
-      "mode": 420,
-      "bytes": 6641,
-      "sha256": "41685f5d3a488b4e512bc9cee80738087f3e84c92f67e89eed9fc4858f81abe6",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/src/components/ui/separator.tsx",
-      "type": "file",
-      "mode": 420,
-      "bytes": 531,
-      "sha256": "082aff76b823256112a622d92dcef79dd008fe8c252611e184c002db770763f3",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/src/components/ui/tabs.tsx",
-      "type": "file",
-      "mode": 420,
-      "bytes": 3427,
-      "sha256": "afcb72cdf033d4eb5eaa2a7bb8ec24ab4af46d9f554034a95de9dd3283547419",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/src/components/ui/textarea.tsx",
-      "type": "file",
-      "mode": 420,
-      "bytes": 842,
-      "sha256": "58b58d84fc54ba5f4ca46937870c619349fd9eccc4d494250ac7bc73a94e05e9",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/src/event-state.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 4555,
-      "sha256": "6605033377b00cd0510de49acf198e2e8c627df20e4e0b99d501c2f7debb8817",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/src/lib/utils.ts",
-      "type": "file",
-      "mode": 420,
-      "bytes": 166,
-      "sha256": "7c8c3dfc0cdd370d44932828eb067ef771c8fe7996693221d5d4b90af6d54f2d",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/src/main.jsx",
-      "type": "file",
-      "mode": 420,
-      "bytes": 8781,
-      "sha256": "60ded9356da3671dfb2fb66c81dfbe5a497954eb992a0b21e0f2e868b9ff2bb4",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/src/structure-correction.css",
-      "type": "file",
-      "mode": 420,
-      "bytes": 96,
-      "sha256": "3f8ae8f591e623e15d5b637fc1012c2d3729076f218fb09363ae929f63f332dd",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/src/styles.css",
-      "type": "file",
-      "mode": 420,
-      "bytes": 6848,
-      "sha256": "7a5891a6a0ac14f7ee288605313515a91ae5be3a7315086404dc6fa495c8e476",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/tsconfig.json",
-      "type": "file",
-      "mode": 420,
-      "bytes": 95,
-      "sha256": "c02933a0435e4608a4f0b53037627eaf4f5ae653b61768e6d18788ac7d0526a5",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "examples/foundation-events/vite.config.js",
-      "type": "file",
-      "mode": 420,
-      "bytes": 733,
-      "sha256": "96bba8193b7a0a041a57a3888ec1714d072e70686f0bb83790870e150672cb55",
-      "ownership": "private-exported"
+      "sha256": "aa4ec63958155cf0e471892d750a667b2824d72e569618e4876b3bf85e5e22e1"
     },
     {
       "path": "foundation-kit",
-      "type": "file",
       "mode": 493,
       "bytes": 66,
-      "sha256": "3ec2e58f3856d3e635a5fc9a09fa97856c17f15527f9bec8b4ac5a0403fea3d4",
-      "ownership": "private-exported"
+      "sha256": "3ec2e58f3856d3e635a5fc9a09fa97856c17f15527f9bec8b4ac5a0403fea3d4"
     },
     {
       "path": "foundation-kit.json",
-      "type": "file",
       "mode": 420,
-      "bytes": 1107,
-      "sha256": "b3070954641cf1a509e448f1de3ce8f3e0bc1ce65ce4d7c3172b3e4673aa401e",
-      "ownership": "private-exported"
+      "bytes": 1128,
+      "sha256": "1920801df3236028fb80e455080e7d447320acf51c908973806bb6d6ce776dcf"
     },
     {
       "path": "migrations/0.1.1.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 52,
-      "sha256": "064196cac952089ff87471416247600ff53cbdbc716d3f3f0828905ef5da9d4b",
-      "ownership": "private-exported"
+      "sha256": "064196cac952089ff87471416247600ff53cbdbc716d3f3f0828905ef5da9d4b"
     },
     {
       "path": "package-lock.json",
-      "type": "file",
       "mode": 420,
-      "bytes": 221285,
-      "sha256": "de4fcd2326574ce9eedd6ecee078a65d845f7509c75045f303628930b0b19371",
-      "ownership": "private-exported"
+      "bytes": 217374,
+      "sha256": "2d1dec673dc24aea210581b7562e5162788a8f3d9b9965aaa0de69864478a729"
     },
     {
       "path": "package.json",
-      "type": "file",
       "mode": 420,
-      "bytes": 957,
-      "sha256": "2a54cc473456f6c6622b909822940081248287b4bb0a0838bf79500b2dfbb356",
-      "ownership": "private-exported"
+      "bytes": 752,
+      "sha256": "9ca8214a4ad8fb8652c374624f7cb3a17a7ad7e51ceea299bb0c1eabbb8e1cab"
     },
     {
       "path": "packages/cli/command-contract.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 14781,
-      "sha256": "bea2a93b3ff74f130f61c4328f704632a73bdafa6763c5dcb3b575ee8838a084",
-      "ownership": "private-exported"
+      "bytes": 16175,
+      "sha256": "b62d2e06829f929b3836efad054977630237499600a86ae191157b990bbb20b0"
     },
     {
       "path": "packages/cli/index.mjs",
-      "type": "file",
       "mode": 493,
-      "bytes": 27451,
-      "sha256": "802b1228a682992f717445dfaccea16f2b14d35da81a70e0a647b0d7fbce39de",
-      "ownership": "private-exported"
+      "bytes": 32750,
+      "sha256": "aca984efa62e51d839ce961cfb0e23b9e16b4222fe6acc781f64371d92988de0"
     },
     {
       "path": "packages/cli/installed-maintenance.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 7723,
-      "sha256": "4da34d399d0fe51b4e183b87de086d88937b5c2081083fc3efaa8a9bedc3224f",
-      "ownership": "private-exported"
+      "sha256": "4da34d399d0fe51b4e183b87de086d88937b5c2081083fc3efaa8a9bedc3224f"
     },
     {
       "path": "packages/cli/lifecycle.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 7229,
-      "sha256": "0087dcd296a09cfac34f822c9aaa9342e91f9c47fe3eb4e3ee48c900a0c2fe7a",
-      "ownership": "private-exported"
+      "sha256": "0087dcd296a09cfac34f822c9aaa9342e91f9c47fe3eb4e3ee48c900a0c2fe7a"
     },
     {
       "path": "packages/cli/package.json",
-      "type": "file",
       "mode": 420,
       "bytes": 294,
-      "sha256": "9d7c1529b8bc9155cc3d60d3dbbde10180c079a779a9cdaba8367e3a6e554594",
-      "ownership": "private-exported"
+      "sha256": "26a75184799d60ac73f7b3770e1fe1e64c8c30187c8a5b60f99fd1dd30f0ef5f"
     },
     {
       "path": "packages/core/ai-bridge.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 16686,
-      "sha256": "ab9b6264e3d1c728c33bb9685fb12167b0363b1986cc134c9d2009ad56d16d10",
-      "ownership": "private-exported"
+      "sha256": "ab9b6264e3d1c728c33bb9685fb12167b0363b1986cc134c9d2009ad56d16d10"
     },
     {
       "path": "packages/core/asset-admission.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 2940,
-      "sha256": "20c2a388bbce4fa5c96f49cb7244b348b48e75cfcb9d591b74e3c27dd8035354",
-      "ownership": "private-exported"
+      "bytes": 3763,
+      "sha256": "118c4cbd7c00161c03f2fcb98c85200051fffa94456bcc654b09b7b5f4ba9a49"
     },
     {
       "path": "packages/core/asset-model.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 9013,
-      "sha256": "2581611e367ed2b5d977a259e8ad506382299c72d1e66d3da1a74c9dc8f43a49",
-      "ownership": "private-exported"
+      "sha256": "2581611e367ed2b5d977a259e8ad506382299c72d1e66d3da1a74c9dc8f43a49"
     },
     {
       "path": "packages/core/asset-preview-bridge.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 3999,
-      "sha256": "9598517adbbb08c80acfd485ec4dc4353e1f25444c5e542c0122f2314b54f788",
-      "ownership": "private-exported"
+      "sha256": "9598517adbbb08c80acfd485ec4dc4353e1f25444c5e542c0122f2314b54f788"
     },
     {
       "path": "packages/core/assets.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 9932,
-      "sha256": "52b5246a727ccf6c69e49abfd4752317ea60bf709a25adb76bbee67074f98698",
-      "ownership": "private-exported"
+      "sha256": "52b5246a727ccf6c69e49abfd4752317ea60bf709a25adb76bbee67074f98698"
     },
     {
       "path": "packages/core/browser-launch-contract.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 1992,
-      "sha256": "8020466ca9d4126a945bcb20dc2b604045223ff3303be409e8f5eb4c3fb8d93a",
-      "ownership": "private-exported"
+      "sha256": "8020466ca9d4126a945bcb20dc2b604045223ff3303be409e8f5eb4c3fb8d93a"
     },
     {
       "path": "packages/core/browser-launch.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 537,
-      "sha256": "a5a07c202aa851d56a1a723c574ee858600cac74d9fb9ada0dbbdb2b07fc33c3",
-      "ownership": "private-exported"
+      "sha256": "a5a07c202aa851d56a1a723c574ee858600cac74d9fb9ada0dbbdb2b07fc33c3"
     },
     {
       "path": "packages/core/browser-lifecycle.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 8167,
-      "sha256": "84ac9af67e83f25133383d434a1245db10ee08b0cc166ac768d5ff8c97e673f8",
-      "ownership": "private-exported"
+      "sha256": "84ac9af67e83f25133383d434a1245db10ee08b0cc166ac768d5ff8c97e673f8"
     },
     {
       "path": "packages/core/candidate-package.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 19863,
-      "sha256": "f5203286daa54cb4f5204b5362b4289f0a7b386af05d56146c702fe40d0be789",
-      "ownership": "private-exported"
+      "sha256": "f5203286daa54cb4f5204b5362b4289f0a7b386af05d56146c702fe40d0be789"
     },
     {
       "path": "packages/core/capability-authority.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 52009,
-      "sha256": "920aebe63f7676fca57deb4b1176665ee6583758d4cd99b3335166b515ca0c43",
-      "ownership": "private-exported"
+      "sha256": "920aebe63f7676fca57deb4b1176665ee6583758d4cd99b3335166b515ca0c43"
     },
     {
       "path": "packages/core/classification.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 1324,
-      "sha256": "d6eeb4507e0bc2e9288454ff510f0fe7c9fa0a30c191d21850114ee09d667297",
-      "ownership": "private-exported"
+      "sha256": "d6eeb4507e0bc2e9288454ff510f0fe7c9fa0a30c191d21850114ee09d667297"
     },
     {
       "path": "packages/core/codex-skill-registration.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 15303,
-      "sha256": "9cf7caa66d13225f28830d8a52764870adfebab40f2ec26db175aa92f849be64",
-      "ownership": "private-exported"
+      "sha256": "9cf7caa66d13225f28830d8a52764870adfebab40f2ec26db175aa92f849be64"
     },
     {
       "path": "packages/core/content-integrity.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 6648,
-      "sha256": "3ce145025da3d89768b843477f8b5f4d4dd6e64e449a786d26089ed161a5245f",
-      "ownership": "private-exported"
+      "sha256": "3ce145025da3d89768b843477f8b5f4d4dd6e64e449a786d26089ed161a5245f"
     },
     {
       "path": "packages/core/context.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 19890,
-      "sha256": "d17fc65a3c9536f3310867e68f0a795025dd8ff6fe45f6ce5f75421d89914530",
-      "ownership": "private-exported"
+      "sha256": "d17fc65a3c9536f3310867e68f0a795025dd8ff6fe45f6ce5f75421d89914530"
     },
     {
       "path": "packages/core/conversation-commands.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 3917,
-      "sha256": "978ba6b1dbdfd1f83a82b4e3feb02492b66203adf5769c37149842cbdf93a39e",
-      "ownership": "private-exported"
+      "sha256": "978ba6b1dbdfd1f83a82b4e3feb02492b66203adf5769c37149842cbdf93a39e"
     },
     {
       "path": "packages/core/conversational-entry-template.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 13349,
-      "sha256": "51a61343b5fca906d03305bc4115944d0b7428f101c923896325cc7e76d61dad",
-      "ownership": "private-exported"
+      "sha256": "51a61343b5fca906d03305bc4115944d0b7428f101c923896325cc7e76d61dad"
     },
     {
       "path": "packages/core/conversational-install.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 5791,
-      "sha256": "784181403f1302031327ae6e07356ee9ec62250bc7119bef5539ea5b47d69971",
-      "ownership": "private-exported"
+      "sha256": "784181403f1302031327ae6e07356ee9ec62250bc7119bef5539ea5b47d69971"
     },
     {
       "path": "packages/core/delivery-identity.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 1786,
-      "sha256": "4c8ccb1ca9d0e557db6e79d05f9870a09d375d91d67d08afbaed5174aa1cfaa2",
-      "ownership": "private-exported"
+      "sha256": "4c8ccb1ca9d0e557db6e79d05f9870a09d375d91d67d08afbaed5174aa1cfaa2"
     },
     {
       "path": "packages/core/delivery-verification.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 2016,
-      "sha256": "44a5a89e51afb498655ddfd65d45da99b75e4a28efc28536a04d9e4ee35cdfbd",
-      "ownership": "private-exported"
+      "sha256": "44a5a89e51afb498655ddfd65d45da99b75e4a28efc28536a04d9e4ee35cdfbd"
     },
     {
       "path": "packages/core/evidence-impact.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 14355,
-      "sha256": "ad90bbed50710cf2ebf96e8c1312394c953ed9a2c01e64ccd3cc3d3e57817a26",
-      "ownership": "private-exported"
+      "bytes": 15675,
+      "sha256": "b1bd83d3f2357ce911a245fdc7f6e7a0706e9fcce48ad42df95aee9f59f38213"
     },
     {
       "path": "packages/core/extension-adapters.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 5791,
-      "sha256": "57260005d943279ae022529b39a943c662f50d5271fb2a851ed2f9fc9e90b194",
-      "ownership": "private-exported"
+      "sha256": "57260005d943279ae022529b39a943c662f50d5271fb2a851ed2f9fc9e90b194"
     },
     {
       "path": "packages/core/fact-contracts.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 2239,
-      "sha256": "bb6b285587697852e006bd2440c4fe43d237077c9f2ebf3ec772fc4658ffbbd3",
-      "ownership": "private-exported"
+      "sha256": "bb6b285587697852e006bd2440c4fe43d237077c9f2ebf3ec772fc4658ffbbd3"
     },
     {
       "path": "packages/core/facts.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 12539,
-      "sha256": "d987ae760ecf2de062da787abd5ad56d8794d913a4b00bca92410f16699a39ca",
-      "ownership": "private-exported"
+      "sha256": "d987ae760ecf2de062da787abd5ad56d8794d913a4b00bca92410f16699a39ca"
     },
     {
       "path": "packages/core/first-install-bootstrap.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 35867,
-      "sha256": "d9da2450d8acfc11201445bc4e136a6f002fb023b739054e3830da12ec5b8dc3",
-      "ownership": "private-exported"
+      "sha256": "d9da2450d8acfc11201445bc4e136a6f002fb023b739054e3830da12ec5b8dc3"
     },
     {
       "path": "packages/core/git-identity.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 1669,
-      "sha256": "f8233f19efaa4a053509277159b538941da5e33e996f99379246fa91d071b7be",
-      "ownership": "private-exported"
+      "sha256": "f8233f19efaa4a053509277159b538941da5e33e996f99379246fa91d071b7be"
     },
     {
       "path": "packages/core/governance.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 4381,
-      "sha256": "317180dc76e5ff12d25672069000b83a4777fe7bd1c41cf869004983932c5c04",
-      "ownership": "private-exported"
+      "sha256": "317180dc76e5ff12d25672069000b83a4777fe7bd1c41cf869004983932c5c04"
     },
     {
       "path": "packages/core/historical-source.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 2049,
-      "sha256": "c5e303478f4c96002ca35e7d29fe7b65acc2ce46b665f4f6cb81aa954283a1df",
-      "ownership": "private-exported"
+      "sha256": "c5e303478f4c96002ca35e7d29fe7b65acc2ce46b665f4f6cb81aa954283a1df"
     },
     {
       "path": "packages/core/human-authorization.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 10504,
-      "sha256": "3faa2d6fc8d85564d54d588b495645ec37e857f84e8461ee1d5209db037b7517",
-      "ownership": "private-exported"
+      "sha256": "3faa2d6fc8d85564d54d588b495645ec37e857f84e8461ee1d5209db037b7517"
     },
     {
       "path": "packages/core/human-labels.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 1279,
-      "sha256": "c0ee9011ad64d97cf1de4f5c71ab506cc8ebb121e89f8e2068cacd8d77d4bbd8",
-      "ownership": "private-exported"
+      "sha256": "c0ee9011ad64d97cf1de4f5c71ab506cc8ebb121e89f8e2068cacd8d77d4bbd8"
     },
     {
       "path": "packages/core/identity.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 592,
-      "sha256": "9a17e30abeead9d4049b26a639d73e63047e627de23fe2c1721b793c95856879",
-      "ownership": "private-exported"
+      "sha256": "9a17e30abeead9d4049b26a639d73e63047e627de23fe2c1721b793c95856879"
     },
     {
       "path": "packages/core/index.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 4114,
-      "sha256": "fdd41648cd3abd122f7f351cbe1f422536e566713db0e5be88808abcbeed1f90",
-      "ownership": "private-exported"
+      "sha256": "fdd41648cd3abd122f7f351cbe1f422536e566713db0e5be88808abcbeed1f90"
     },
     {
       "path": "packages/core/inspector-render-adapters.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 2996,
-      "sha256": "7daf3254312c0a6c3d5d96a037aa07e6727e9fb0833fe7a434bf7e033a568419",
-      "ownership": "private-exported"
+      "sha256": "7daf3254312c0a6c3d5d96a037aa07e6727e9fb0833fe7a434bf7e033a568419"
     },
     {
       "path": "packages/core/inspector-syntax.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 5273,
-      "sha256": "e08e5ee2858060e9608e9a0af962c3a019594fc032ac6561388260788014eaa6",
-      "ownership": "private-exported"
+      "bytes": 5874,
+      "sha256": "0266e439abe27a0410c70c81368c683914975a3caf56bc5128c60c30e5fa9928"
     },
     {
       "path": "packages/core/inspector-upgrade-plan.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 8469,
-      "sha256": "3e73cbbd75fcd67ed35fba9c240202267a740f3a6a52678cb8cefa8738639e22",
-      "ownership": "private-exported"
+      "bytes": 10169,
+      "sha256": "32229630db51cebe45ce72a895edf61b59178cb97c63bd0d9174acaf0957bac8"
     },
     {
       "path": "packages/core/install-contract.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 12993,
-      "sha256": "bb64eb3fd8475e50129cde2dac5d6dd852f5ff42d30a1c8912cd10f68dbb05ee",
-      "ownership": "private-exported"
+      "sha256": "bb64eb3fd8475e50129cde2dac5d6dd852f5ff42d30a1c8912cd10f68dbb05ee"
     },
     {
       "path": "packages/core/install-destination.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 3849,
-      "sha256": "af387f6381a93bd9f6be22f1d2f6e39e80a2ee97f8c80fd947f3ab947d4378ce",
-      "ownership": "private-exported"
+      "sha256": "af387f6381a93bd9f6be22f1d2f6e39e80a2ee97f8c80fd947f3ab947d4378ce"
     },
     {
       "path": "packages/core/installation-scope.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 4348,
-      "sha256": "18ca8d279647cb4427ee0ff86c89532888f12b73ad79782fea4a4b4fa2a8fed4",
-      "ownership": "private-exported"
+      "sha256": "18ca8d279647cb4427ee0ff86c89532888f12b73ad79782fea4a4b4fa2a8fed4"
     },
     {
       "path": "packages/core/journey-transport.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 1631,
-      "sha256": "f1610a1866d739bb548367e4a124709399d9e0d75eb1fcfa3da5570beb555eb7",
-      "ownership": "private-exported"
+      "sha256": "f1610a1866d739bb548367e4a124709399d9e0d75eb1fcfa3da5570beb555eb7"
     },
     {
       "path": "packages/core/lifecycle-feedback.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 29803,
-      "sha256": "c67ea458173918cc80d3d10a3926a6513825f8cd86bb6a9a76000de7d7f245c3",
-      "ownership": "private-exported"
+      "sha256": "c67ea458173918cc80d3d10a3926a6513825f8cd86bb6a9a76000de7d7f245c3"
     },
     {
       "path": "packages/core/lifecycle-journey.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 7513,
-      "sha256": "e9dd44d919895cfcc844f61f87304399f46e4ea6482e37673367401714c09725",
-      "ownership": "private-exported"
+      "sha256": "e9dd44d919895cfcc844f61f87304399f46e4ea6482e37673367401714c09725"
     },
     {
       "path": "packages/core/lifecycle-manager-host.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 25305,
-      "sha256": "15ed19be91c4a6588d4ca5a62f4085c8f840e098a589d78fc7afeb7ffd73d9b0",
-      "ownership": "private-exported"
+      "sha256": "15ed19be91c4a6588d4ca5a62f4085c8f840e098a589d78fc7afeb7ffd73d9b0"
     },
     {
       "path": "packages/core/lifecycle-manager.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 38116,
-      "sha256": "337310f93a33c7711172a68e1283582ebfbb16cf464911401aa7500cee4e6f9f",
-      "ownership": "private-exported"
+      "sha256": "337310f93a33c7711172a68e1283582ebfbb16cf464911401aa7500cee4e6f9f"
     },
     {
       "path": "packages/core/manager-confirmation.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 5915,
-      "sha256": "e525fa7356b062b688615ac1ab76bf158c0d1dc45b57c26692162b113b75edae",
-      "ownership": "private-exported"
+      "sha256": "e525fa7356b062b688615ac1ab76bf158c0d1dc45b57c26692162b113b75edae"
     },
     {
       "path": "packages/core/motion-scene.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 3933,
-      "sha256": "03f912a6da2796ac1ed6f587c66adaaecb663643d77ec26b9ab8819b9780d6a4",
-      "ownership": "private-exported"
+      "bytes": 4122,
+      "sha256": "2f9046e8fecda3aa8589db545f8fbe50b15ca2415ab780e08c7643c57db490bf"
     },
     {
       "path": "packages/core/node-startup-environment.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 2981,
-      "sha256": "e7335084d1e463ee1cf9ec082e6b0f11b1ca53f2d8505578028578017aede707",
-      "ownership": "private-exported"
+      "sha256": "e7335084d1e463ee1cf9ec082e6b0f11b1ca53f2d8505578028578017aede707"
     },
     {
       "path": "packages/core/notices/typescript-5.8.3/LICENSE.txt",
-      "type": "file",
       "mode": 420,
       "bytes": 9197,
-      "sha256": "a7d00bfd54525bc694b6e32f64c7ebcf5e6b7ae3657be5cc12767bce74654a47",
-      "ownership": "private-exported"
+      "sha256": "a7d00bfd54525bc694b6e32f64c7ebcf5e6b7ae3657be5cc12767bce74654a47"
     },
     {
       "path": "packages/core/notices/typescript-5.8.3/ThirdPartyNoticeText.txt",
-      "type": "file",
       "mode": 420,
       "bytes": 37824,
-      "sha256": "1af3c68039c57e539422da82a4faada506ce6d0ea6f90e0b699d02dbcdb7a90c",
-      "ownership": "private-exported"
+      "sha256": "1af3c68039c57e539422da82a4faada506ce6d0ea6f90e0b699d02dbcdb7a90c"
     },
     {
       "path": "packages/core/notices/typescript-5.8.3/provenance.json",
-      "type": "file",
       "mode": 420,
       "bytes": 478,
-      "sha256": "69b7be61162c287622c4e86654dda01e2879673def68e56418fb77008c21eace",
-      "ownership": "private-exported"
+      "sha256": "69b7be61162c287622c4e86654dda01e2879673def68e56418fb77008c21eace"
     },
     {
       "path": "packages/core/object-context.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 7275,
-      "sha256": "cc5b8302425c580fb82ba232bd1641ab8bef456e9fe126d7dab1bf337a516bc0",
-      "ownership": "private-exported"
+      "bytes": 12091,
+      "sha256": "612d987be9590d0579796748b24771ff78de5c139de5d61eaca472cf187c61a4"
     },
     {
       "path": "packages/core/object-identity.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 9279,
-      "sha256": "f8e5e03d474bad49f0e667bf0f088a527caa605832a7328e10bc288dd5bade2a",
-      "ownership": "private-exported"
+      "bytes": 12949,
+      "sha256": "c09cb6e6667f2bca74526b264d91096a0657469ee3700de4fc26da601571c9ed"
     },
     {
       "path": "packages/core/offer-consent.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 9011,
-      "sha256": "5d50eaa42b10828bc3b27b91066ea292ca237cae425dfc128822552af7c3729e",
-      "ownership": "private-exported"
+      "sha256": "5d50eaa42b10828bc3b27b91066ea292ca237cae425dfc128822552af7c3729e"
     },
     {
       "path": "packages/core/official-node-runtime.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 2959,
-      "sha256": "e802095a37dbb8c172233f09f87ee1b76f9eead2143610de8ce1cdbe24a16c36",
-      "ownership": "private-exported"
+      "sha256": "e802095a37dbb8c172233f09f87ee1b76f9eead2143610de8ce1cdbe24a16c36"
     },
     {
       "path": "packages/core/package.json",
-      "type": "file",
       "mode": 420,
       "bytes": 582,
-      "sha256": "9b4883199c635bcc1edf718fc1453da9c77fb9fcb10ee724415b361612f38e7e",
-      "ownership": "private-exported"
+      "sha256": "29216df2a0e9edc636e847755732acdaccba1565c1c5944754bc5d0ef9b5e316"
     },
     {
       "path": "packages/core/path-boundary.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 3508,
-      "sha256": "889b909c4910db2de2c37a7ea7b924dea0facaf07a1321df3be74216806199bc",
-      "ownership": "private-exported"
+      "sha256": "889b909c4910db2de2c37a7ea7b924dea0facaf07a1321df3be74216806199bc"
     },
     {
       "path": "packages/core/platform-account.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 2962,
-      "sha256": "ca16f298a671a5683b7266651aeea58476f41b61d097b3c254dfd84d386258be",
-      "ownership": "private-exported"
+      "sha256": "ca16f298a671a5683b7266651aeea58476f41b61d097b3c254dfd84d386258be"
     },
     {
       "path": "packages/core/platform-bootstrap.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 4724,
-      "sha256": "ed7a46fe3df4a278235b8ad915af9ceda14b044e01bb0d898a41e2e1192067f4",
-      "ownership": "private-exported"
+      "sha256": "ed7a46fe3df4a278235b8ad915af9ceda14b044e01bb0d898a41e2e1192067f4"
     },
     {
       "path": "packages/core/platform-paths.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 3991,
-      "sha256": "10abf5ba6d488892fe2c80374bc7834f5814a19be50af89b510a38db970d0cc4",
-      "ownership": "private-exported"
+      "sha256": "10abf5ba6d488892fe2c80374bc7834f5814a19be50af89b510a38db970d0cc4"
     },
     {
       "path": "packages/core/preview-bridge.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 19555,
-      "sha256": "ae0cc6ecfbc808b59040ece3ca867bb599dbf6748674a884b8b12b017f1b6693",
-      "ownership": "private-exported"
+      "bytes": 28129,
+      "sha256": "6debfd3ace37496ca15b01c7b39d77eb3a9647487555222bff913c1304cc20fc"
     },
     {
       "path": "packages/core/preview-config.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 3296,
-      "sha256": "16a658dc180bdee56f6861d466f78393f2dfae985508d6fd9fdd0c0765ace065",
-      "ownership": "private-exported"
+      "sha256": "16a658dc180bdee56f6861d466f78393f2dfae985508d6fd9fdd0c0765ace065"
     },
     {
       "path": "packages/core/process-owner.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 3185,
-      "sha256": "103f2a77f854c921af472c8022ef30003755399dcac70fecb4dadb68e101530a",
-      "ownership": "private-exported"
+      "sha256": "103f2a77f854c921af472c8022ef30003755399dcac70fecb4dadb68e101530a"
     },
     {
       "path": "packages/core/product-version.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 1508,
-      "sha256": "612c68e22272075c6a98efec720d3befd1df2dabb96981cf867448c5b0f488d6",
-      "ownership": "private-exported"
+      "sha256": "612c68e22272075c6a98efec720d3befd1df2dabb96981cf867448c5b0f488d6"
     },
     {
       "path": "packages/core/project-authority.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 82927,
-      "sha256": "28b36a0fe023695a830a5df75c2a1d68353d70017b0168dac1bd7c8793821cf1",
-      "ownership": "private-exported"
+      "bytes": 83347,
+      "sha256": "fa6eb1b321881505d81321b3425e1b0360313642884af5a2bb476f1ab7a69299"
     },
     {
       "path": "packages/core/project-context-round.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 13253,
-      "sha256": "77821ab2427a1bb08bf2a24547210df309951e8366e372bb5b5a2c3cec34539d",
-      "ownership": "private-exported"
+      "bytes": 14950,
+      "sha256": "d36c062797ae8ed607b3f1c11854302ed7d643d3e9d93c6e027d328e38faf1a0"
     },
     {
       "path": "packages/core/project-coverage.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 14794,
-      "sha256": "e5668ac420b95156a5c0d08640f73b03d0e88394f093ca28d1de88fd45857f2a",
-      "ownership": "private-exported"
+      "bytes": 17001,
+      "sha256": "ddbd9019372f98b4a3ea2eb37d65f97c2bf558f77921c6b6ccbf5159ac2c9000"
     },
     {
       "path": "packages/core/project-delivery.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 29229,
-      "sha256": "8cdc59035bc551f7435fcf9b418ddc403832457ba5f181d3b147a30622596425",
-      "ownership": "private-exported"
+      "bytes": 29404,
+      "sha256": "4c83b9c53b4299cc51137fbcac7337257f8d8f633ce9aabe5ddedc7b4ef8e01e"
     },
     {
       "path": "packages/core/project-layout.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 48807,
-      "sha256": "89e278474f915ae52b41247e1c590d2ee0ba25525728c1ed92f069e4265a8a78",
-      "ownership": "private-exported"
+      "sha256": "89e278474f915ae52b41247e1c590d2ee0ba25525728c1ed92f069e4265a8a78"
     },
     {
       "path": "packages/core/project-mutation-handlers.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 43426,
-      "sha256": "8bc21a0c0b98e6ac1728b89f855063fe233ddcbcb05e62ee66dc080ec7997388",
-      "ownership": "private-exported"
+      "bytes": 43987,
+      "sha256": "0506fa2fc161b38222b1b686ee909361ecfd553d24878f56dd09fd2f2b1896ef"
     },
     {
       "path": "packages/core/project-preparation-view.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 8382,
-      "sha256": "0fd481e9610b411ca4a86fa02bf84eab5a81a8d1272009e07c07fbcfc4f4a851",
-      "ownership": "private-exported"
+      "sha256": "0fd481e9610b411ca4a86fa02bf84eab5a81a8d1272009e07c07fbcfc4f4a851"
+    },
+    {
+      "path": "packages/core/project-reference-lifecycle.mjs",
+      "mode": 420,
+      "bytes": 16801,
+      "sha256": "36fbc24890c75f7a9912fc63e0f7a0e0e9d89cfcf17e82fbe5fee5fba73c4525"
+    },
+    {
+      "path": "packages/core/project-reference-recovery.mjs",
+      "mode": 420,
+      "bytes": 2292,
+      "sha256": "58e14d0c911e6d33eef46fe0a8c6abb6e2e484e15f7f75ff3013c85e39c26799"
     },
     {
       "path": "packages/core/project-revisions.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 1550,
-      "sha256": "29774ff603f9cd2a70ce2cd685a5e2c478a41d3a069e7c4c197fca4d49fe2947",
-      "ownership": "private-exported"
+      "bytes": 11351,
+      "sha256": "34773d55c0b736b39ecdaa51bab5bff015818581248395572f679c6b6dcdff72"
     },
     {
       "path": "packages/core/project-rules.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 5975,
-      "sha256": "bfdc7f320952e848dc88e59bdcb0767f2103d80eb12ad7667fbb73b46c1548e5",
-      "ownership": "private-exported"
+      "bytes": 6060,
+      "sha256": "2c5c3d30f6d857fcdbd59c19a1ae01aa4aae47632e239c25802a37302500c355"
     },
     {
       "path": "packages/core/project-sync.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 42519,
-      "sha256": "7f5ecd2e1f54c04e08ed3f717656363db948c7f4159868a2a920859b0ed99115",
-      "ownership": "private-exported"
+      "bytes": 71183,
+      "sha256": "808c3f2cba930060fd5b252ff3047fa13390da7d094676e4005a91bc24b473f6"
     },
     {
       "path": "packages/core/project-transaction.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 20733,
-      "sha256": "25b08aa7fb2684168bcce0c98043738f492992a812761902492d199f975928bd",
-      "ownership": "private-exported"
+      "bytes": 21997,
+      "sha256": "39f15ccdcda45c421df37454d2c307c978e3f77e4fad66df2063bd336562de7b"
     },
     {
       "path": "packages/core/protected-host-adapter.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 1925,
-      "sha256": "f01da93b4f284a5075b75e01a458103980ea00dbd23b4d96c8058d4d60372ffc",
-      "ownership": "private-exported"
+      "sha256": "f01da93b4f284a5075b75e01a458103980ea00dbd23b4d96c8058d4d60372ffc"
     },
     {
       "path": "packages/core/release-catalog.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 10350,
-      "sha256": "0a04ed68ef0f0b2272f97e5ddfffe612fd68a4deed2e2c1702d31dfb57919a8d",
-      "ownership": "private-exported"
+      "sha256": "0a04ed68ef0f0b2272f97e5ddfffe612fd68a4deed2e2c1702d31dfb57919a8d"
     },
     {
       "path": "packages/core/rules-delivery.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 6630,
-      "sha256": "ccf93cc7864cc81488d382155f1eb018c40627192a071fa84ee52420e414f69b",
-      "ownership": "private-exported"
+      "sha256": "ccf93cc7864cc81488d382155f1eb018c40627192a071fa84ee52420e414f69b"
     },
     {
       "path": "packages/core/runtime-descriptor.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 12864,
-      "sha256": "906f416afaa44fc09161aafdc68d54d5e27548decef064f804486bb65a7fb640",
-      "ownership": "private-exported"
+      "sha256": "906f416afaa44fc09161aafdc68d54d5e27548decef064f804486bb65a7fb640"
+    },
+    {
+      "path": "packages/core/runtime-object-snapshot.mjs",
+      "mode": 420,
+      "bytes": 9782,
+      "sha256": "af1b7a6e6b873da1955aa96534d0702004ae9276d54764fc2a1b9e5c5f4db010"
     },
     {
       "path": "packages/core/runtime-surface.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 1216,
-      "sha256": "34086f733a0d1fc5de0dd1a010deb953ada64ff6d7f42ba75e485ee3ed842cf8",
-      "ownership": "private-exported"
+      "sha256": "34086f733a0d1fc5de0dd1a010deb953ada64ff6d7f42ba75e485ee3ed842cf8"
     },
     {
       "path": "packages/core/scene-runtime-contract.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 1654,
-      "sha256": "8bcebd5cb21845a8549955528dbc5cb8541aec863be712e4351f223efda4e664",
-      "ownership": "private-exported"
+      "sha256": "8bcebd5cb21845a8549955528dbc5cb8541aec863be712e4351f223efda4e664"
     },
     {
       "path": "packages/core/scene-source-selection.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 2660,
-      "sha256": "ff8fcf5a1c02d7efda7f196971dbede32c6e4154f92d644f3b250ce7ee73c707",
-      "ownership": "private-exported"
+      "sha256": "ff8fcf5a1c02d7efda7f196971dbede32c6e4154f92d644f3b250ce7ee73c707"
     },
     {
       "path": "packages/core/schemas/asset-model-1.json",
-      "type": "file",
       "mode": 420,
       "bytes": 6095,
-      "sha256": "d9707368a725e6a2014917f95d26c836f2c9d2be312f6e851c2f4c3df0ca711d",
-      "ownership": "private-exported"
+      "sha256": "d9707368a725e6a2014917f95d26c836f2c9d2be312f6e851c2f4c3df0ca711d"
     },
     {
       "path": "packages/core/schemas/authorization-capability-v1.json",
-      "type": "file",
       "mode": 420,
       "bytes": 2519,
-      "sha256": "db3259c23cdd2ed6bf5b83fc6b4008df6c116abea8dbd9f7df1061bb739f0700",
-      "ownership": "private-exported"
+      "sha256": "db3259c23cdd2ed6bf5b83fc6b4008df6c116abea8dbd9f7df1061bb739f0700"
     },
     {
       "path": "packages/core/schemas/delivery-scope-2.json",
-      "type": "file",
       "mode": 420,
       "bytes": 8409,
-      "sha256": "e079be3e8a1971dbbd6921c7f096d852e7d7440aa77606f079f9f7db44ca3028",
-      "ownership": "private-exported"
+      "sha256": "e079be3e8a1971dbbd6921c7f096d852e7d7440aa77606f079f9f7db44ca3028"
     },
     {
       "path": "packages/core/schemas/evidence-1.json",
-      "type": "file",
       "mode": 420,
       "bytes": 3270,
-      "sha256": "3b1abd9b5e533f84dec65cd0467df6cc6ce6ba59ec850dfb125c4cd09c189022",
-      "ownership": "private-exported"
+      "sha256": "3b1abd9b5e533f84dec65cd0467df6cc6ce6ba59ec850dfb125c4cd09c189022"
     },
     {
       "path": "packages/core/schemas/install-contract-v1.json",
-      "type": "file",
       "mode": 420,
       "bytes": 5954,
-      "sha256": "0996c60f7cf6a1e6a65a14337afbad49b7029090b496bd3d2e9cf367faacea51",
-      "ownership": "private-exported"
+      "sha256": "0996c60f7cf6a1e6a65a14337afbad49b7029090b496bd3d2e9cf367faacea51"
     },
     {
       "path": "packages/core/schemas/local-manager-confirmation-v1.json",
-      "type": "file",
       "mode": 420,
       "bytes": 2371,
-      "sha256": "9b8417bf849ef5016695fd321a7119c2cf7375d2179367f064fa7736ad59f714",
-      "ownership": "private-exported"
+      "sha256": "9b8417bf849ef5016695fd321a7119c2cf7375d2179367f064fa7736ad59f714"
     },
     {
       "path": "packages/core/schemas/reuse-decision-1.json",
-      "type": "file",
       "mode": 420,
       "bytes": 3389,
-      "sha256": "85a29014902ffeb12a49e680e68b5a912c8a0e96cc9fce66054383ff5776f1e8",
-      "ownership": "private-exported"
+      "sha256": "85a29014902ffeb12a49e680e68b5a912c8a0e96cc9fce66054383ff5776f1e8"
     },
     {
       "path": "packages/core/schemas/semantic-review-1.json",
-      "type": "file",
       "mode": 420,
       "bytes": 2756,
-      "sha256": "07d8d2d4d94cb5444bbe3b5659508887ca3f415c8554b2592d647b9c0b6c076f",
-      "ownership": "private-exported"
+      "sha256": "07d8d2d4d94cb5444bbe3b5659508887ca3f415c8554b2592d647b9c0b6c076f"
     },
     {
       "path": "packages/core/source-analysis-worker.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 331,
-      "sha256": "f435a8d691db1ea4bd515cb35b80ad00814a8ec78dcc673d74d2f633c415cc33",
-      "ownership": "private-exported"
+      "sha256": "f435a8d691db1ea4bd515cb35b80ad00814a8ec78dcc673d74d2f633c415cc33"
     },
     {
       "path": "packages/core/source-analysis.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 18046,
-      "sha256": "0a834465b6a89adbe86c15fd38ce31c4e99633c81e6cc0cea8207e9f3586ab61",
-      "ownership": "private-exported"
+      "bytes": 19256,
+      "sha256": "fec66750a548a30378ce05b42808a9f13ff6d93c200285ec2652ce3bf8cb64f4"
     },
     {
       "path": "packages/core/source-inventory.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 1167,
-      "sha256": "184d04b733d9027f8ccf2b414e8192c4841d00c91eb7af81ef0f30585c553b43",
-      "ownership": "private-exported"
+      "sha256": "184d04b733d9027f8ccf2b414e8192c4841d00c91eb7af81ef0f30585c553b43"
     },
     {
       "path": "packages/core/source-scene.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 11724,
-      "sha256": "58f215041bf96aa988f7053186c2a270ed1e29e5e120a65db0920076c7207322",
-      "ownership": "private-exported"
+      "sha256": "58f215041bf96aa988f7053186c2a270ed1e29e5e120a65db0920076c7207322"
     },
     {
       "path": "packages/core/source-semantics.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 5436,
-      "sha256": "c4ab410edeef40f141f3fdbc231a69c1d786ce97aede159b574716e67d7d71e3",
-      "ownership": "private-exported"
+      "bytes": 5572,
+      "sha256": "f652a935234d721bccebff4861b40f6df47df3eff2060b173f2037b81867cfcb"
     },
     {
       "path": "packages/core/source-syntax.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 863,
-      "sha256": "ca3c515ce303b88938c225e7a6905ba2086d55fce884e82907666e95166590b3",
-      "ownership": "private-exported"
+      "sha256": "ca3c515ce303b88938c225e7a6905ba2086d55fce884e82907666e95166590b3"
     },
     {
       "path": "packages/core/static-preview-plan.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 3152,
-      "sha256": "b75bc6a95c4f8c55a74bed7bed7fdacc93ab5f2a8ab3abb19f427da4e145c899",
-      "ownership": "private-exported"
+      "sha256": "b75bc6a95c4f8c55a74bed7bed7fdacc93ab5f2a8ab3abb19f427da4e145c899"
     },
     {
       "path": "packages/core/style-assets.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 3121,
-      "sha256": "4900f76d4bd090b03ba01ad233fb329d5ff24cf9d7a57a2766070f7ed4bc91fd",
-      "ownership": "private-exported"
+      "bytes": 6982,
+      "sha256": "abb0b56dd347d6e8ce168cc74eddc765b18fc9bc0296eb3c4e760c6f9b57bd02"
+    },
+    {
+      "path": "packages/core/style-variable-usage.mjs",
+      "mode": 420,
+      "bytes": 7976,
+      "sha256": "689d701a69a8942b859aa1dc35ab41acd9101b23f0f5519878e6ed9463e8954f"
     },
     {
       "path": "packages/core/transaction-engine.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 80425,
-      "sha256": "d1fb86419dcf1ab32f3683798ecd71f2a23c2807abcde7522b858a04a4f1e4b6",
-      "ownership": "private-exported"
+      "sha256": "d1fb86419dcf1ab32f3683798ecd71f2a23c2807abcde7522b858a04a4f1e4b6"
     },
     {
       "path": "packages/core/trusted-authority.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 20777,
-      "sha256": "c3d173c0675a60760dc32f3d961c91dc3ce5035bd869126476d7a3cbea41db78",
-      "ownership": "private-exported"
+      "bytes": 21603,
+      "sha256": "30dba253e20793f9b7075401dc32b05281291fd0ff5d374725299ee3b8e467a9"
     },
     {
       "path": "packages/core/trusted-intent-ledger.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 16412,
-      "sha256": "494a1a6f519835aed09eb9991e86551540a7235f12a31fe0176c30b9a26a1ceb",
-      "ownership": "private-exported"
+      "sha256": "494a1a6f519835aed09eb9991e86551540a7235f12a31fe0176c30b9a26a1ceb"
     },
     {
       "path": "packages/core/ui-policy.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 3239,
-      "sha256": "5ccacd52c39ac878c99ec5f7022c7d1841edd577621f8f77419a4626378e194d",
-      "ownership": "private-exported"
+      "sha256": "5ccacd52c39ac878c99ec5f7022c7d1841edd577621f8f77419a4626378e194d"
     },
     {
       "path": "packages/core/uninstall-finalizer.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 19117,
-      "sha256": "525677157a550a5a35b295de2bce8bc9be405054bef44567cb29d1e9eb3cd35a",
-      "ownership": "private-exported"
+      "sha256": "525677157a550a5a35b295de2bce8bc9be405054bef44567cb29d1e9eb3cd35a"
     },
     {
       "path": "packages/core/update-input-inventory.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 11905,
-      "sha256": "1f2727d5e2672d5a29226aa196f833142b2d1ef8f93766c5b1d8d27d15568bb9",
-      "ownership": "private-exported"
+      "sha256": "1f2727d5e2672d5a29226aa196f833142b2d1ef8f93766c5b1d8d27d15568bb9"
+    },
+    {
+      "path": "packages/core/web-preview-build.mjs",
+      "mode": 420,
+      "bytes": 7124,
+      "sha256": "1da645045aa0145b6ae5c4be10f9c20edb653955f71bddcb66f57265648dd241"
     },
     {
       "path": "packages/core/workbench-runtime.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 11704,
-      "sha256": "96979ecca3e649dad893dd75017d80c4afe7e876eec2c31233c2818ce08be79b",
-      "ownership": "private-exported"
+      "sha256": "96979ecca3e649dad893dd75017d80c4afe7e876eec2c31233c2818ce08be79b"
     },
     {
       "path": "packages/core/workspace-host.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 1496,
-      "sha256": "f4a26591aa62303267ab71d7ac003b5a2020a4c969020d57169d669ef5df24d8",
-      "ownership": "private-exported"
+      "bytes": 2001,
+      "sha256": "d091f67f5dc3cd2dd4eda25f94fe7f3f1ad542d8bec13222521c67c9b11d3fb5"
     },
     {
       "path": "rules/foundation-making.md",
-      "type": "file",
       "mode": 420,
-      "bytes": 29436,
-      "sha256": "b4dfd10bfa5bf8f2201c43b16651bb43e563f9910d4ea2bef875fc98c0920894",
-      "ownership": "private-exported"
+      "bytes": 33853,
+      "sha256": "7467d0f8ce8949f604520d2d9250207648ea03ab46f03aa3a3250fd650c0059f"
     },
     {
       "path": "rules/lifecycle-guide.md",
-      "type": "file",
       "mode": 420,
       "bytes": 23054,
-      "sha256": "e4ffa40af1797d16ed38842c21d946d1581e3f820a1172c2d61f923565626799",
-      "ownership": "private-exported"
+      "sha256": "e4ffa40af1797d16ed38842c21d946d1581e3f820a1172c2d61f923565626799"
     },
     {
       "path": "rules/manifest.json",
-      "type": "file",
       "mode": 420,
       "bytes": 284,
-      "sha256": "4b8631ef8f636c5327699773457113cdca3971ec803001af62a61036543e716b",
-      "ownership": "private-exported"
+      "sha256": "4b8631ef8f636c5327699773457113cdca3971ec803001af62a61036543e716b"
     },
     {
       "path": "scripts/build-candidate.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 10755,
-      "sha256": "1b94699cf69818f9fe332ee55755a3bec92480970a89c06fb72fd57c4e1cea69",
-      "ownership": "private-exported"
+      "bytes": 10976,
+      "sha256": "6e85c63c5cb31db72de2eb6b2e63545368be56c1186735ac631150edfbe057a0"
     },
     {
       "path": "scripts/build-conversational-entry.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 1974,
-      "sha256": "405b689c23acfd1c1237631a5da9d306453773ae9086406cda13d6a17532522e",
-      "ownership": "private-exported"
+      "sha256": "405b689c23acfd1c1237631a5da9d306453773ae9086406cda13d6a17532522e"
     },
     {
       "path": "scripts/candidate-module-boundary-audit.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 16062,
-      "sha256": "72052e4e8c10f6138cf9323cc75882da8da6516ec451f6f71e55078406c1b0ae",
-      "ownership": "private-exported"
+      "sha256": "72052e4e8c10f6138cf9323cc75882da8da6516ec451f6f71e55078406c1b0ae"
     },
     {
       "path": "scripts/candidate-reproducibility.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 2118,
-      "sha256": "2fac9abebb24fe2615452745f65dc86a8f3e210cfec7d97a111e66145e811ba8",
-      "ownership": "private-exported"
+      "sha256": "2fac9abebb24fe2615452745f65dc86a8f3e210cfec7d97a111e66145e811ba8"
     },
     {
       "path": "scripts/dependency-declaration-audit.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 3451,
-      "sha256": "9a9eff561ce5f7a8659932cc83e1d8df9c7a5b80f891a845663ceb13448ebfe0",
-      "ownership": "private-exported"
+      "sha256": "9a9eff561ce5f7a8659932cc83e1d8df9c7a5b80f891a845663ceb13448ebfe0"
     },
     {
       "path": "scripts/module-probe-values.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 2265,
-      "sha256": "dad189370a6741a77e13c97a6180e2db134755ad5b6cc3c64dd6aae7ab48227c",
-      "ownership": "private-exported"
+      "sha256": "dad189370a6741a77e13c97a6180e2db134755ad5b6cc3c64dd6aae7ab48227c"
     },
     {
       "path": "scripts/mutation-entrypoint-audit.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 7520,
-      "sha256": "aa4fe75f569c3bb0ae0e448b6d65e4e1b8b104d64eec67728c8a32004710c401",
-      "ownership": "private-exported"
+      "sha256": "aa4fe75f569c3bb0ae0e448b6d65e4e1b8b104d64eec67728c8a32004710c401"
     },
     {
       "path": "scripts/offline-safety-audit.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 2959,
-      "sha256": "08af1e290b11e60a7b3d24171d83e7db59dcf8771af27654f60c3c3564927a05",
-      "ownership": "private-exported"
+      "sha256": "08af1e290b11e60a7b3d24171d83e7db59dcf8771af27654f60c3c3564927a05"
     },
     {
       "path": "scripts/package-candidate-archive.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 5657,
-      "sha256": "1532722e78d2744b4c6b68e20c2d17d35d57c087ab57e4c34342f35acf6865f4",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "scripts/preview-control.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 12972,
-      "sha256": "da0094f9f465783625d964d847284bb955e413347090085ec4242972f8c894ba",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "scripts/preview.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 671,
-      "sha256": "4b079fe8c952e8b465a180f70517155f23a2ed35d641ead7d1c3d79d824a0587",
-      "ownership": "private-exported"
+      "bytes": 5734,
+      "sha256": "89ebd64eb0837e77dc788083e08129329489c0363f730c6d87dd35fa37885acd"
     },
     {
       "path": "scripts/production-surface-audit.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 9231,
-      "sha256": "b7cb7dc70c19b74588f3630ae7471197c324b1bc5f930c40894f21fc4049e9df",
-      "ownership": "private-exported"
+      "sha256": "b7cb7dc70c19b74588f3630ae7471197c324b1bc5f930c40894f21fc4049e9df"
     },
     {
       "path": "scripts/sync-conversation-help.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 1213,
-      "sha256": "ce526f6ad1978c8230cdc1d4e70182dcef49311570951295680fc4349bf7d785",
-      "ownership": "private-exported"
+      "sha256": "ce526f6ad1978c8230cdc1d4e70182dcef49311570951295680fc4349bf7d785"
     },
     {
       "path": "scripts/third-party-notices.mjs",
-      "type": "file",
       "mode": 420,
       "bytes": 4905,
-      "sha256": "c002748c6089d6b4d6ca707969b5b4a96cfbc5eee3f71b3620b89126b0f675e7",
-      "ownership": "private-exported"
+      "sha256": "c002748c6089d6b4d6ca707969b5b4a96cfbc5eee3f71b3620b89126b0f675e7"
     },
     {
       "path": "scripts/ui-governance-audit.mjs",
-      "type": "file",
       "mode": 420,
-      "bytes": 11732,
-      "sha256": "6d9c868d14739af27090a056ab35dd3e9b29759665f7bf0fe96d3bba34a119f4",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "scripts/verify-024r3-smoke.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 7579,
-      "sha256": "8267b19814da6d7b4528bee9ab4b3844bc70e229e6a9fbc9b13fd27558c0f01b",
-      "ownership": "private-exported"
+      "bytes": 11766,
+      "sha256": "23380ad4aa3b879797a03482b3dbeb67b297f5bff6506ba3baebac0441369490"
     },
     {
       "path": "skills/ai-product-foundation-kit/SKILL.md",
-      "type": "file",
       "mode": 420,
-      "bytes": 16224,
-      "sha256": "1775b9afa9b50efb9bfea41d6648f52de719f7f169d46f733300604396732688",
-      "ownership": "private-exported"
+      "bytes": 16728,
+      "sha256": "1ae1e5bf00ca535d653cc2ee1feba4cc2e63284f3fa9b7c69e2d8347eb6e63b6"
     },
     {
       "path": "skills/ai-product-foundation-kit/capability.json",
-      "type": "file",
       "mode": 420,
       "bytes": 944,
-      "sha256": "dd98a48f8514b0870e317350acf92720892bd78b50dd1702110876f61fb852d1",
-      "ownership": "private-exported"
+      "sha256": "7699e79fea455ed6eb8d4a959fabc1242ab2d2c059462cf464f6ce0acd19d502"
     },
     {
       "path": "templates/foundation-project/.foundation/facts/changes.json",
-      "type": "file",
       "mode": 420,
       "bytes": 54,
-      "sha256": "798191c031f6553a227e40e93c732f29f67f927dc7f50979aa7c32606e4a5e19",
-      "ownership": "private-exported"
+      "sha256": "798191c031f6553a227e40e93c732f29f67f927dc7f50979aa7c32606e4a5e19"
     },
     {
       "path": "templates/foundation-project/.foundation/facts/components.json",
-      "type": "file",
       "mode": 420,
       "bytes": 57,
-      "sha256": "181ebba2842812a287bcbe76e09d2a72c02e10296cf70a31ef330220956c4dd8",
-      "ownership": "private-exported"
+      "sha256": "181ebba2842812a287bcbe76e09d2a72c02e10296cf70a31ef330220956c4dd8"
     },
     {
       "path": "templates/foundation-project/.foundation/facts/design-tokens.json",
-      "type": "file",
       "mode": 420,
       "bytes": 60,
-      "sha256": "04a3946037fa17714489e84573606b7cf1ec4cb3e858cf80da69d0f0c2c35be8",
-      "ownership": "private-exported"
+      "sha256": "04a3946037fa17714489e84573606b7cf1ec4cb3e858cf80da69d0f0c2c35be8"
     },
     {
       "path": "templates/foundation-project/.foundation/facts/figma.json",
-      "type": "file",
       "mode": 420,
       "bytes": 52,
-      "sha256": "c31ecd5e2ffea37cf321b3e5c6f81ebc7b32b92b55df20dd67187c9174405e78",
-      "ownership": "private-exported"
+      "sha256": "c31ecd5e2ffea37cf321b3e5c6f81ebc7b32b92b55df20dd67187c9174405e78"
     },
     {
       "path": "templates/foundation-project/.foundation/facts/interactions.json",
-      "type": "file",
       "mode": 420,
       "bytes": 59,
-      "sha256": "498783b43823c943549a356d72c51d741902fe0814dd77d99009435b993a9891",
-      "ownership": "private-exported"
+      "sha256": "498783b43823c943549a356d72c51d741902fe0814dd77d99009435b993a9891"
     },
     {
       "path": "templates/foundation-project/.foundation/facts/motions.json",
-      "type": "file",
       "mode": 420,
       "bytes": 54,
-      "sha256": "00a1d0212add183127e09b3180551d9a831542fdd6ae3ad2f38dff2ddbb85b17",
-      "ownership": "private-exported"
+      "sha256": "00a1d0212add183127e09b3180551d9a831542fdd6ae3ad2f38dff2ddbb85b17"
     },
     {
       "path": "templates/foundation-project/.foundation/facts/pages.json",
-      "type": "file",
       "mode": 420,
       "bytes": 52,
-      "sha256": "50357509c22b0453ab1c0d9bc83eef51f31060ae353749879d81162f73b5e1bb",
-      "ownership": "private-exported"
+      "sha256": "50357509c22b0453ab1c0d9bc83eef51f31060ae353749879d81162f73b5e1bb"
     },
     {
       "path": "templates/foundation-project/.foundation/facts/project.json",
-      "type": "file",
       "mode": 420,
       "bytes": 54,
-      "sha256": "20c38040c9405c1538ca6b071d3e7102a660632e32312cbbdee1164a93924a92",
-      "ownership": "private-exported"
+      "sha256": "20c38040c9405c1538ca6b071d3e7102a660632e32312cbbdee1164a93924a92"
     },
     {
       "path": "templates/foundation-project/.foundation/facts/relations.json",
-      "type": "file",
       "mode": 420,
       "bytes": 56,
-      "sha256": "97d4b9771f9dcc9efa51e96a6f720cc07eca1874d8236c6091b76d85af5055d6",
-      "ownership": "private-exported"
+      "sha256": "97d4b9771f9dcc9efa51e96a6f720cc07eca1874d8236c6091b76d85af5055d6"
     },
     {
       "path": "templates/foundation-project/.foundation/preview.json",
-      "type": "file",
       "mode": 420,
       "bytes": 89,
-      "sha256": "b4af39f4990541c693699371ae2c77379c6838a9df3936db84cca663b57cdcee",
-      "ownership": "private-exported"
+      "sha256": "b4af39f4990541c693699371ae2c77379c6838a9df3936db84cca663b57cdcee"
     },
     {
       "path": "templates/foundation-project/README.md",
-      "type": "file",
       "mode": 420,
       "bytes": 264,
-      "sha256": "de7fd152f976f8f2b0934f1242696001138e163022c567da29d9c5cbc4c439ba",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/browser/asset-preview-isolation-021.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 6672,
-      "sha256": "a465752e2794621dfaa94e782463698257258fa93fd67df493df4745b2c86e4d",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/browser/cross-platform-typography-023.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 19093,
-      "sha256": "88514b54f3d3659659388ca5477bc36abd4e1cb8264f594fc1e649402233a46c",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/browser/foundation-ui-matrix-021.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 39969,
-      "sha256": "032cc86b8e55fb589d5f5ed6348f453e68ed7c8d999a48e12d77dbb4f8790414",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/contracts/cross-platform-typography-023.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 11262,
-      "sha256": "d6954b62dd72f9d0cf011bcc906f5b9cc7acafcda83008e7f1075973979a829b",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/contracts/install-platform-024.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 7220,
-      "sha256": "dfc6deca2267f12ae14c231fbc7c048314718030e0981df92213e6f0474da68f",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/contracts/install-platform-024r1.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 6202,
-      "sha256": "07239c991bf2ac21abed51f28ebc38e5ec53f4b9d6d0337fc1abfce5870767a7",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/contracts/local-lifecycle-manager-026.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 5078,
-      "sha256": "a00c00cd30ef1e2e509315bd614f4aadc43ec0c4be5b824681f529ca3484291d",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/contracts/local-lifecycle-manager-026r1.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 3954,
-      "sha256": "52154a9105eae3cc292a6820f1d38dba1c9b7b9d3cb67b681f416d43ea237d19",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/contracts/local-lifecycle-manager-026r2.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 2148,
-      "sha256": "57235e71bb2bdba080d31a904c4cbef1dc3c32574a0c9fb55cf3cf6bbdea41c6",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/contracts/local-lifecycle-manager-026r3.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 3162,
-      "sha256": "b8461876a741f171c089c82c142258819163f5f71527d435d020c21f652e4536",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/contracts/react-flow-017r1.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 10645,
-      "sha256": "10bc90b455f9d1722be57180b00085b0b96bcd2666c81bb9558cef7ae58bec20",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/contracts/ui-governance-correction-020r1.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 8623,
-      "sha256": "c8ccd547433b5eb729444d60c894c365d59fc2cbbd587f39a862b781440fd13f",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/contracts/ui-scale-governance-020.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 5086,
-      "sha256": "e0016b4b70feb6a0e74e11a8d8d8c60ca450beea6cffaea040ff9419ac1af81e",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/contracts/workspace-code-splitting-021.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 1876,
-      "sha256": "1c86ff65042649b8718810b89ed724dd69240fba63ccdbf3ff8e98bf5f2cd4ad",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/contracts/workspaces.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 7331,
-      "sha256": "75e131e7da26a8c3a35e83521f6d5430970c1ba5791d300c48a6cfc21002f67b",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/fixtures/browser-manager-worker-026r1.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 4754,
-      "sha256": "89da6e50ca925ce5dc21836cf07a582c555f4fe9526662cb2c9c67eebb1a6a09",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/fixtures/lifecycle-child.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 1167,
-      "sha256": "e032bc2b9cbfb08db19c99254a48044b31c8a9a74e5f65b509ac842c5016a282",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/fixtures/manager-handoff-worker-026r1.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 1818,
-      "sha256": "a5925271e9f0b0d0973a043ae0ab7bfbd54d65f7c8080cf51dcb6751f034f1cd",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/fixtures/production-lifecycle-apply-child.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 529,
-      "sha256": "3ba7b7dadff1a13d222c734f7318cccf3d1fbf903afcb25282895a317ff4579c",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/fixtures/project-authority-child.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 919,
-      "sha256": "84ff1aa527d163c448b7e1e96825e8e1bd1a5dc2a5f017da5ee03f017e97259c",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/fixtures/project-mutation-child.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 1013,
-      "sha256": "977a10ca23777a35506cffb70dc837caddc52360159f1148c2ad5f750b74a669",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/fixtures/project-transaction-worker-026r1.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 2379,
-      "sha256": "db8b9f3b15e0a5e30c21b8e8ca1cad7bc3e60ff185f1a13840ac4631b1c913c0",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/fixtures/test-browser-launch.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 113,
-      "sha256": "fd4b219b0ae507dfd3c0904d4afda4dedb282da59208c01fc8d720af181d7523",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/fixtures/test-host-loader.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 1896,
-      "sha256": "ba41946bd087ca9a26c71f1ce5f3c030bd3a6994482a8c440304baf4afa0a2f6",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/fixtures/test-manager-confirmation.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 1379,
-      "sha256": "8a92d5e3dcf1fad2fc89259b0f0888203fab4ad46eaf5970012e126b643f2dcc",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/fixtures/test-protected-host-adapter.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 13322,
-      "sha256": "8c1f4231bd8cd83c5d2b2d7201cbb47e6df25691fd4e964805234c1a886761da",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/fixtures/test-runtime-surface.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 3392,
-      "sha256": "c1ed9273b433bee349cf2d7919c638417062589280e99e83dcd638cb9c32ce5b",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/helpers/authorized-project-fixture.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 4351,
-      "sha256": "02abf364a16bcb392ba9f8ec06b07709e0b2ede7d551f0db385594accf91c583",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/helpers/browser-launch-contract.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 154,
-      "sha256": "02c57e0be18413ef60e3662fa022d1cf527ac2bf8eca672cfd99304c863090f5",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/helpers/browser-lifecycle.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 148,
-      "sha256": "b604719c7ead67869b3b29e497d9956d846636022849b280f474c3dca05b637f",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/helpers/health-probe-observer.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 3160,
-      "sha256": "e543d40ddf4e0f56adb94aac575fb57c38f7d9b059f33d8698d14faa28d801d2",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/helpers/internal-core.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 861,
-      "sha256": "bb9c3301fc9ed694598e4d9e75c7b948b817c68417906466dbcc4ecd0ad5c53d",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/helpers/legacy-capability-fixture.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 1161,
-      "sha256": "67f609c0a02eb59764f1183de5098323eaebf9c556bf095295b52d079d003e70",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/helpers/platform-font-evidence.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 3163,
-      "sha256": "d49486aa8640078100af602eb139776237abcda6546c139ee6e6a9387272da58",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/helpers/project-fixture.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 3857,
-      "sha256": "93a5a80df04344290904430fe4d5ba0721f50d1568fefa1ff26347abfb5510c6",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/helpers/register-test-host.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 179,
-      "sha256": "ac2884e02fda19da3c6d91dac86b68deed15e2b9809e0ec3017003798fe0779a",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/helpers/repository-candidate.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 1441,
-      "sha256": "46f9c7da1a072f511fb34437cc5f778f0489758fcb104efb32ee1f6f35769680",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/helpers/scoped-tree-snapshot.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 1118,
-      "sha256": "338ee8c8d312844a3dfcf4cc88aa22cd65b93414641767bf7e7c93bf69aaef5e",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/helpers/test-authorization.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 2795,
-      "sha256": "b081d30e82de4a59a5348bd5a9fd209c477cd0313da9464f8451de183e6cc4e7",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/asset-management-018.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 9950,
-      "sha256": "e40922de229bffce027a00001a4ebe525adcb8196ae1191c1498576a1effcc1e",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/asset-preview-018.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 3695,
-      "sha256": "415d225793779ebe84aa7d1f6baa9f813102d2718017362b855e92829f20fae2",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/asset-scene-047r1.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 7263,
-      "sha256": "791a821948c13fc8991bc264180a2176ba6906fb6876b6ba4587acd49491669d",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/authorization-capability-024r7-matrix.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 22529,
-      "sha256": "c6d53c9ff25aa2fbbdea353fdf99dfd318c5492e360d69dc945c81562dde6209",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/authorization-capability-024r7.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 5095,
-      "sha256": "47811f3576f0a68c3822d8f440004de2a6517a80512d34674c9bd1703975388a",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/authorization-runtime-surface-024r8.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 20932,
-      "sha256": "a9afda4d6e2724ea6d64a7b511c6608e959d25814f59928af866bc37c7557bff",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/automatic-project-context-047.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 10298,
-      "sha256": "ec07fab3fa76a0360df6204d8e4a257871c6307006b0f3b8b49bac061092bcd7",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/automatic-static-047r3.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 14302,
-      "sha256": "f0e03ec780459ae1855035df52dfb928d97fb32ae52cf21379ef54a24aa51cc8",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/cli.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 4110,
-      "sha256": "6a769f81b025dc51035880b5d3c61c9770c9c37b02a5f630d69a13e2b260b584",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/context-data-view.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 3393,
-      "sha256": "ccef7e2450397281db9d3ead74feddbc6c0bc25dd7876fff5aba275fd6427973",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/deep-import-reopen-authority-024r9.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 14620,
-      "sha256": "39e87db80f80e97cd598db35515409f3961c3c5795108041bd571ad608d74d0c",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/environment-bootstrap-c6.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 3165,
-      "sha256": "89fbd12648e3399ed7f59064215f61cd54b2202d1cf22659af1e6bfc6b9f3350",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/first-install-bootstrap-027.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 6124,
-      "sha256": "3fd2f02f52cd7f90ea92b91c3b0146dfa832e63c2dea5292762b1570f7c330b0",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/first-install-bootstrap-027r1.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 15089,
-      "sha256": "0610b5614727a3d52f77f204d2ebd84bfdd04754d68629bd5cc092ee16ae158c",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/first-install-health-authority.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 2094,
-      "sha256": "45359b61baf68c1940fd070ae19c1cac762e2f864e00f0575870efe3f0f863db",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/http.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 4933,
-      "sha256": "04ff4c712743489dd382c43a54ae4081fb83ff03de74d5031fc18648c8492b6c",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/inspector-bridge-017r1.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 10028,
-      "sha256": "1b5438486d97f048569e0f5cf82507bbff78b5a87d221c67b17f2def30dbde77",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/inspector-tree-keyboard-021.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 6484,
-      "sha256": "0179c164ed48f5b1732b435f76aac892cedfe061aa2ab11f3350e4ddccca164d",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/install-entry-035.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 25109,
-      "sha256": "79e191966f7610762740c3183b65e9450c4bc8e7722dbdb3fc9587a2e4a80f68",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/install-lifecycle-024.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 23495,
-      "sha256": "7890d28ec04502b48e73c0cb1e294328fac621337840106950e0de24e263c741",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/install-lifecycle-024r1.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 16849,
-      "sha256": "17b3be8a375c5c2743c38ff4723f9057f65723a9e0bca1e4a3e9d15af6ba3507",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/install-lifecycle-024r2.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 20985,
-      "sha256": "29e970a2642e6fc2785e251f81247fdf61fa8124166a3d3ad7ad5e30a148e83e",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/install-lifecycle-024r3.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 31979,
-      "sha256": "c3b84f9416a985ca89417684527e95f18ec2724063e31144eec8442dbbd89e0c",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/install-lock-024r2.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 4749,
-      "sha256": "7f3eea310070e02124fd93072d224de4a4486453ac2b7e52088377978a7d8fa8",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/install-recovery-024r1.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 10302,
-      "sha256": "98267ce03e5bc7248f39ccd985cc4415d1f19cc6df712a4b4d4bb8bc0b97e718",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/installation-scope-c6.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 4408,
-      "sha256": "e1a4443bb247c57730fb5e9ef3c6213234a63a9ca3990809e479d6a21916ad50",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/local-lifecycle-manager-026.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 20771,
-      "sha256": "6cca02396165bdde837ccf70644dae9acddbb55b0b293c19afedf514bb9b5052",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/local-lifecycle-manager-026r1.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 23969,
-      "sha256": "ea858e836a56ed097848bd034819772f732a921ab196dbadc4285b5d46784c12",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/local-lifecycle-manager-026r2.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 17048,
-      "sha256": "4e7f2983df6bd00d028922c25342a91496666a410a1d8d559d99c031d521f5bb",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/local-lifecycle-manager-026r3.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 25763,
-      "sha256": "ee74724f72ff21f06765c4ffb986650489acf863ab14009d9322617d743ee90f",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/local-lifecycle-manager-026r5.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 10651,
-      "sha256": "96407efd5bf7e2d16601c902771095aa20ba1234c0b413e1164bc180175b3c12",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/logic-flow-component-017r1.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 12375,
-      "sha256": "dc23c59b41ae2e4db2bb8f48b6003437648a70c7c37762e25927d809b16cb101",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/node-startup-environment-027r2.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 8979,
-      "sha256": "935cd8042ab83ca47421fc54991daa548ab81493e45f284b72ac3b7d29647243",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/preview-config.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 2845,
-      "sha256": "5364c83a846bd7bbf93a9e5a7eb14a77fa778bbae1b92756a3272f15e6b524f4",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/preview-entry.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 8575,
-      "sha256": "c416ed518038a81bc444ca43fe9defa1683d1761a843877329d516bc5abc9f91",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/preview-loading-021.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 3359,
-      "sha256": "4b7730f4bc024bfc9edd4b5efe3421e6a0a9f106e789be5488b28fc2c5d40cc3",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/preview-sidebar-017r1.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 10999,
-      "sha256": "2273539cf0ce2d0b3ac48b3c9ddc0b5cce0beba1ee749a994b6a0274e1b96a22",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/preview-sidebar-contexts-018.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 12458,
-      "sha256": "853ac0dc7afa99fa9b17cfc7ec46e0cbdf8f28d61f3e242c02263de6a1726008",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/project-context-round-047r2.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 8070,
-      "sha256": "4ee5eb053aa5b467075fb3c9e9d556d335571bf527e19268493a3799be377c8b",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/project-transaction-recovery-026r1.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 5618,
-      "sha256": "2b71dedad3a6c6536bd6a1594f6424a11bfe2fbcf220fe6e44735bd0b41d5bcd",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/public-acquisition-034r1.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 15617,
-      "sha256": "1171553c0816bac6ef19c84b67e364ca4394e59a9b6df8824a4efb0b18fc998a",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/relation-dialog-018.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 5227,
-      "sha256": "5ebe7366c2c20460b872d5b511904a07f2f74aa3de1a3cad17e14747036be6c2",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/relation-http-017r1.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 9212,
-      "sha256": "eafaaa0cdf591fb9746abc680221ae58cf534b9bc59f4c0a7a5a5f9e0795fcd2",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/release-extraction-030r6.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 8754,
-      "sha256": "69861503f28727ff41a6f40ec9b39e0f48095673d85e4e27329d4d581a97e895",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/retained-capabilities.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 2974,
-      "sha256": "79653f8888ecc00434f8f67ae9108c0a88c3b3c28c2f3bd28882baae1a47f588",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/round-preflight-047r2.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 5489,
-      "sha256": "b9282a5391b2872adf8cd090f9a0f883aed66724a119e4b466cd413a0bad81e5",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/rules-delivery-037.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 11139,
-      "sha256": "2f58e5baab374b534fe4dbc3a3c3fc80f0ade2a0248f72e22a1b9893bb5574a6",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/single-workbench-033.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 4540,
-      "sha256": "b51847e9e284dd918835c0ce89386c0c8ea606588553f8ede30536992a3a5437",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/source-scene-047r2.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 8662,
-      "sha256": "9ba65ca46c43f4d59575c8419bf8b6106f653cf7bf3c0860778290cbfea87f49",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/update-input-cleanup-034r1.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 11004,
-      "sha256": "8d744a156648861111483069e45ae0cbd9a1d2cd3751697cd9e7b0bb22339055",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/workbench-close.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 1892,
-      "sha256": "87b232503f21d4a2fe357f984ebd669c8ee6141589a5425b11ff84432b1fc7b2",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/integration/workspace-navigation-017r1.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 12251,
-      "sha256": "9821ebd046c1b53c1401c1b132a1749a94d24e0968262963abfa57181f019f64",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/asset-logic-r1.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 3637,
-      "sha256": "c18727267da27254ff61c79fdf4bd9cac5bf0f146be9a47f6ecb3fcf6a706bce",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/asset-management-018.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 3850,
-      "sha256": "3077cce076077c7db3590e21711db3322af8ac3bd51f009143d2dc7b96db72a5",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/asset-preview-isolation-021.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 3901,
-      "sha256": "c81746b12292344976804cbbe217f6878572183e2804ba7758607ce262aed9a9",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/automatic-project-context-047.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 22121,
-      "sha256": "0f5157fdeeb3e1bc12401a57fc0712d921719df44f2b85f3b3680ffe0c0dfff7",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/bridge-policy.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 2437,
-      "sha256": "25b5c0f19d8a81aa2fce128f0609619c49e5b77d458bceb6862dab7224673fcb",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/candidate-module-boundary-parser.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 2543,
-      "sha256": "af0f3d6ac46ac72450ebb0d7df5cd98b4ce059e7d8caafe12bd62f60d63519ac",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/conversation-commands-032r1.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 2613,
-      "sha256": "1e0d3498902c6a0ac7fd8cd5903c8ff06d20862d2f22453e69ce4562e6b8769d",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/copy-context.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 843,
-      "sha256": "bf56ef6b871c334d8db793ef4b1d0713a0dfa8b875c223b7d41accdee049ad27",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/core.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 3606,
-      "sha256": "6bcc6aca50da4153d1ff905f0a2cd533f6fef549b6c02cbb3978df35aaad2e19",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/entry-environment-c6.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 2825,
-      "sha256": "507501265bcc3e7ddcb315378e9634186985033c173c91ac32e5594fe36c32ce",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/events-state.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 3677,
-      "sha256": "e089455897df9ee7ab79042d183f3cde5721c15316546a0b36853735f5bc1136",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/git-identity-021.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 2421,
-      "sha256": "dee950778f410b2cb566d981167e4ca4126e992ee459777d468873f8aecee172",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/guided-lifecycle-039.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 5984,
-      "sha256": "7b7a1220da4796885e76bc5f229339fe1c18396655c5ffc88a2b3c7cfb856e63",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/human-context.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 2527,
-      "sha256": "6c7aac3211f7df53ed45fdb14b9145cf124d8c6d29bc6b274e32575a30e94452",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/human-workspaces.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 5583,
-      "sha256": "cab98bd7d89f5a597ddf73a2d248ef5f6d76ab3825d7cfcfaab5155039cba425",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/inspector-context-017r1.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 4386,
-      "sha256": "c30ba3499f4a1cf43733a968b2faf215070cf818b82073e94bb71a5e873f4d27",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/install-destination-030r1.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 11061,
-      "sha256": "a9b6fd733ef3a41a6e05b287e6212c9da4d9cb01b06023a7ee8178bc8309eae6",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/install-entry-035.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 11067,
-      "sha256": "f4259be0d33d8b764e2261a57aff5057ec067f83995854a530dcb5c616420585",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/install-follow-through-035r1.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 7654,
-      "sha256": "6ed21ad714872aa16f726c712e215516b3160e955604be7ace4ac22633b8339c",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/installation-scope-c6.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 2007,
-      "sha256": "5dcefcd74ac6ec1e9534220ce6e39d81320a7040b46abce74a341e7ac1e4b26c",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/lifecycle-feedback-031.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 3925,
-      "sha256": "0bbb8507e0f4a838178a29beaa5bbad26051cbeaa1042bd638ae199408fcf5f2",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/lifecycle-feedback-032r1.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 2664,
-      "sha256": "b3eddedd10a4a2f7074d2add3c737c72b58fbd69a327e4ab5d5a5ae150a6663a",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/lifecycle-feedback-032r2.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 2773,
-      "sha256": "f7c88f0671ac4884f108502ff825846b6ddcfbe36e1499654a2881690da405b3",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/lifecycle-journey-038.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 4497,
-      "sha256": "e41655e0eae26a99aa70eb09c755c9ada129cc8ee12ab4d6e6091c9d3c9f4895",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/lifecycle-journey-038r1.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 7347,
-      "sha256": "34bd19216ec83850bd10d9fa56f2469e575ef35f90b4abac511bd22d6c5a381e",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/logic-flow-017r1.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 3622,
-      "sha256": "cee3bbb30b4d3f100cd55ebf72b33087bcdcb6b40052c8ffd24c6e79c85c35b7",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/product-closure-037.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 10024,
-      "sha256": "565fd77386d05c6d2a6dee503b9cdca47de4c556221f9c63438a604fbf036b3c",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/project-context-047r3.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 8743,
-      "sha256": "e5386f18f1546cbdeb1149136cf5a0ba432710a235fb0f6686219f38538fee04",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/project-context-round-047r2.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 9278,
-      "sha256": "6b5e1c1a4be52f3b30afc3abb7bb169c1eadb43aaf0e7132c6bc362bde4602f2",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/project-continuity-038.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 5922,
-      "sha256": "39a055a8e4ea66b8d800056b6ae40fdd5270a7d4ff0dc49df47d80c7c2442e82",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/project-removals.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 2716,
-      "sha256": "3f78a2f0303852dfe936ee33422799745ea0efbeccc68822bea12fe29a6df877",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/r1-correction.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 8925,
-      "sha256": "9c65f6b2b31e643d4904ea6b3bba20f9df2c6a88e20b36e0f4abfdaa90101f5f",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/r1-structure.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 7969,
-      "sha256": "5dcb0c5e3bd05608d39ea1e9da28eaf689f523b862b6589362ec69b815bba588",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/relation-client-017r1.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 4544,
-      "sha256": "59cda53634c00de437c22a53f9d301fc96aa0a3ab602235113ce1d19d5eab9cc",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/relation-persistence-017.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 7502,
-      "sha256": "8d09637ac6191142ead714b0a23503188a37e4fd1815ccde317547a6ffffda93",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/single-page-transport-040.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 9950,
-      "sha256": "3fe3386de72e73375721e420f1e8130d3664e35f82e1cad19dfb8e85d9b79345",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/single-page-view-040.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 15916,
-      "sha256": "5c62aa181e2e9889b47c4a96c931074c0bbdfd30e5d042231d5dcd8b8c98fe7a",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/third-party-notices-034r1.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 1244,
-      "sha256": "ef56fbddfedb5656335fc2186c4a9ad12ac2ef203b2b6933f83689dcf48da5b5",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/workspace-state.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 5659,
-      "sha256": "17646529b36028084d6994efea00dd5dc56fe9c813f7ec2a95d732cb96f63712",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/workspace-theme.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 1774,
-      "sha256": "c939b6e45999d5f0b717166b45f59673b7f63b9e4fbff30dfbef329bcd291b42",
-      "ownership": "private-exported"
-    },
-    {
-      "path": "tests/unit/zz-temp-cleanup-018.test.mjs",
-      "type": "file",
-      "mode": 420,
-      "bytes": 986,
-      "sha256": "6f59673164ba83086d845a87894e985836c43b89440640fb8574980441be4bc1",
-      "ownership": "private-exported"
+      "sha256": "de7fd152f976f8f2b0934f1242696001138e163022c567da29d9c5cbc4c439ba"
     }
-  ],
-  "self": {
-    "path": "public-export-inventory.json",
-    "ownership": "generated-public",
-    "inventoryExcludedFromOwnHash": true
-  },
-  "excludedPrivateContent": {
-    "reports": "all tracked Result/audit files remain in the private authority",
-    "history": "no .git directory or commit metadata",
-    "process": [
-      "AGENTS.md",
-      "PROJECT_STATE.md",
-      "tasks/**",
-      "public maintenance tooling"
-    ],
-    "generated": "tracked dist assets and source maps are omitted and rebuilt from source",
-    "localMaterial": [
-      "absolute user paths",
-      "author email",
-      "machine/account metadata",
-      "caches",
-      "logs"
-    ]
-  }
+  ]
 }

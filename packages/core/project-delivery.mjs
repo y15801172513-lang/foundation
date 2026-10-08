@@ -1,3 +1,5 @@
+import {currentEvidenceEntries} from './evidence-impact.mjs';
+import {sourceContinuityMatches} from './object-identity.mjs';
 import {captureProjectRoundInputs,inspectProjectRound} from './project-context-round.mjs';
 import {inspectProjectStructure,inspectStructureCoverage} from './project-coverage.mjs';
 import {inspectContentIntegrity} from './content-integrity.mjs';
@@ -44,7 +46,7 @@ export function assessDelivery(facts,{contentIntegrity=null,evidenceResults={},a
       if(!isVisual && item.applicability?.state!=='not-applicable' && !item.requiredEvidenceDimensions?.includes(dimension))continue;
       const sources=(item.sourceRefIds || []).map(id=>scope.sourceRefs?.find(s=>s.id===id));
       let state='pending',reason='缺当前输入上的独立验证证据';
-      const evidence=(change.evidenceIndex || []).filter(e=>e.subject?.requirementId===item.requirementId && e.dimensions?.includes(dimension) && e.scopeRevision===scope.revision && e.taskId===scope.taskId);
+      const evidence=currentEvidenceEntries(change.evidenceIndex || [],evidenceResults).filter(e=>e.subject?.requirementId===item.requirementId && e.dimensions?.includes(dimension) && e.scopeRevision===scope.revision && e.taskId===scope.taskId);
       const observed=evidence.map(e=>({e,...evidenceResults[e.evidenceId]}));
       let supported=observed.filter(x=>x.state==='verified' && !(['runtime','layout'].includes(dimension) && !['browser-observation','renderer-observation'].includes(x.e.kind)));
       if(isVisual && ['scope','content'].includes(dimension))supported=supported.filter(x=>x.result==='failed'||x.e.kind==='semantic-review'&&x.report?.verifierVersion==='foundation-semantic-contract/2.0.0'&&x.report?.structureDigest===structureCoverage?.sourceDigest);
@@ -94,7 +96,7 @@ export function deriveDeliveryApplicability(facts,{change,changedInputs=[]}={}) 
 // Acceptance belongs to the exact owner observed by each controlled report.
 // A multi-owner scope cannot lend one component's evidence to its siblings.
 export function hasCurrentOwnerEvidence(ownerId,task,evidenceResults){
-  return DELIVERY_DIMENSIONS.every(dimension=>(task.evidenceIndex || []).some(evidence=>evidence.subject?.definitionId===ownerId&&evidence.taskId===task.id&&evidence.scopeRevision===task.deliveryScope?.revision&&evidence.dimensions?.includes(dimension)&&evidenceResults[evidence.evidenceId]?.state==='verified'&&evidenceResults[evidence.evidenceId]?.result==='passed'));
+  return DELIVERY_DIMENSIONS.every(dimension=>currentEvidenceEntries(task.evidenceIndex || [],evidenceResults).some(evidence=>evidence.subject?.definitionId===ownerId&&evidence.taskId===task.id&&evidence.scopeRevision===task.deliveryScope?.revision&&evidence.dimensions?.includes(dimension)&&evidenceResults[evidence.evidenceId]?.state==='verified'&&evidenceResults[evidence.evidenceId]?.result==='passed'));
 }
 
 // A deletion is an explicit scope item, never inferred as acceptance from absence.
@@ -253,7 +255,7 @@ export function inspectProjectDeliveryFiles({project, installationRoot=null,chan
   assessment.task={taskId:taskAssessment.taskId,state:taskReady?'passed':taskAssessment.aggregate==='passed'?'pending':taskAssessment.aggregate};
   assessment.project={state:['failed','blocked'].includes(assessment.aggregate)?assessment.aggregate:issues.length?'pending':assessment.aggregate,pendingPaths:projectPendingChanges.map(change=>change.path)};
   if(issues.length){assessment.issues=[...(assessment.issues || []),...issues.map(issue=>({...issue,priority:'P1',dimension:'scope'}))];if(!['failed','blocked'].includes(assessment.aggregate))assessment.aggregate='pending';if(!['failed','blocked'].includes(assessment.scope?.state))assessment.scope={...(assessment.scope || {}),state:'pending'};}
-  return {schemaVersion: '1.0.0', project: root, objectIdentities:(facts.project.contextLifecycle?.identities || []).map(identity=>({...identity,state:identity.state==='active'&&round.current?.end?.files?.some(file=>file.path===identity.sourceFile&&file.physical===identity.sourcePhysical)&&round.physicalDigest===round.current.end.physicalDigest?'active':'unverified'})), state: issues.length ? 'sync-pending' : 'consistent', summary: issues.length ? '代码完成，Foundation同步待完成' : '源码字节、事实引用与所要求的预览映射一致', changes, issues, contentIntegrity, structureCoverage, round,taskReady,taskAssessment,projectPendingChanges,acceptanceCandidates,projectDeliveryReady:!issues.length&&assessment.aggregate==='passed', assessment, evidenceResults, acceptanceInputs, deliveryReady: !issues.length && assessment.aggregate==='passed', preview: {required: requirePreview, state: supported ? assessment.runtime.state==='passed'?'verified-current-capabilities':'configured-not-browser-verified' : 'unavailable'}, semanticAcceptance: assessment.aggregate==='passed'?'verified-codex-or-reviewer-not-human':'not-verified', mutationPerformed: false};
+  return {schemaVersion: '1.0.0', project: root, objectIdentities:(facts.project.contextLifecycle?.identities || []).map(identity=>({...identity,state:identity.state==='active'&&sourceContinuityMatches(identity,currentFiles.get(identity.sourceFile))&&currentFiles.get(identity.sourceFile)?.sha256===identity.sourceSha256?'active':'unverified'})), state: issues.length ? 'sync-pending' : 'consistent', summary: issues.length ? '代码完成，Foundation同步待完成' : '源码字节、事实引用与所要求的预览映射一致', changes, issues, contentIntegrity, structureCoverage, round,taskReady,taskAssessment,projectPendingChanges,acceptanceCandidates,projectDeliveryReady:!issues.length&&assessment.aggregate==='passed', assessment, evidenceResults, acceptanceInputs, deliveryReady: !issues.length && assessment.aggregate==='passed', preview: {required: requirePreview, state: supported ? assessment.runtime.state==='passed'?'verified-current-capabilities':'configured-not-browser-verified' : 'unavailable'}, semanticAcceptance: assessment.aggregate==='passed'?'verified-codex-or-reviewer-not-human':'not-verified', mutationPerformed: false};
 }
 
 export function inspectProjectDelivery({installationRoot, project, changes, requirePreview = false, activeTaskId = null} = {}) {

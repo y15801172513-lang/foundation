@@ -50,6 +50,6 @@ generic project mutation 由 `project-authority.mjs` 的单一事务和 `project
 
 ## 固定预览进程入口
 
-根目录的 `npm run preview`、`npm run preview:status`、`npm run preview:stop` 是跨 macOS/Windows 的唯一预览入口。它们由 `scripts/preview-control.mjs` 提供，固定使用 `examples/foundation-events` 与 4317；进程控制记录仅写入系统临时目录，不进入仓库。
+根目录的 `npm run preview`、`npm run preview:status`、`npm run preview:stop` 是跨 macOS/Windows 的唯一预览入口。它们由 `scripts/preview-control.mjs` 提供，私有开发固定使用 `examples/text-app` 与 4317；进程控制记录放在本项目 `.tmp/preview-control`。公开产品保留其独立示例，不导出 TEXT。
 
 启动时先检查 Node 版本和现有构建产物，仅在关键产物缺失时调用 npm 构建恢复，不安装依赖。服务的 `GET /__foundation/health` 返回无敏感信息的服务身份、管理项目、端口、进程所有者标识和可安全读取的 Git commit。stop 只有在状态记录、PID 和健康身份三者一致时才发送关闭信号；未知端口占用永不关闭。

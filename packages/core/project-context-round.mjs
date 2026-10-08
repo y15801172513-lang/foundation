@@ -1,6 +1,7 @@
+import {prepareObjectReferences} from './project-revisions.mjs';
 import {readFacts} from './facts.mjs';
 import {inspectProjectDeliveryFiles} from './project-delivery.mjs';
-import {beginObjectLifetimes,finishObjectLifetimes} from './object-identity.mjs';
+import {beginObjectLifetimes,finishObjectLifetimes,sourceContinuityMatches} from './object-identity.mjs';
 import {inspectProjectStructure} from './project-coverage.mjs';
 import fs from 'node:fs';import path from 'node:path';import crypto from 'node:crypto';import {createRequire} from 'node:module';
 import {sourceSemanticDigest} from './source-syntax.mjs';
@@ -17,7 +18,7 @@ export function captureProjectRoundInputs(project) {
     try{const file=resolveProjectFile(root,evidence.report.path),bytes=fs.readFileSync(file);if(sha256(bytes)!==evidence.report.sha256)continue;const {foundationReceipt,...report}=JSON.parse(bytes),{integrity,...receipt}=foundationReceipt || {};if(receipt.project===root&&receipt.reportDigest===digest(report)&&verifyTrustedPayload(receipt,integrity))evidencePaths.add(evidence.report.path);}catch{}
   }}catch{}
 
-  const walk=directory=>{for(const entry of fs.readdirSync(directory,{withFileTypes:true}).sort((a,b)=>a.name.localeCompare(b.name))){if(ignored.has(entry.name))continue;const file=path.join(directory,entry.name),relative=path.relative(root,file).split(path.sep).join('/');if(entry.isSymbolicLink()){unknown.push({path:relative,reason:'symbolic-link'});continue;}if(entry.isDirectory()){walk(file);continue;}if(evidencePaths.has(relative))continue;if(!entry.isFile()){unknown.push({path:relative,reason:'non-file'});continue;}const before=fs.statSync(file),bytes=fs.readFileSync(file),after=fs.statSync(file);if(before.ino!==after.ino||before.size!==after.size||before.mtimeMs!==after.mtimeMs||before.ctimeMs!==after.ctimeMs)throw new Error('枚举期间文件变化，保留旧完整代');files.push({path:relative,sha256:sha256(bytes),semanticSha256:sourceSemanticDigest(relative,bytes),kind:/^(?:package(?:-lock)?|[jt]sconfig)\.json$/u.test(relative)?'runtime-config':runtime.test(relative)?'runtime-candidate':/\.(?:md|txt|rst)$/iu.test(relative)||/^(?:LICENSE|NOTICE|\.gitignore|\.npmrc)$/u.test(relative)?'document':'unknown',physical:digest({dev:after.dev,ino:after.ino,birth:after.birthtimeMs,ctime:after.ctimeMs})});}};walk(root);
+  const walk=directory=>{for(const entry of fs.readdirSync(directory,{withFileTypes:true}).sort((a,b)=>a.name.localeCompare(b.name))){if(ignored.has(entry.name))continue;const file=path.join(directory,entry.name),relative=path.relative(root,file).split(path.sep).join('/');if(entry.isSymbolicLink()){unknown.push({path:relative,reason:'symbolic-link'});continue;}if(entry.isDirectory()){walk(file);continue;}if(evidencePaths.has(relative))continue;if(!entry.isFile()){unknown.push({path:relative,reason:'non-file'});continue;}const before=fs.statSync(file),bytes=fs.readFileSync(file),after=fs.statSync(file);if(before.ino!==after.ino||before.size!==after.size||before.mtimeMs!==after.mtimeMs||before.ctimeMs!==after.ctimeMs)throw new Error('枚举期间文件变化，保留旧完整代');files.push({path:relative,sha256:sha256(bytes),semanticSha256:sourceSemanticDigest(relative,bytes),kind:/^(?:package(?:-lock)?|[jt]sconfig)\.json$/u.test(relative)?'runtime-config':runtime.test(relative)?'runtime-candidate':/\.(?:md|txt|rst)$/iu.test(relative)||/^(?:LICENSE|NOTICE|\.gitignore|\.npmrc)$/u.test(relative)?'document':'unknown',identityPhysical:digest({dev:after.dev,ino:after.ino,birth:after.birthtimeMs}),physical:digest({dev:after.dev,ino:after.ino,birth:after.birthtimeMs,ctime:after.ctimeMs})});}};walk(root);
   const managed=path.join(root,'.foundation/preview.json');if(fs.existsSync(managed)){const file=resolveProjectFile(root,'.foundation/preview.json'),bytes=fs.readFileSync(file);files.push({path:'.foundation/preview.json',sha256:sha256(bytes),semanticSha256:sha256(bytes),kind:previewResources.length?'runtime-config':'configuration-empty',physical:sha256(bytes)});}
   // A textual extension is not an exclusion when runtime ownership or a source
   // reference proves that the bytes are consumed by the product.
@@ -61,7 +62,7 @@ export function inspectProjectRound(facts,observation,{taskId=null}={}) {
   for(const file of observation.previewResources || [])known.add(file);
   const unaccounted=observation.files.filter(file=>!nonRuntime(file)&&file.kind!=='runtime-config'&&!known.has(file.path));
   const changes=current?diffRoundInputs(current.baseline,observation):[];
-  const unknown=[...(lifecycle.identities || []).filter(identity=>['reserved','unverified'].includes(identity.state)||identity.reason==='retired-birth-still-in-source'||identity.state==='active'&&!observation.files.some(file=>file.path===identity.sourceFile&&file.physical===identity.sourcePhysical)).map(identity=>({path:identity.sourceFile,reason:'object-continuity-unverified',incarnation:identity.incarnation})),...observation.unknown,...unaccounted.map(file=>({path:file.path,reason:'unregistered-runtime-input'}))];
+  const unknown=[...(lifecycle.identities || []).filter(identity=>['reserved','unverified'].includes(identity.state)||identity.reason==='retired-birth-still-in-source'||identity.state==='active'&&!observation.files.some(file=>file.path===identity.sourceFile&&sourceContinuityMatches(identity,file)&&file.sha256===identity.sourceSha256)).map(identity=>({path:identity.sourceFile,reason:'object-continuity-unverified',incarnation:identity.incarnation})),...observation.unknown,...unaccounted.map(file=>({path:file.path,reason:'unregistered-runtime-input'}))];
   const last=facts.project?.contextLifecycle?.lastObservation || current?.end;
   const fresh=last?.byteDigest===observation.byteDigest&&last?.physicalDigest===observation.physicalDigest;
   const state=unknown.length?'pending':!last?(observation.files.every(nonRuntime)?'not-applicable':'untracked'):!fresh||current?.state==='active'?'pending':'observed';
@@ -73,7 +74,20 @@ export function prepareRoundTransition({project,facts,taskId,action,identityActi
   const lifecycle=advanceProjectObservation(previous,observation,{origin:action==='begin'?'preflight':action}),current=lifecycle.rounds.find(round=>round.id===lifecycle.currentRoundId);
   if(action==='begin') {
     if(current?.state==='active'){if(current.taskId!==taskId)throw new Error('另一轮任务尚未结束，不能覆盖其基线');if(identityActions.length)throw new Error('已有 round 起点；身份意图不能事后追加');}
-    else {const round={id:crypto.randomUUID(),taskId,state:'active',baseline:observation,startedAt:new Date(now).toISOString()};lifecycle.rounds.push(round);lifecycle.currentRoundId=round.id;lifecycle.identities=beginObjectLifetimes(finishObjectLifetimes(lifecycle.identities || [],inspectProjectStructure(project,{installationRoot}).objects,observation.files),identityActions);}
+    else {const round={id:crypto.randomUUID(),taskId,state:'active',baseline:observation,startedAt:new Date(now).toISOString()};lifecycle.rounds.push(round);lifecycle.currentRoundId=round.id;const active=finishObjectLifetimes(lifecycle.identities || [],inspectProjectStructure(project,{installationRoot}).objects,observation.files);
+      const actions=identityActions.map(action=>{
+        if(action.verifiedSnapshotGeneration)throw new Error('不能自行声明快照出生世代');
+        if(!action.fromSnapshot)return action;
+        const index=previous.objectReferences,locator=index?.references?.[action.fromSnapshot];
+        const matches=index?.objects?.filter(item=>item.reference===action.fromSnapshot&&item.mode==='static-snapshot'&&item.persistentId===action.objectId&&item.pageId===action.ownerId&&item.file===action.sourceFile) || [];
+        const source=observation.files.find(file=>file.path===action.sourceFile);
+        if(action.kind!=='create'||matches.length!==1||!locator||matches[0].sha256!==source?.sha256||!sourceContinuityMatches(matches[0],source))throw new Error('快照身份适配缺少当前精确来源');
+        return {...action,verifiedSnapshotGeneration:matches[0].generation};
+      });
+      // A normal task starts before edits. Existing active anchors are retained
+      // inside this exact round unless it explicitly moves or retires them.
+      const targeted=new Set(actions.map(action=>action.incarnation).filter(Boolean));
+      lifecycle.identities=beginObjectLifetimes(active,[...active.filter(item=>item.state==='active'&&!targeted.has(item.incarnation)).map(item=>({kind:'retain',incarnation:item.incarnation})),...actions]);}
   } else if(action==='finish') {
     if(identityActions.length)throw new Error('身份连续性意图必须在 round 开始时声明，不能事后补造');
     if(!current||current.taskId!==taskId)throw new Error('结束前缺匹配的 round 起点');
@@ -88,6 +102,7 @@ export function prepareRoundTransition({project,facts,taskId,action,identityActi
     const accepted=new Map(valid.flatMap(record=>record.files.map(file=>[file.path,file.sha256])));
     lifecycle.pendingChanges=lifecycle.pendingChanges.filter(change=>!accepted.has(change.path)||accepted.get(change.path)!==(change.after?.sha256 || null));
   }
+  lifecycle.objectReferences=prepareObjectReferences({...facts,project:{...facts.project,contextLifecycle:lifecycle}},inspectProjectStructure(project,{installationRoot}),observation.files);
   const content={...facts.project,contextLifecycle:lifecycle};
   const value={purpose:'foundation-project-round/1',project:realProject(project),action,taskId,factsDigest:digest(facts),expectedSha256:sha256(fs.readFileSync(resolveProjectFile(project,'.foundation/facts/project.json'))),observation,content};
   return {...value,integrity:signTrustedPayload(value)};

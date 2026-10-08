@@ -55,7 +55,12 @@ routes.push(
   {path:['project','delivery-identity'],options:{'--project':value(true),'--root':value(true)},positionals:{min:0,max:0}},
   {path:['project','verify-delivery'],options:{'--project':value(true),'--root':value(true),'--task-id':value(true)},positionals:{min:0,max:0}},
   {path:['project','inspector-plan'],options:{'--project':value(true),'--root':value(true)},positionals:{min:0,max:0}},
-  {path:['project','resolve-object'],options:{'--project':value(true),'--root':value(true),'--input':value(true)},positionals:{min:0,max:0}},
+  {path:['project','inspector-apply'],options:{'--project':value(true),'--root':value(true),'--plan':value(true),'--source-write-authorized':flag(),'--reviewed-bridge-files-json':value()},positionals:{min:0,max:0}},
+  {path:['project','reference-backup'],options:{'--project':value(true),'--root':value(true)},positionals:{min:0,max:0}},
+  {path:['project','build-preview'],options:{'--project':value(true),'--root':value(true),'--page-id':value(true),'--build-authorized':flag()},positionals:{min:0,max:0}},
+  {path:['project','reference-restore-plan'],options:{'--project':value(true),'--root':value(true),'--backup':value(true)},positionals:{min:0,max:0}},
+  {path:['project','reference-restore'],options:{'--project':value(true),'--root':value(true),'--plan':value(true),'--source-write-authorized':flag()},positionals:{min:0,max:0}},
+  {path:['project','resolve-object'],options:{'--project':value(true),'--root':value(true),'--input':value(),'--ref':value()},positionals:{min:0,max:0}},
   {path: ['project', 'analyze'], options: {'--project': value(true), '--root': value(true), '--entry-roots-json': value(true)}, positionals: {min: 0, max: 0}},
   {path: ['project', 'verify-browser'], options: {'--project':value(true),'--root':value(true),'--task-id':value(true),'--asset-id':value(true),'--scenario-id':value(true),'--requirement-id':value(true)},positionals:{min:0,max:0}},
   {path: ['project', 'prepare-semantic-review'], options: {'--project':value(true),'--root':value(true),'--task-id':value(true),'--asset-id':value(true),'--requirement-id':value(true)}, positionals:{min:0,max:0}},
@@ -64,6 +69,8 @@ routes.push(
   {path: ['project', 'status'], options: {'--project': value(true), '--root': value()}, positionals: {min: 0, max: 0}},
   {path: ['project', 'sync'], options: {'--project': value(true), '--root': value(true), '--payload': value(), '--round': value(), '--task-id': value(), '--identity-actions-json': value()}, positionals: {min: 0, max: 0}},
   {path: ['project', 'sync-status'], options: {'--project': value(true), '--root': value(true)}, positionals: {min: 0, max: 0}},
+  {path:['project','continue'],options:{'--project':value(true),'--root':value(true),'--source-write-authorized':flag(),'--build-authorized':flag(),'--reviewed-bridge-files-json':value()},positionals:{min:0,max:0}},
+  {path:['project','register-evidence'],options:{'--project':value(true),'--root':value(true),'--report':value(true)},positionals:{min:0,max:0}},
   {path: ['project', 'delivery-check'], options: {'--project': value(true), '--root': value(true), '--changes-json': value(true), '--require-preview': flag()}, positionals: {min: 0, max: 0}},
   {path: ['project', 'list'], options: {'--root': value(true)}, positionals: {min: 0, max: 0}},
   {path: ['project', 'explain'], options: {'--plan': value(true), '--format': value()}, positionals: {min: 0, max: 0}},
@@ -157,6 +164,7 @@ export function parseCliInvocation(tokens) {
   }
   for (const [name, specification] of Object.entries(route.options)) if (specification.required && !seen.has(name)) invalid(`missing required option: ${name}${name === '--root' ? '（安装根）' : ''}`);
   if (positionals.length < route.positionals.min || positionals.length > route.positionals.max || positionals.some((p) => !p)) invalid('unexpected/missing positional argument');
+  if(route.path.join(' ')==='project resolve-object'&&(Number(seen.has('--ref'))+Number(seen.has('--input'))!==1))invalid('resolve-object 必须且只能提供 --ref 或 --input');
   if (parsedOptions['--profile'] === 'custom' && !seen.has('--ai-bridge')) invalid('custom 必须明确选择 --ai-bridge on|off');
   if (seen.has('--choose-destination') && seen.has('--destination')) invalid('页面选择与预选目录不可同时提供');
   if (route.path[1] === 'plan' && CLI_ROUTE_GROUPS.lifecycleCommands.includes(route.path[0])) {

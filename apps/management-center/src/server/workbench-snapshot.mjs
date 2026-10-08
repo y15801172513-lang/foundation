@@ -1,3 +1,5 @@
+import {instrumentStaticObjects,projectObjectReferenceProjection} from '../../../../packages/core/workspace-host.mjs';
+import {verifyWebPreviewBuild} from '../../../../packages/core/workspace-host.mjs';
 import {prepareMotionScene} from '@foundation/core';
 import {projectDeliveryIdentity} from '@foundation/core';
 import {prepareSourceScene} from '@foundation/core';
@@ -40,9 +42,14 @@ export function prepareWorkbenchSnapshot({installationRoot,project=null,writeNon
     add(prefix+name,path.join(assets,folder,name),distRoot);
     if(folder==='chunks')resourceBytes[WORKSPACE_ASSETS.preloadChunkPrefix+name]=resourceBytes[prefix+name];
   }
-  let model={project:{name:'Foundation'},pages:[],relations:[],components:[],assets:[],changes:[],interactions:[],preview:{mode:'local-static',allowedOrigins:['self']},projectSelected:false},factsDigest=null,previewManifestDigest=null,assessment=null,acceptanceInputs=[],routeMap={},sourceScenes={},semanticRevision=null,roundObservation=null,deliveryIdentity=null;
+  let model={project:{name:'Foundation'},pages:[],relations:[],components:[],assets:[],changes:[],interactions:[],preview:{mode:'local-static',allowedOrigins:['self']},projectSelected:false},factsDigest=null,factsRevisionDigest=null,previewManifestDigest=null,assessment=null,acceptanceInputs=[],routeMap={},sourceScenes={},semanticRevision=null,roundObservation=null,deliveryIdentity=null;
   if(project) {
     const facts=readFacts(project);roundObservation=captureProjectRoundInputs(project);semanticRevision=projectSemanticRevision(facts,roundObservation.files);factsDigest=hash(JSON.stringify(facts));
+    // Document cursors order transport requests; they are not content and must
+    // not invalidate an otherwise identical frozen browser verification.
+    const revisionFacts=structuredClone(facts);
+    for(const page of Object.values(revisionFacts.project.contextLifecycle?.objectReferences?.runtimeSnapshots || {}))delete page.documents;
+    factsRevisionDigest=hash(JSON.stringify(revisionFacts));
     deliveryIdentity=projectDeliveryIdentity({project,current:state.installation.current,facts});
     const preview=fs.existsSync(path.join(project,'.foundation/preview.json'))?readPreviewConfig(project):{schemaVersion:'0.1.0',mode:'unconfigured',routes:[],assets:[]};
     previewManifestDigest=hash(JSON.stringify(preview));
@@ -50,11 +57,19 @@ export function prepareWorkbenchSnapshot({installationRoot,project=null,writeNon
     facts.delivery=inspectProjectDeliveryFiles({project,installationRoot});assessment=facts.delivery.assessment;acceptanceInputs=facts.delivery.acceptanceInputs || [];
     for(const entry of [...preview.routes,...preview.assets]) {add(entry.path,entry.absoluteFile,project);routeMap[entry.path]=entry.file;}
     const bridgeRoot=path.join(installationRoot,state.installation.current.appPath,'artifacts/preview');
-    for(const page of facts.pages.items.filter(page=>page.previewBinding?.producer==='foundation-static-preview/1')){
+    for(const page of facts.pages.items.filter(page=>['foundation-static-preview/1','foundation-web-build/1'].includes(page.previewBinding?.producer))){
       const entry=resourceBytes[page.preview];if(!entry)continue;
-      for(const name of ['preview-bridge.mjs','object-identity.mjs'])if(!resourceBytes['/__foundation/standard-preview/'+name])add('/__foundation/standard-preview/'+name,path.join(bridgeRoot,name),bridgeRoot);
-      const script=`<script type="module">import {bindPreviewContext,createInspectorBridge,announcePreview} from '/__foundation/standard-preview/preview-bridge.mjs';bindPreviewContext(window,{pageId:${JSON.stringify(page.id)}});createInspectorBridge();announcePreview();</script>`;
-      const bytes=Buffer.from(entry.bytes.toString('utf8')+script);resourceBytes[page.preview]={...entry,bytes,sha256:hash(bytes)};
+      if(page.previewBinding.producer==='foundation-web-build/1')verifyWebPreviewBuild({project,facts,page});
+      for(const name of ['preview-bridge.mjs','object-identity.mjs','style-variable-usage.mjs'])if(!resourceBytes['/__foundation/standard-preview/'+name])add('/__foundation/standard-preview/'+name,path.join(bridgeRoot,name),bridgeRoot);
+      const index=facts.project.contextLifecycle?.objectReferences;
+      const identities=(index?.objects || []).filter(item=>item.pageId===page.id).map(item=>({persistentId:item.persistentId,incarnation:item.generation,generation:item.generation,state:'active',instanceKey:item.instanceKey}));
+      const dataBinding=/<script\b|\bon[a-z]+\s*=/iu.test(entry.bytes.toString('utf8'))?'source-program':'static-source';
+      const context={pageId:page.id,dataBinding,contentVersion:index?.contentVersion===semanticRevision?semanticRevision:null,identityHistory:identities};
+      const safeJson=JSON.stringify(context).replaceAll('<','\\u003c');
+      const script=`<script>Object.defineProperty(window,'__foundationTrustedPreview',{value:${safeJson},configurable:false});</script><script type="module">import {bindPreviewContext,installInspectorBridge,announcePreview} from '/__foundation/standard-preview/preview-bridge.mjs';bindPreviewContext(window,window.__foundationTrustedPreview);installInspectorBridge();announcePreview();</script>`;
+      let html=instrumentStaticObjects(entry.bytes.toString('utf8'),page.id,index);
+      html=/<head\b[^>]*>/iu.test(html)?html.replace(/<head\b[^>]*>/iu,opening=>opening+script):script+html;
+      const bytes=Buffer.from(html);resourceBytes[page.preview]={...entry,bytes,sha256:hash(bytes)};
     }
     const fontRoot=path.join(project,'dist/assets');
     if(fs.existsSync(fontRoot))for(const name of fs.readdirSync(fontRoot).sort())if(name.endsWith('.woff2')&&!resourceBytes['/assets/'+name]){add('/assets/'+name,path.join(fontRoot,name),project);routeMap['/assets/'+name]='dist/assets/'+name;}
@@ -83,13 +98,15 @@ export function prepareWorkbenchSnapshot({installationRoot,project=null,writeNon
         if(target){target.previewRoute=scene.route;target.motionScenario='motion';}
       }catch(error){if(target){target.previewRoute=null;target.sceneLimitation=error.message;}}
     }
+    model.objectReferences=projectObjectReferenceProjection(facts,facts.delivery);
+    model.objectIdentities=[...(model.objectIdentities || []),...(model.objectReferences?.objects || []).filter(item=>item.mode==='static-snapshot').map(item=>({objectId:item.persistentId,incarnation:item.generation,instanceKey:item.instanceKey,state:'active'}))];
     if(hash(JSON.stringify(readFacts(project)))!==factsDigest)throw new Error('准备快照时事实发生并发变化');
   }
   const after=readWorkbenchAuthorityKey({installationRoot,project});if(before!==after)throw new Error('准备快照时授权代际发生变化');
   const installationGeneration=hash(JSON.stringify(state.installation.current));
   const buildDigest=hash(JSON.stringify(Object.entries(resourceBytes).map(([url,r])=>[url,r.sha256])));
   const acceptanceDigest=hash(canonicalStringify({assessment,round:roundObservation,inputs:acceptanceInputs.sort((a,b)=>a.evidenceId.localeCompare(b.evidenceId))}));
-  const revision=hash(canonicalStringify({installationGeneration,factsDigest,previewManifestDigest,buildDigest,acceptanceDigest}));
+  const revision=hash(canonicalStringify({installationGeneration,factsDigest:factsRevisionDigest,previewManifestDigest,buildDigest,acceptanceDigest}));
   model={...model,deliveryIdentity,revision,semanticRevision,resourceRevision:buildDigest,observationRevision:acceptanceDigest,installationGeneration,assets:model.assets.map(asset=>({...asset,revision,resourceRevision:buildDigest,projectId:model.project.projectId}))};
   const html=workspaceModelDocument(model,{writeNonce});
   const finalState=inspectLocalLifecycle({installationRoot,project,operationRequirement:'lifecycle-inspect'});

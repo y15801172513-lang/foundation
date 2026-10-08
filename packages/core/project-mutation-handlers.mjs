@@ -257,6 +257,12 @@ function normalizeAssetBatch(project, payload) {
       for (const requirement of item.deliveryScope?.items || []) if (['content','mapping','runtime'].some(field => requirement[field] === 'verified') && !seen.has(requirement.evidence)) throw coded('PROJECT_HANDLER_PAYLOAD_INVALID', '任务范围已验证项需绑定实际证据文件');
       for(const evidence of item.evidenceIndex || []) {
         if(!seen.has(evidence.report?.path) || sources.find(s=>s.path===evidence.report.path)?.sha256!==evidence.report.sha256)throw coded('PROJECT_HANDLER_PAYLOAD_INVALID','证据报告必须绑定本次精确 sources');
+        // Rebinding/restore can make an old signed receipt unverifiable. Keep
+        // exact historical entries and bytes without endorsing them, so a fresh
+        // controlled run can supersede them. New or edited receipts still pass
+        // the full verifier; delivery independently revalidates every entry.
+        const unchangedHistory=item.verificationStatus==='unverified'&&existing.items.find(prior=>prior.id===item.id)?.evidenceIndex?.some(prior=>canonicalStringify(prior)===canonicalStringify(evidence));
+        if(unchangedHistory)continue;
         const checked=inspectEvidenceReport({project,evidence});
         if(checked.state==='invalid' || item.verificationStatus==='verified' && checked.state!=='verified')throw coded('PROJECT_HANDLER_PAYLOAD_INVALID',checked.reason || '未经独立核验的报告不能标记 verified');
       }

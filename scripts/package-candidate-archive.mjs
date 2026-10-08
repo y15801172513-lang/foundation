@@ -10,6 +10,7 @@ const root = fs.realpathSync(path.resolve(import.meta.dirname, '..'));
 const boundary = fs.realpathSync(path.join(root, '.tmp'));
 const args = process.argv.slice(2);
 const options = {};
+let work;
 try {
   for (let i = 0; i < args.length; i += 2) {
     if (!['--candidate', '--output'].includes(args[i]) || !args[i + 1] || options[args[i]]) throw new Error('仅支持一次 --candidate <目录> 和 --output <tar.gz>');
@@ -31,7 +32,7 @@ try {
   const checked = validateCandidate(candidate, {platform: process.platform, arch: process.arch, requireRuntime: true});
   if (!checked.ok) throw new Error(`候选不能归档：${checked.error.code}`);
   if (!fs.existsSync(path.dirname(output))) throw new Error('请先在 .tmp 准备真实输出父目录');
-  const work = fs.mkdtempSync(path.join(boundary, '030R1-archive-'));
+  work = fs.mkdtempSync(path.join(boundary, '030R1-archive-'));
   const staged = path.join(work, 'candidate');
   fs.cpSync(candidate, staged, {recursive: true, verbatimSymlinks: true});
   const instant = new Date('2000-01-01T00:00:00Z');
@@ -70,3 +71,4 @@ try {
   fs.writeFileSync(output + '.json', JSON.stringify(receipt, null, 2) + '\n', {flag: 'wx', mode: 0o600});
   console.log(JSON.stringify({archive: output, receipt: output + '.json', ...receipt}, null, 2));
 } catch (error) { console.error(`错误：${error.message}`); process.exitCode = 1; }
+finally {if(work&&fs.existsSync(work))fs.rmSync(work,{recursive:true});}

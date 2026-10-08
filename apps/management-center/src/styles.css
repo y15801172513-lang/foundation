@@ -1,9 +1,9 @@
-@import "tailwindcss";
+@import "tailwindcss" source("./");
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@xyflow/react/dist/style.css";
 @import "./foundation-geist.css";
-@source not "../dist";
+@source "../index.html";
 
 @custom-variant dark (&:is(.dark *));
 

@@ -11,6 +11,19 @@ const WINDOWS_ABSOLUTE = /^(?:[a-z]:[\\/]|\\\\)/iu;
 let activeFirstInstallCandidateRoot = null;
 let activeFirstInstallDestination = null;
 
+function hasLocalSourceMarker(root) {
+  const marker = path.join(root, 'SOURCE_BASELINE.json');
+  try {
+    if (fs.realpathSync(root) !== root || !fs.lstatSync(marker).isFile() || fs.lstatSync(marker).isSymbolicLink()) return false;
+    const value = JSON.parse(fs.readFileSync(marker, 'utf8'));
+    if (value?.sourceAuthority?.kind !== 'local-development-source' || value?.sourceAuthority?.scope !== 'repository-local-only') return false;
+    return ['packages/core/trusted-authority.mjs', 'packages/cli/index.mjs', 'package.json'].every(relative => {
+      const file = path.join(root, relative);
+      return fs.lstatSync(file).isFile() && !fs.lstatSync(file).isSymbolicLink() && fs.realpathSync(file) === file;
+    });
+  } catch { return false; }
+}
+
 function discoverExecutionAuthority() {
   let cursor = fs.realpathSync(import.meta.dirname);
   for (;;) {
@@ -24,7 +37,7 @@ function discoverExecutionAuthority() {
     if (fs.existsSync(current) && fs.existsSync(versions) && fs.statSync(versions).isDirectory()) return {kind: 'installed', root: cursor};
     const manifest = path.join(cursor, 'foundation-kit.json');
     const git = path.join(cursor, '.git');
-    if (fs.existsSync(manifest) && fs.existsSync(git) && (fs.statSync(git).isDirectory() || fs.statSync(git).isFile())) {
+    if (fs.existsSync(manifest) && ((fs.existsSync(git) && (fs.statSync(git).isDirectory() || fs.statSync(git).isFile())) || hasLocalSourceMarker(cursor))) {
       try {
         const value = JSON.parse(fs.readFileSync(manifest, 'utf8'));
         if (value?.product?.name === 'AI Product Foundation Kit' && value?.versionAuthority === 'foundation-kit.json#/product/version') return {kind: 'repository', root: cursor};
@@ -42,7 +55,7 @@ function discoverEnclosingRepository(start) {
   for (;;) {
     const manifest = path.join(cursor, 'foundation-kit.json');
     const git = path.join(cursor, '.git');
-    if (fs.existsSync(manifest) && fs.existsSync(git) && (fs.statSync(git).isDirectory() || fs.statSync(git).isFile())) {
+    if (fs.existsSync(manifest) && ((fs.existsSync(git) && (fs.statSync(git).isDirectory() || fs.statSync(git).isFile())) || hasLocalSourceMarker(cursor))) {
       try {
         const value = JSON.parse(fs.readFileSync(manifest, 'utf8'));
         if (value?.product?.name === 'AI Product Foundation Kit' && value?.versionAuthority === 'foundation-kit.json#/product/version') return cursor;

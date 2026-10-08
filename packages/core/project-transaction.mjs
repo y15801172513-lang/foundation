@@ -1,3 +1,4 @@
+import {rebindRestoredReferenceWitnesses} from './project-reference-recovery.mjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -190,6 +191,20 @@ function checkpoint(record, name, status = record.payload.status, extra = {}) {
   operationCheckpoint(`project-transaction:${record.payload.operation}:${name}`);
 }
 
+// A lifecycle may contain several source/facts transactions. Serialize the
+// whole sequence with the same verifiable process guard and recovery journal.
+export function withSerializedProjectTransactions({stateRoot},run) {
+  const paths=statePaths(stateRoot);ensureState(paths);
+  const recovery=recoverProjectTransactions({stateRoot});
+  if(recovery.recovered.some(item=>item.outcome==='live-owner-not-taken-over'))failure('PROJECT_TRANSACTION_BUSY','当前项目生命周期仍有真实进程执行；未接管',{},true);
+  const guard=acquireGuard(paths,'state-root-serialization',sha256(crypto.randomUUID()));
+  try {
+    const current=recoverProjectTransactions({stateRoot});
+    if(current.recovered.some(item=>item.operationId!=='state-root-serialization'&&item.outcome==='live-owner-not-taken-over'))failure('PROJECT_TRANSACTION_BUSY','项目仍有活动事务，等待完成后重试',{},true);
+    return run(recovery);
+  }finally{releaseGuard(guard);}
+}
+
 export function executeProjectTransaction({operationId, operation, planHash, expectedBeforeState, stateRoot, scopes, consume, apply, verify, completion = {}, recoveryPolicy = null}) {
   if (typeof operationId !== 'string' || !operationId || typeof operation !== 'string' || !/^[0-9a-f]{64}$/u.test(planHash || '') || typeof consume !== 'function' || typeof apply !== 'function' || typeof verify !== 'function') failure('PROJECT_TRANSACTION_INPUT_INVALID', 'transaction 缺少 operation/planHash/consume/apply/verify');
   const paths = statePaths(stateRoot);
@@ -222,6 +237,7 @@ export function executeProjectTransaction({operationId, operation, planHash, exp
     if (record?.payload?.captured) {
       try {
         restoreScopes(record.payload.captured, record.payload.backupRoot);
+        if(record.payload.recoveryPolicy?.objectReferences===true)rebindRestoredReferenceWitnesses(record.payload);
         updateJournal(record, 'rolled-back', 'rollback-complete', {failedAt: Date.now(), failure: {code: error.code || 'PROJECT_TRANSACTION_FAILED', message: error.message}});
       } catch (recoveryError) {
         updateJournal(record, 'manual-action-required', 'rollback-failed', {failedAt: Date.now(), failure: {code: error.code || 'PROJECT_TRANSACTION_FAILED', message: error.message}, recoveryFailure: {code: recoveryError.code || 'PROJECT_TRANSACTION_RECOVERY_FAILED', message: recoveryError.message}});
@@ -301,6 +317,7 @@ export function recoverProjectTransactions({stateRoot}) {
       continue;
     }
     restoreScopes(payload.captured, payload.backupRoot);
+    if(payload.recoveryPolicy?.objectReferences===true)rebindRestoredReferenceWitnesses(payload);
     updateJournal(record, 'rolled-back', 'restart-rollback-complete', {recoveredAt: Date.now(), recoveredOwnerState: ownerState});
     fs.rmSync(guardFile); fsyncDirectory(paths.guards);
     recovered.push({operationId: payload.operationId, outcome: 'byte-exact-rolled-back', snapshotHash: payload.snapshotHash});

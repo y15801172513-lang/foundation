@@ -1,7 +1,7 @@
 {
   "product": {
     "name": "AI Product Foundation Kit",
-    "version": "0.2.31",
+    "version": "0.2.32",
     "dataFormatVersion": "0.1.0"
   },
   "versionAuthority": "foundation-kit.json#/product/version",
@@ -29,13 +29,13 @@
   "codexShortcut": "skills/ai-product-foundation-kit",
   "migrations": "migrations",
   "distribution": {
-    "status": "production distribution pending",
-    "candidate": "unsigned-local-only",
+    "status": "determined-by-current-release-receipt",
+    "candidate": "engineering-until-final-gates-pass",
     "telemetry": "off"
   },
   "verification": {
-    "status": "verified-preview-workspace-with-browser-clipboard-fallback",
-    "lastVerified": "2026-08-31"
+    "status": "not-an-acceptance-record",
+    "authority": "current-source-and-candidate-bound-test-results"
   },
   "legacyVersionLines": [
     "0.1.x"

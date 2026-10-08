@@ -37,6 +37,21 @@ function inputsFor({project, entryRoots = ['src']}) {
     } else if (stat.isFile() && /\.(vue|svelte|swift|kt)$/u.test(relative)) diagnostics.push({code:'UNSUPPORTED_LANGUAGE', file:relative, coverage:'unknown'});
   };
   for (const relative of entryRoots) visit(relative);
+  // A file entry includes its statically named local module closure. External
+  // packages remain explicit unsupported type/runtime edges; no code executes.
+  const {ts}=createRequire(import.meta.url)('ts-morph');
+  const expanded=new Set();
+  for(const file of files.values()) {
+    if(expanded.has(file.path)||file.path.endsWith('.html'))continue;expanded.add(file.path);
+    for(const imported of ts.preProcessFile(file.text,true,true).importedFiles) {
+      if(!imported.fileName.startsWith('.'))continue;
+      const base=path.posix.normalize(path.posix.join(path.posix.dirname(file.path),imported.fileName));
+      if(base.startsWith('../'))throw new Error('本地模块引用逃出项目');
+      const alternatives=[base,...['.ts','.tsx','.js','.jsx','.mjs','.mts','.json'].map(extension=>base+extension),...['index.ts','index.tsx','index.js','index.jsx'].map(name=>base+'/'+name),...(/\.js$/u.test(base)?[base.slice(0,-3)+'.ts',base.slice(0,-3)+'.tsx']:[])];
+      const resolved=alternatives.find(candidate=>fs.existsSync(path.join(root,candidate))&&fs.statSync(path.join(root,candidate)).isFile()&&sourcePattern.test(candidate));
+      if(resolved&&!files.has(resolved))visit(resolved);
+    }
+  }
   const configs = [];
   for (const relative of ['tsconfig.json', 'jsconfig.json', 'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml']) {
     if (!fs.existsSync(path.join(root, relative))) continue;

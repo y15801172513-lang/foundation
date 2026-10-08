@@ -1,3 +1,6 @@
+import {evidenceRetryPredecessors} from '../../../../packages/core/workspace-host.mjs';
+import {resolveProjectObject} from '../../../../packages/core/workspace-host.mjs';
+import {Worker} from 'node:worker_threads';
 import {browserRequirementDigest,browserConfigurationInputs,currentEvidenceInputs} from '@foundation/core';
 import {projectSemanticRevision} from '../../../../packages/core/workspace-host.mjs';
 import {captureProjectRoundInputs, projectRuntimeDigest} from '@foundation/core';
@@ -25,6 +28,7 @@ import {readProjectPolicyForDisplay, projectWithEffectivePolicy, validateFacts, 
 import {createWorkbenchRuntime} from '../../../../packages/core/workspace-host.mjs';
 import {prepareWorkbenchSnapshot} from './workbench-snapshot.mjs';
 
+const SOURCE_ROOT = fs.realpathSync(path.resolve(import.meta.dirname, '../../../..'));
 const DIST_ASSETS = path.resolve(import.meta.dirname, '../../dist/assets');
 const BINARY_ASSETS = path.join(DIST_ASSETS, 'binary');
 const CHUNK_ASSETS = path.join(DIST_ASSETS, 'chunks');
@@ -44,7 +48,7 @@ function snapshotResponse(req,res,runtime) {
   try{current=runtime.request();}catch(error){send(res,409,JSON.stringify({ok:false,message:error.message,...runtime.inspect()}),'application/json');return;}
   const url=new URL(req.url,'http://127.0.0.1');
   if(url.pathname==='/__foundation/revision')return send(res,200,JSON.stringify(runtime.inspect()),'application/json');
-  if(url.pathname==='/__foundation/health')return send(res,200,JSON.stringify({ok:true,service:'foundation-management-center',...runtime.inspect()}),'application/json');
+  if(url.pathname==='/__foundation/health')return send(res,200,JSON.stringify({...healthPayload(''),...runtime.inspect(),sourceRoot:SOURCE_ROOT}),'application/json');
   if(url.pathname==='/__foundation/model') {
     const selected=runtime.generation(url.searchParams.get('revision') || current.revision);
     return selected?send(res,200,JSON.stringify(selected.model),'application/json'):send(res,409,JSON.stringify({state:'reload-required'}),'application/json');
@@ -56,7 +60,10 @@ function snapshotResponse(req,res,runtime) {
     try{const ref=new URL(req.headers.referer);const match=/^\/__foundation\/g\/([a-f0-9]{64})\//u.exec(ref.pathname);if(ref.host===req.headers.host){if(match)selected=runtime.generation(match[1]);else if(ref.searchParams.has('revision'))selected=runtime.generation(ref.searchParams.get('revision'));}}catch{}
   }
   if(!selected)return send(res,409,JSON.stringify({state:'reload-required',message:'旧版本资源已淘汰，请重新载入工作台'}),'application/json');
-  const versionHtml=bytes=>String(bytes).replace(/((?:src|href)=["'])\/(?!\/)/gu,`$1/__foundation/g/${selected.revision}/`);
+  // Workspace code belongs to the validated installed program, not to a project
+  // facts revision. Lazy imports must survive project snapshot retirement.
+  const workspaceResource=pathname=>pathname===WORKSPACE_ASSETS.script||pathname===WORKSPACE_ASSETS.stylesheet||[WORKSPACE_ASSETS.chunkPrefix,WORKSPACE_ASSETS.preloadChunkPrefix,WORKSPACE_ASSETS.binaryPrefix].some(prefix=>pathname.startsWith(prefix));
+  const versionHtml=bytes=>String(bytes).replace(/((?:src|href)=["'])(\/(?!\/)[^"']*)/gu,(_match,prefix,url)=>prefix+(workspaceResource(url)?url:`/__foundation/g/${selected.revision}${url}`));
   if(pathname==='/'||pathname==='/index.html')return send(res,200,versionHtml(selected.html),'text/html;charset=utf-8',{'x-foundation-revision':selected.revision});
   if(pathname==='/__foundation/relations/current')return send(res,200,JSON.stringify({ok:true,relations:selected.model.relations,version:selected.model.relationsVersion}),'application/json');
   if(pathname==='/__foundation/installed-status')return send(res,200,JSON.stringify(runtime.inspect()),'application/json');
@@ -67,12 +74,12 @@ function snapshotResponse(req,res,runtime) {
 
 class RequestError extends Error { constructor(status, message) { super(message); this.status = status; } }
 
-function readJson(req) {
+function readJson(req,maxBytes=65536) {
   return new Promise((resolve, reject) => {
     const declared = Number(req.headers['content-length'] || 0);
-    if (declared > 65536) { req.resume(); reject(new RequestError(413, '请求过大')); return; }
+    if (declared > maxBytes) { req.resume(); reject(new RequestError(413, '请求过大')); return; }
     const chunks = []; let size = 0; let oversized = false;
-    req.on('data', (chunk) => { size += chunk.length; if (size > 65536) oversized = true; else chunks.push(chunk); });
+    req.on('data', (chunk) => { size += chunk.length; if (size > maxBytes) oversized = true; else chunks.push(chunk); });
     req.on('end', () => {
       if (oversized) return reject(new RequestError(413, '请求过大'));
       try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}')); }
@@ -147,7 +154,8 @@ function healthPayload(projectRoot) {
     managedProject: process.env.FOUNDATION_PREVIEW_MANAGED_PROJECT || path.basename(projectRoot),
     port: Number(process.env.FOUNDATION_PREVIEW_PORT || 0) || null,
     processOwner: process.env.FOUNDATION_PREVIEW_OWNER || null,
-    gitCommit: readRepositoryGitCommit(projectRoot)
+    gitCommit: readRepositoryGitCommit(projectRoot || SOURCE_ROOT),
+    sourceRoot: SOURCE_ROOT
   };
 }
 
@@ -194,6 +202,9 @@ function resolveManagedFont(projectRoot, pathname) {
 }
 
 export function createManagementCenterServer(project, {installationRoot = null, validateContext = null, runtime = null, runtimeWriteNonce = null} = {}) {
+  // Both explicit center and workbench open consume the same frozen resources,
+  // object projection and runtime-observation protocol when an installation is bound.
+  if (installationRoot && !runtime) return createInstalledWorkbenchServer({installationRoot, project});
   const projectRoot = realProject(project);
   if (installationRoot && !runtime) synchronizeProject({project:projectRoot,installationRoot,trigger:'workbench-start'});
   const withoutPreview = installationRoot && !fs.existsSync(path.join(projectRoot, '.foundation/preview.json'));
@@ -203,8 +214,49 @@ export function createManagementCenterServer(project, {installationRoot = null, 
   const preview = withoutPreview ? {schemaVersion: '0.1.0', mode: 'unconfigured', routes: [], assets: []} : readPreviewConfig(projectRoot);
   const writeNonce = runtimeWriteNonce || crypto.randomBytes(18).toString('base64url');
   const managerServers = new Set();
+  // Preserve request order while keeping filesystem verification and signed
+  // transactions off the HTTP/CDP event loop. The worker uses the same authority.
+  let observationQueue=Promise.resolve();
+  const observeRuntime=input=>{
+    const next=observationQueue.then(()=>new Promise((resolve,reject)=>{
+      const worker=new Worker(new URL('./workbench-validation-worker.mjs',import.meta.url),{workerData:{operation:'runtime-observation',input}});
+      const timer=setTimeout(()=>{worker.terminate();reject(new Error('运行观察事务超时；请重新选择以恢复'));},120000);
+      const finish=(error,result)=>{clearTimeout(timer);worker.terminate();error?reject(error):resolve(result);};
+      worker.once('message',message=>finish(message.error?new Error(message.error):null,message.result));
+      worker.once('error',error=>finish(error));
+      worker.once('exit',code=>{clearTimeout(timer);if(code!==0)reject(new Error('运行观察进程退出：'+code));});
+    }));
+    observationQueue=next.catch(()=>{});return next;
+  };
   const declared = new Map([...preview.routes, ...preview.assets].map((entry) => [entry.path, entry.absoluteFile]));
   const server = http.createServer(async (req, res) => {
+    // Session credentials are transported separately from immutable preview bytes.
+    // Same-origin POST plus strict Host/Origin checks prevents cross-origin reads.
+    if(requestPath(req.url)==='/__foundation/runtime-session') {
+      if(req.method!=='POST')return send(res,405,'仅允许 POST');
+      if(!runtime||!requestAuthorityAllowed(req,server))return send(res,403,'运行会话来源无效');
+      try{runtime.request();}catch{return send(res,409,'当前运行版本尚未就绪');}
+      return send(res,200,JSON.stringify({writeNonce}),'application/json');
+    }
+    if(requestPath(req.url)==='/__foundation/runtime-object-snapshot') {
+      if(req.method!=='POST')return send(res,405,'仅允许 POST');
+      if(!runtime||!requestAuthorityAllowed(req,server)||req.headers['x-foundation-write-nonce']!==writeNonce)return send(res,403,'运行观察来源无效');
+      try {
+        const body=await readJson(req,2*1024*1024);
+        const result=await observeRuntime({project:projectRoot,installationRoot,pageId:body.pageId,contentVersion:body.contentVersion,previousRuntimeVersion:body.previousRuntimeVersion,documentId:body.documentId,requestSequence:body.requestSequence,observationScope:body.observationScope,objects:body.objects});
+        return send(res,result.state==='bound'?200:409,JSON.stringify(result),'application/json');
+      }catch(error){return send(res,422,JSON.stringify({state:'unverified',reason:error.message}),'application/json');}
+    }
+    if(requestPath(req.url)==='/__foundation/object-reference') {
+      if(req.method!=='POST')return send(res,405,'仅允许 POST');
+      if(!requestAuthorityAllowed(req,server)||req.headers['x-foundation-write-nonce']!==writeNonce)return send(res,403,'请求来源无效');
+      try {
+        const authority=inspectProjectAuthority(projectRoot,{installationRoot});
+        if(authority.state!=='enabled'||!authority.agreement)return send(res,403,'项目权限不可用');
+        const body=await readJson(req),result=resolveProjectObject({project:projectRoot,input:body.reference,installationRoot});
+        return send(res,result.state==='resolved'?200:409,JSON.stringify({state:result.state,reason:result.reason,recovery:result.recovery,contentVersion:result.contentVersion}),'application/json');
+      }catch(error){return send(res,422,JSON.stringify({state:'unresolved',reason:error.message}),'application/json');}
+    }
     if(runtime && req.method==='GET')return snapshotResponse(req,res,runtime);
     try { validateContext?.(); }
     catch (error) { return send(res, 409, JSON.stringify({ok:false,message:error.message,mutationPerformed:false}), 'application/json;charset=utf-8'); }
@@ -285,7 +337,7 @@ export function listenManagementCenter(project, port = 4173, options = {}) {
     console.error(`管理中心启动失败：${error.code === 'EADDRINUSE' ? `端口 ${port} 已被占用` : error.message}`);
     process.exitCode = 1;
   });
-  server.listen(port, '127.0.0.1', () => console.log(`管理中心：http://127.0.0.1:${port}`));
+  server.listen(port, '127.0.0.1', () => console.log(`管理中心：http://127.0.0.1:${server.address().port}`));
   return server;
 }
 
@@ -324,7 +376,7 @@ export async function verifyInstalledProjectBrowser({installationRoot,project,ta
   if(!browserPath||!fs.existsSync(browserPath)||typeof WebSocket==='undefined')return {state:'blocked',reason:'当前环境没有可用的受控 Chrome/CDP 运行工具；未签发通过收据',mutationPerformed:false};
   const viewports=scope.layoutPolicy?.viewports || [];
   if(!viewports.length||viewports.length>10||viewports.some(viewport=>viewport.width>4096||viewport.height>8192))return {state:'blocked',reason:'需明确有限的实际验证视口；未改写设计尺寸',mutationPerformed:false};
-  const before=prepareWorkbenchSnapshot({installationRoot,project});
+  let before=prepareWorkbenchSnapshot({installationRoot,project});
   const sourceDigest=sha256(canonicalStringify(inspectSyncSources(project)));
   const sourceScene=before.sourceScenes[assetId+':'+scenarioId];
   const route=pageTarget?Object.entries(before.routeMap).find(([,file])=>file===scenario.adapter)?.[0]:sourceScene?.route;
@@ -345,11 +397,40 @@ export async function verifyInstalledProjectBrowser({installationRoot,project,ta
     const target=await(await fetch(`http://127.0.0.1:${port}/json/new?about:blank`,{method:'PUT'})).json();
     devtools=await connectDevtools(target.webSocketDebuggerUrl);await devtools.call('Runtime.enable');
     const browserVersion=await devtools.call('Browser.getVersion');
+    if(pageTarget&&before.resourceBytes[route]?.bytes.toString('utf8').includes('"dataBinding":"source-program"')) {
+      // Establish the actual program's first data observation before freezing
+      // browser evidence. That controlled observation is not a source edit.
+      const warmup=new URL(route,instance.url);warmup.searchParams.set('pageId',assetId);warmup.searchParams.set('projectId',state.project.projectId);
+      await devtools.call('Page.navigate',{url:warmup.href});
+      // Observe this newly served document's completed binding, not an old
+      // snapshot left by a different browser.
+      let observed;
+      for(const deadline=Date.now()+60000;Date.now()<deadline;){
+        observed=await evaluate(devtools,`new Promise(resolve=>{const timer=setTimeout(()=>{removeEventListener('message',listener);resolve(null)},200);const listener=event=>{if(event.source===window&&event.data?.kind==='runtime-binding'){clearTimeout(timer);removeEventListener('message',listener);resolve(event.data)}};addEventListener('message',listener);postMessage({namespace:'ai-product-foundation-preview',kind:'runtime-binding-request'},location.origin)})`);
+        if(observed?.runtimeVersion&&!observed.pending)break;
+      }
+      if(!observed?.runtimeVersion||observed.pending)throw new Error('本次运行文档尚未形成可信观察；保留同步缺口');
+      const settled=prepareWorkbenchSnapshot({installationRoot,project});
+      if(settled.semanticRevision!==before.semanticRevision||settled.buildDigest!==before.buildDigest||sourceDigest!==sha256(canonicalStringify(inspectSyncSources(project))))throw new Error('运行观察准备期间有效源码或构建发生变化');
+      before=settled;
+    }
     for(const viewport of viewports) {
       await devtools.call('Emulation.setDeviceMetricsOverride',{...viewport,deviceScaleFactor:1,mobile:false});
       const url=new URL(route,instance.url);url.searchParams.set('revision',before.revision);url.searchParams.set('projectId',state.project.projectId);url.searchParams.set('channel',crypto.randomUUID());for(const [key,value]of Object.entries({foundationAssetPreview:'1',assetId,scenarioId,instanceId:scenario.instanceId || '',state:scenario.state || '',variantValues:JSON.stringify(scenario.variantValues || {})}))url.searchParams.set(key,value);
+      // Wait for the exact frozen revision to reach the serving cache. A
+      // transient synchronizing response is not the page to validate.
+      let served=false;
+      for(let n=0;n<100;n++){
+        const response=await fetch(url);await response.arrayBuffer();
+        if(response.status===200){served=true;break;}
+        if(![409,503].includes(response.status))throw new Error('当前验证页面无法读取：HTTP '+response.status);
+        await new Promise(resolve=>setTimeout(resolve,50));
+      }
+      if(!served)throw new Error('当前验证版本仍在同步，未把中间页当作产品页面');
       await devtools.call('Page.navigate',{url:url.href});
-      for(let n=0;n<100;n++){if(await evaluate(devtools,'document.readyState === "complete"'))break;await new Promise(resolve=>setTimeout(resolve,50));}
+      let loaded=false;
+      for(let n=0;n<100;n++){if(await evaluate(devtools,`location.href===${JSON.stringify(url.href)}&&document.readyState==='complete'`)){loaded=true;break;}await new Promise(resolve=>setTimeout(resolve,50));}
+      if(!loaded)throw new Error('当前验证文档未完成加载');
       for(const declaredCheck of requirement.browserChecks) {
         const check={...declaredCheck,expected:declaredCheck.expectedByViewport?.[`${viewport.width}x${viewport.height}`] ?? declaredCheck.expected};
         await devtools.call('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:check.reducedMotion || 'no-preference'}]});
@@ -366,12 +447,14 @@ export async function verifyInstalledProjectBrowser({installationRoot,project,ta
     }
     const page=facts.pages.items.find(page=>requirement.factIds.includes(page.id)) || facts.pages.items.find(page=>(asset.usageLocations || []).some(usage=>usage.pageId===page.id)) || facts.pages.items.find(page=>asset.pageIds?.includes(page.id));
     const assetUrl=new URL(route,instance.url);for(const [key,value]of Object.entries({projectId:state.project.projectId,revision:before.revision,channel:crypto.randomUUID(),assetId,scenarioId,foundationAssetPreview:'1',instanceId:scenario.instanceId || '',state:scenario.state || '',variantValues:JSON.stringify(scenario.variantValues || {})}))assetUrl.searchParams.set(key,value);
-    checks.push(...await observeWorkbenchCapabilities({devtools,devtoolsPort:port,sourceSceneDigest:sourceScene?.renderDigest,workbenchUrl:instance.url,projectId:state.project.projectId,revision:before.revision,pageId:page?.id,assetUrl:pageTarget?null:assetUrl.href}));
+    const frozenWorkbench=new URL(instance.url);frozenWorkbench.searchParams.set('revision',before.revision);
+    checks.push(...await observeWorkbenchCapabilities({devtools,devtoolsPort:port,sourceSceneDigest:sourceScene?.renderDigest,workbenchUrl:frozenWorkbench.href,projectId:state.project.projectId,revision:before.revision,pageId:page?.id,assetUrl:pageTarget?null:assetUrl.href}));
     checks.push({id:'runtime-errors',result:devtools.events.some(event=>event.method==='Runtime.exceptionThrown')?'failed':'passed'});
     const after=prepareWorkbenchSnapshot({installationRoot,project});
     if(after.revision!==before.revision||sourceDigest!==sha256(canonicalStringify(inspectSyncSources(project))))throw new Error('运行期间输入、构建或任务发生变化；未签发证据');
     const result=checks.some(check=>check.result==='failed')?'failed':'passed';
     const report={configurationInputs:browserConfigurationInputs(project),projectRuntimeDigest:projectRuntimeDigest(captureProjectRoundInputs(project)),...(sourceScene?{sourceScene}:{ }),kind:'browser-observation',taskId,scopeRevision:scope.revision,scopeDigest:browserRequirementDigest(scope,requirementId),subjectDigest:evidenceSubjectFingerprint(asset),sourceDigest,subject:{definitionId:assetId,scenarioId,requirementId,...(scenario.instanceId?{instanceId:scenario.instanceId}:{})},inputFingerprint:evidenceInputFingerprint(inputs),artifactDigest:before.buildDigest,currentFileSha256:sha256(fs.readFileSync(path.join(installationRoot,'state/current.json'))),previewConfigSha256:sha256(fs.readFileSync(path.join(project,'.foundation/preview.json'))),artifactFiles:(sourceScene?[]:[...new Set(Object.values(before.routeMap))]).map(file=>({path:file,sha256:sha256(fs.readFileSync(path.join(project,file)))})),environment:{browser:browserVersion,browserExecutable:{path:browserPath,sha256:sha256(fs.readFileSync(browserPath))},platform:process.platform,architecture:process.arch,osRelease:os.release(),viewports},runnerVersion:'foundation-cdp/1.0.0',verifierVersion:'foundation-browser-checks/3.0.0',dimensions:['runtime','layout'],checkIds:checks.map(check=>check.id),checks,result,observations,revision:before.revision,artifactInputs:Object.entries(before.resourceBytes).map(([url,entry])=>({url,sha256:entry.sha256})),limitations:['只覆盖当前范围声明的检查与视口，不代表真人接受或范围外行为']};
+    report.supersedes=evidenceRetryPredecessors(task,report);
     const receipt={purpose:'foundation-evidence-run',project:realProject(project),reportDigest:sha256(canonicalStringify(report))};
     const signed={...report,foundationReceipt:{...receipt,integrity:signTrustedPayload(receipt)}};
     const reportText=JSON.stringify(signed,null,2)+'\n';

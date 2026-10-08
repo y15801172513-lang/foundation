@@ -19,8 +19,9 @@ const OUTPUT = option('--output', path.join(ROOT, '.tmp', 'candidates', `foundat
 const MANAGEMENT_DIST = option('--management-dist', path.join(ROOT,'apps/management-center/dist'));
 const RUNTIME_ARCHIVE = option('--runtime-archive', null);
 const COMMIT = readRepositoryGitCommit(ROOT) || 'uncommitted-local';
-const DIRTY = spawnSync('git', ['status', '--short'], {cwd: ROOT, encoding: 'utf8'}).stdout.trim().length > 0;
-const ESBUILD = path.join(ROOT, 'examples', 'foundation-events', 'node_modules', '.bin', 'esbuild');
+const gitStatus = spawnSync('git', ['status', '--short'], {cwd: ROOT, encoding: 'utf8'});
+const DIRTY = COMMIT === 'uncommitted-local' || gitStatus.status !== 0 || String(gitStatus.stdout || '').trim().length > 0;
+const ESBUILD = path.join(ROOT, 'node_modules', '.bin', 'esbuild');
 const bundledInputs = new Set();
 // Validate the exact bundled Skill before creating any candidate output.
 const capability = auditCapabilityArtifact(path.join(ROOT, 'skills', 'ai-product-foundation-kit', 'capability.json')).manifest;
@@ -65,6 +66,7 @@ function bundle(entry, destination, external = [], browser = false) {
   for (const input of Object.keys(JSON.parse(fs.readFileSync(metafile, 'utf8')).inputs)) bundledInputs.add(input);
 }
 
+fs.mkdirSync(path.join(ROOT, '.tmp'), {recursive: true});
 const boundary = fs.realpathSync(path.join(ROOT, '.tmp'));
 for (const target of [TMP, OUTPUT]) {
   const relative = path.relative(boundary, target);
@@ -124,6 +126,7 @@ for(const contract of Object.values(SCENE_RUNTIME_IMPORTS)){
 copy('packages/core/preview-bridge.mjs','artifacts/preview/preview-bridge.mjs');
 copy('packages/core/asset-preview-bridge.mjs','artifacts/preview/asset-preview-bridge.mjs');
 copy('packages/core/object-identity.mjs','artifacts/preview/object-identity.mjs');
+copy('packages/core/style-variable-usage.mjs','artifacts/preview/style-variable-usage.mjs');
 copy('templates');
 copy('skills', 'artifacts/skills');
 copy('rules', 'artifacts/rules');

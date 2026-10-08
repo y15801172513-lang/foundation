@@ -1,14 +1,12 @@
 {
   "name": "ai-product-foundation-kit",
-  "version": "0.2.31",
+  "version": "0.2.32",
   "private": true,
   "workspaces": [
     "apps/*",
     "packages/*"
   ],
   "scripts": {
-    "test": "node --test --test-concurrency=1 tests/unit/*.test.mjs tests/integration/*.test.mjs tests/contracts/*.test.mjs",
-    "test:browser": "node --test --test-concurrency=1 tests/browser/*.test.mjs",
     "build": "node apps/management-center/build.mjs && npm run build --prefix examples/foundation-events",
     "audit:deps": "node scripts/dependency-declaration-audit.mjs",
     "audit:ui": "node scripts/ui-governance-audit.mjs",
@@ -21,7 +19,7 @@
     "node": ">=20.19.0"
   },
   "devDependencies": {
-    "jsdom": "29.1.1"
+    "esbuild": "0.28.0"
   },
   "overrides": {
     "@floating-ui/utils": "0.2.12"
