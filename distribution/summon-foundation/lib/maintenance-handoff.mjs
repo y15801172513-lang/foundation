@@ -83,6 +83,7 @@ const event=await observePlan(client,requested,observation=>onChange({phase:obse
   const result=await run('program',kind,parameters);
   const payload=result.result?.lifecycleResult||result.result||{};
   onChange({programState:result.state,sessionId:result.sessionId,runtimeHealth:payload.stableLauncherHealth||'unknown',programResult:payload,phase:'runtime-ended'});
+  if(['cancelled','expired'].includes(result.state))return {state:'partial',terminal:true,phase:'finished',next:(result.state==='cancelled'?'程序操作已取消':'程序确认已过期')+'，未执行本次程序变更。此前已单独确认的项目恢复或Skill移除仍保留；核对同次结果，需要继续时生成新计划，不重放旧确认。'};
   if(result.state!=='completed'){
     const diagnostic=operationFailure(result.failure);
     return {state:'partial',terminal:true,phase:'finished',errorCode:diagnostic.code,errorStage:diagnostic.stage,retryable:diagnostic.retryable,diagnostic,next:diagnostic.next};

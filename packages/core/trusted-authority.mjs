@@ -347,7 +347,7 @@ export function assertTrustedCandidatePath(candidatePath, authority = deriveTrus
   if(authority.mode==='platform-installed-runtime'&&!isWithin(authority.trustedRootRealPath,candidate)){
     if(!captureAcquisition&&!expectedAcquisition)throw new LifecycleError('ACQUISITION_CACHE_PLAN_BINDING_REQUIRED','标准获取候选必须绑定本次精确计划',{stage:'authority'});
     let snapshot;
-    try{snapshot=snapshotAcquisitionCandidate(candidate,authority);}catch{throw new LifecycleError('ACQUISITION_CACHE_REJECTED','标准获取候选路径、归属、来源或字节无法核实；保留材料，不重复下载',{stage:'authority'});}
+    try{snapshot=snapshotAcquisitionCandidate(candidate,authority);}catch(error){if(error.code==='ACQUISITION_CACHE_OPERATION_ENDED')throw new LifecycleError(error.code,'获取操作已结束；保留旧结果，从正常更新入口发起新操作与新确认',{stage:'authority'});throw new LifecycleError('ACQUISITION_CACHE_REJECTED','标准获取候选路径、归属、来源或字节无法核实；保留材料，不重复下载',{stage:'authority'});}
     if(expectedAcquisition&&canonical(snapshot)!==canonical(expectedAcquisition))throw new LifecycleError('ACQUISITION_CACHE_CHANGED','获取候选或目录身份已变化，原批准不再适用',{stage:'authority'});
     captureAcquisition?.(snapshot);
     return candidate;

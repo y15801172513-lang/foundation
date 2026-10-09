@@ -1,13 +1,13 @@
 {
   "schemaVersion": "clean-export/1",
-  "version": "0.2.35",
-  "sourceTreeSha256": "ee79ebd562515d2e3ad03c3229243073b5dd4397ccb8195bc7c2b1e730e337c4",
+  "version": "0.2.36",
+  "sourceTreeSha256": "db369699fd435752f31c8640b271209e5d13861c164d62f15695b5119dd10513",
   "exportedFiles": [
     {
       "path": "README.md",
       "mode": 420,
       "bytes": 6384,
-      "sha256": "e7be0c072495167e159dc635d06d66ac0e17fda431efc122b66377fb2f2a78ca"
+      "sha256": "90c87b574a8daab30e62426621e303537dbdfb74ef1170cf63266fa64eb49693"
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
@@ -43,7 +43,7 @@
       "path": "apps/management-center/package.json",
       "mode": 420,
       "bytes": 1330,
-      "sha256": "f1578db35ef07793c886c9ccd8dee0296175c8fcb978b0b66c0766fe63f18141"
+      "sha256": "de5ad47ea10f08d117da385e292f10c4557639120e87bcd0a4f2388d9f17c1ab"
     },
     {
       "path": "apps/management-center/src/components/foundation/content-roles.jsx",
@@ -426,8 +426,8 @@
     {
       "path": "distribution/summon-foundation/bin/summon.mjs",
       "mode": 493,
-      "bytes": 19176,
-      "sha256": "edcb0fda07e485717129217ab5479832a4223962b5b2d20e8ed58748b306b51b"
+      "bytes": 19342,
+      "sha256": "f840cc6f11660af081b6df35a8e3174ed6d9ae9ca501fcd28e4823c817cb1bec"
     },
     {
       "path": "distribution/summon-foundation/lib/acquire.mjs",
@@ -492,8 +492,8 @@
     {
       "path": "distribution/summon-foundation/lib/maintenance-handoff.mjs",
       "mode": 420,
-      "bytes": 9533,
-      "sha256": "bc26ac391e61bb3ecef1a48cf7a6093d931eb3d6a895d5a8044458771ac01302"
+      "bytes": 9897,
+      "sha256": "82290e474ffa5533cc7ae4bab6af82f90c3d82e3361f9a1839814ce565795f48"
     },
     {
       "path": "distribution/summon-foundation/lib/manager-step.mjs",
@@ -504,8 +504,8 @@
     {
       "path": "distribution/summon-foundation/lib/operation-failure.mjs",
       "mode": 420,
-      "bytes": 4257,
-      "sha256": "50d5a2644d3e64412bee8b4ad44868fe6d3c4357bf32a5dd979c38e47cc5c38d"
+      "bytes": 5863,
+      "sha256": "f00a203738569b52d42567427b133244029c0ed37733d1ec59fdb519bf8b709e"
     },
     {
       "path": "distribution/summon-foundation/lib/operation-result.mjs",
@@ -546,8 +546,8 @@
     {
       "path": "distribution/summon-foundation/lib/single-page-view.mjs",
       "mode": 420,
-      "bytes": 15989,
-      "sha256": "3ed1a66ec68decf64f9a54a3c947b84c1f86df0bb4494406eea9e96535663a35"
+      "bytes": 16109,
+      "sha256": "4a9e079c0527d097bbba66df60d69038c00f8caf52db60cc6cc57526f1c5cfac"
     },
     {
       "path": "distribution/summon-foundation/lib/skill-handoff.mjs",
@@ -559,13 +559,13 @@
       "path": "distribution/summon-foundation/npm-shrinkwrap.json",
       "mode": 420,
       "bytes": 21856,
-      "sha256": "832a3fbc5f85d7eae357a24c42bf9aa800ec1d88bf86ae5b0a16d0f8ded21d9e"
+      "sha256": "df566865663d731e1971c84ce091b8ed9477081920c423bc5d01d17009f6d683"
     },
     {
       "path": "distribution/summon-foundation/package.json",
       "mode": 420,
       "bytes": 873,
-      "sha256": "7f1457b4571339295d17fb056e472b86bc198c2cba65c9aa5470cd861cd9b02a"
+      "sha256": "a6416dfb4aa8615f68a72c6ad919af2079681dd15214feb4e0d980682d7c0dda"
     },
     {
       "path": "docs/FOUNDATION_SHADCN_TYPE_SPACING_GOVERNANCE_V01.md",
@@ -648,8 +648,8 @@
     {
       "path": "docs/install-with-codex.md",
       "mode": 420,
-      "bytes": 29585,
-      "sha256": "50f4c3f003566cbd52b1a9003aab51ac847d2cea3f3f3f8261ab669840ed11a1"
+      "bytes": 30966,
+      "sha256": "bc853fe20554bba9ae80f3bade54191da0138f321424afa860a42dfd7d4e83d2"
     },
     {
       "path": "docs/rules-and-project-use.md",
@@ -667,7 +667,7 @@
       "path": "foundation-kit.json",
       "mode": 420,
       "bytes": 1128,
-      "sha256": "085c5d95554d53f881f8873661d37f0d2c768b16964499c97787aabd8a640456"
+      "sha256": "44615e4385a928579ac45735b9e93410d5bf1a1e8c6656c6b0f35322a917abf4"
     },
     {
       "path": "migrations/0.1.1.mjs",
@@ -679,13 +679,13 @@
       "path": "package-lock.json",
       "mode": 420,
       "bytes": 217374,
-      "sha256": "a21dd9fdc033f16cfa6774d133278aba46c89b05bed88cdb531607421315f854"
+      "sha256": "b74a670488d0da07e15a8c6566dbf0baeaa04f83794bddafbe54ba081a862ec5"
     },
     {
       "path": "package.json",
       "mode": 420,
       "bytes": 752,
-      "sha256": "01a218e37033beb766493de0a9876d038b3fa6589b0f01b1a30ca89b1f386b5a"
+      "sha256": "1efab8afd9fa561de19650849305b542d27ec4bf30f02d7108ceb22ad072bc9e"
     },
     {
       "path": "packages/cli/command-contract.mjs",
@@ -702,8 +702,8 @@
     {
       "path": "packages/cli/installed-maintenance.mjs",
       "mode": 420,
-      "bytes": 8091,
-      "sha256": "880ff78fcc36882a0d4f795b406c1aa55fcf4d48478f46a8223f41acf00e401a"
+      "bytes": 8479,
+      "sha256": "f3d2d7093a5f29c858e41aac4c7fc2a4919014f6825f4967ebfc28e87c74e4e5"
     },
     {
       "path": "packages/cli/lifecycle.mjs",
@@ -715,7 +715,7 @@
       "path": "packages/cli/package.json",
       "mode": 420,
       "bytes": 294,
-      "sha256": "8bb327964bb22c83723b6921c00fa530d5a25f56bacf755d88564e57becd274e"
+      "sha256": "d8c5c330ff811d40dcdc2bfffbaa76e45d423a30e875b79bcc8aa27577da5de1"
     },
     {
       "path": "packages/core/ai-bridge.mjs",
@@ -954,8 +954,8 @@
     {
       "path": "packages/core/lifecycle-feedback.mjs",
       "mode": 420,
-      "bytes": 30520,
-      "sha256": "7df7706e6e04bff3d8d7f870d7353a52aef699d23a728df9343d49ba0a65bb63"
+      "bytes": 30761,
+      "sha256": "60363c48767393d11e80c0931fc1c39d3b1f210b02cddd7f1993a8e440eb2cf0"
     },
     {
       "path": "packages/core/lifecycle-journey.mjs",
@@ -1039,7 +1039,7 @@
       "path": "packages/core/package.json",
       "mode": 420,
       "bytes": 582,
-      "sha256": "be693ee174f8f3798d4fdc66eeeee21451f32f9b475116fcc9d55ba652b0e3d7"
+      "sha256": "291e05b9930ab343c3e706f9136acf42b0f520d348b712682ce05da5f83abbad"
     },
     {
       "path": "packages/core/path-boundary.mjs",
@@ -1092,8 +1092,8 @@
     {
       "path": "packages/core/project-authority.mjs",
       "mode": 420,
-      "bytes": 94168,
-      "sha256": "42eca873e28f5435aee48699d68c9d0e953a3c9d22c7685cf63812a58cf611f3"
+      "bytes": 96833,
+      "sha256": "4f7e6b585dda766fbc4ed481a1d1b161c547f1fd289016b87c3b929f09217b32"
     },
     {
       "path": "packages/core/project-compatibility.mjs",
@@ -1332,8 +1332,8 @@
     {
       "path": "packages/core/trusted-authority.mjs",
       "mode": 420,
-      "bytes": 22454,
-      "sha256": "c0a6350c5cd7c58623377c23ee3d3bdc44c546cf16f5f94826422bdc77a3fbda"
+      "bytes": 22663,
+      "sha256": "9c46912f195c7e26bf61630e823224dfcd10f113213330eeecad78aae8cdfd8b"
     },
     {
       "path": "packages/core/trusted-intent-ledger.mjs",
@@ -1356,8 +1356,8 @@
     {
       "path": "packages/core/update-input-inventory.mjs",
       "mode": 420,
-      "bytes": 11905,
-      "sha256": "1f2727d5e2672d5a29226aa196f833142b2d1ef8f93766c5b1d8d27d15568bb9"
+      "bytes": 12141,
+      "sha256": "2c70e89dc990a386eb728e4306bed5b5e6bad59471eb02efcd97a5745dd08278"
     },
     {
       "path": "packages/core/web-preview-build.mjs",
@@ -1386,8 +1386,8 @@
     {
       "path": "rules/lifecycle-guide.md",
       "mode": 420,
-      "bytes": 24029,
-      "sha256": "20be6247c2973dc045747b56cf529cf2a66d97954a74deb5803150041e17d125"
+      "bytes": 24397,
+      "sha256": "b9c9a67969cfa3a632a13bc50aa5d01ac1ba296aaec1e473603ba197f4af5224"
     },
     {
       "path": "rules/manifest.json",
@@ -1476,14 +1476,14 @@
     {
       "path": "skills/ai-product-foundation-kit/SKILL.md",
       "mode": 420,
-      "bytes": 17928,
-      "sha256": "873b44d54f99a9171e21157aa475c43fd1df2bb4bca5920819feb51c5e0ddce5"
+      "bytes": 18579,
+      "sha256": "e63dc160d314ef4bd41353649df4715849b55b197e6b5ed6f58ae39ee393b7fd"
     },
     {
       "path": "skills/ai-product-foundation-kit/capability.json",
       "mode": 420,
       "bytes": 945,
-      "sha256": "5c295756b5db93d9399194c631f4073db8b9e4ba49d7518db3175a30f7d5ec01"
+      "sha256": "6f2a07467b27516f797396dd2d3d0098b0306e88c3084aa9aa7fdf4c1f1450e1"
     },
     {
       "path": "templates/foundation-project/.foundation/facts/changes.json",

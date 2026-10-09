@@ -458,21 +458,48 @@ function writeProjectOwnership(project, projectId, portableFile) {
   writeJsonAtomic(path.join(project, ...OWNERSHIP_RELATIVE.split('/')), ownership);
 }
 
-// A new explicit confirmation binds selected directories; matching portable IDs
-// only narrows eligibility and never proves continuity after a device change.
+// A recovery observation must distinguish absence from unreadable or replaced
+// material. Missing inactive records can be retired only by an exact plan.
+function recoveryDocument(project, relative, reject) {
+  const file = path.join(project, relative);
+  let cursor = file;
+  while (true) {
+    try {
+      const stat = fs.lstatSync(cursor);
+      if (stat.isSymbolicLink() || fs.realpathSync(cursor) !== cursor) reject('PROJECT_BINDING_INVALID', 'unsafe-path');
+      if (cursor === file && !stat.isFile()) reject('PROJECT_BINDING_INVALID', 'invalid-file');
+      break;
+    } catch (error) {
+      if (error.code !== 'ENOENT') {if(error instanceof LifecycleError)throw error;reject('PROJECT_BINDING_INVALID','unreadable-file');}
+      cursor = path.dirname(cursor);
+    }
+  }
+  if (cursor !== file) return null;
+  try {const bytes = fs.readFileSync(file);return {value:JSON.parse(bytes),hash:sha256(bytes)};}
+  catch {reject('PROJECT_BINDING_INVALID', 'invalid-file');}
+}
+
 export function inspectProjectIdentityRevalidation(installationRoot) {
   const context = installationContext(installationRoot), registry = registryContext(context);
   const entries = [];
   for (const [id, record] of Object.entries(registry.payload.projects)) {
-    const project = assertEligibleProject(record.realPath, context.root);
-    const portable = portableContext(project), identity = projectIdentity(project);
-    const projectDocument = readJson(path.join(project, ...IDENTITY_RELATIVE.split('/')));
-    if (record.projectId !== id || record.canonicalPath !== canonicalPath(project) || !['enabled','disabled'].includes(record.state) || portable.hash !== record.portableBindingHash || portable.value?.projectId !== id || portable.value.state !== record.state || projectDocument.projectId !== id || projectDocument.identityScheme !== 'foundation-project-id-v2') throw new LifecycleError('PROJECT_BINDING_INVALID','项目登记和当前目录的身份资料不一致；不能通过更新恢复覆盖',{stage:'project-revalidation'});
-    if (sameIdentity(record.projectIdentity, identity)) continue;
-    if (record.projectIdentity?.inode !== identity.inode || record.projectIdentity?.kind !== identity.kind) throw new LifecycleError('PROJECT_DIRECTORY_REPLACED','目录已替换；更新不能自动选择新目录，请先明确选择正确项目',{stage:'project-revalidation'});
+    const reject = (code, reason) => {throw new LifecycleError(code, '更新前项目状态需要核对；保留原程序和项目资料', {stage:'project-revalidation',details:{project:record.realPath,projectId:id,reason}});};
+    if (record.projectId !== id || typeof record.realPath !== 'string' || !path.isAbsolute(record.realPath) || path.resolve(record.realPath)!==record.realPath || record.canonicalPath !== canonicalPath(record.realPath) || !['enabled','disabled'].includes(record.state)) reject('PROJECT_BINDING_INVALID','invalid-registration');
+    let project;
+    try {project = assertEligibleProject(record.realPath, context.root, {mayNotExist:record.state==='disabled'});}
+    catch (error) {reject(error.code==='PROJECT_NOT_FOUND'?'PROJECT_METADATA_MISSING':'PROJECT_BINDING_INVALID', error.code==='PROJECT_NOT_FOUND'?'project-missing':'unsafe-path');}
     const grant = record.continuousSync;
-    if (!grant || !Number.isSafeInteger(grant.revision) || grant.revision<1 || !['active','revoked','not-granted'].includes(grant.state) || grant.state === 'active' && (record.state !== 'enabled' || grant.installId !== context.current.identity.installId || grant.projectId !== id || canonicalStringify(grant.scope) !== canonicalStringify(CONTINUOUS_SYNC_SCOPE))) throw new LifecycleError('PROJECT_SYNC_SCOPE_INVALID','原同步权限无法核实；更新不能扩大或猜测权限',{stage:'project-revalidation'});
-    entries.push({projectId:id, project, registeredIdentity:record.projectIdentity, selectedIdentity:identity, state:record.state, continuousSync:structuredClone(grant), portableHash:portable.hash, protected:snapshotProtectedProjectData(project)});
+    if (!grant || !Number.isSafeInteger(grant.revision) || grant.revision<1 || !['active','revoked','not-granted'].includes(grant.state) || grant.state === 'active' && (record.state !== 'enabled' || grant.installId !== context.current.identity.installId || grant.projectId !== id || canonicalStringify(grant.scope) !== canonicalStringify(CONTINUOUS_SYNC_SCOPE))) reject('PROJECT_SYNC_SCOPE_INVALID','invalid-sync-scope');
+    const exists = fs.existsSync(project), identity = exists ? projectIdentity(project) : null;
+    if (identity && (record.projectIdentity?.inode !== identity.inode || record.projectIdentity?.kind !== identity.kind)) reject('PROJECT_DIRECTORY_REPLACED','directory-replaced');
+    let portable = recoveryDocument(project, PORTABLE_RELATIVE, reject);
+    if(portable){try{portable=portableContext(project);}catch{reject('PROJECT_BINDING_INVALID','portable-binding-mismatch');}}
+    const document = recoveryDocument(project, IDENTITY_RELATIVE, reject);
+    if (portable && (portable.hash !== record.portableBindingHash || portable.value?.projectId !== id || portable.value.state !== record.state) || document && (document.value?.projectId !== id || document.value?.identityScheme !== 'foundation-project-id-v2')) reject('PROJECT_BINDING_INVALID','portable-binding-mismatch');
+    const missing = [!exists?'project-directory':null,!portable?PORTABLE_RELATIVE:null,!document?IDENTITY_RELATIVE:null].filter(Boolean);
+    if (missing.length && record.state !== 'disabled') reject('PROJECT_METADATA_MISSING',exists?'missing-metadata':'project-missing');
+    if (!missing.length && sameIdentity(record.projectIdentity, identity)) continue;
+    entries.push({projectId:id, project, action:missing.length?'retire-disabled-registration':'rebind', reason:missing.length?(exists?'missing-metadata':'project-missing'):'device-changed', missing, registeredIdentity:record.projectIdentity, selectedIdentity:identity, state:record.state, continuousSync:structuredClone(grant), portableHash:portable?.hash||null, protected:exists?snapshotProtectedProjectData(project):null});
   }
   return {installationRoot:context.root, installId:context.current.identity.installId, currentIntegrityHash:context.currentIntegrityHash, registryHash:registry.fileHash, entries};
 }
@@ -481,8 +508,8 @@ export function createProjectIdentityRevalidationPlan({installationRoot, now=Dat
   const snapshot = inspectProjectIdentityRevalidation(installationRoot);
   if (!snapshot.entries.length) throw new LifecycleError('PROJECT_REVALIDATION_NOT_REQUIRED','项目目录无需重新确认',{stage:'project-revalidation'});
   return planIntegrity({schemaVersion:'1.0.0',bindingVersion:PROJECT_BINDING_VERSION,operation:'project-identity-revalidate',installationRoot:snapshot.installationRoot,installId:snapshot.installId,projectId:'update-project-bindings',createdAt:now,expiresAt:now+ttlMs,revalidation:snapshot,
-    changes:['重新绑定本页明确列出的当前目录','保持每个项目原启用或停用状态','对原持续同步范围重新授权；不新增范围'],creates:[],replacements:['state/projects.json'],deletes:[],preserves:['source-code','.foundation/facts','project-files','原停用状态','未授予或已撤销的同步权限'],
-    semantics:'设备身份已变化，程序不能证明目录仍是原项目。确认表示你选择下列当前目录，并重新授予列出的原同步范围。停用项目保持停用；不会准备、同步或改写项目内容。完成后继续独立确认程序更新。'});
+    changes:['重新绑定本页明确列出的完整项目目录','仅对本页列出的停用且资料缺失项目解除当前登记，并在签名登记内保留历史','保持其他项目原启用或停用状态及同步范围'],creates:[],replacements:['state/projects.json'],deletes:[],preserves:['source-code','.foundation/facts','project-files','原停用状态','未授予或已撤销的同步权限'],
+    semantics:'设备身份变化时，程序不能证明目录仍是原项目；确认仅对标记为重新绑定的完整项目选择当前目录，并重新授予列出的原同步范围。完整停用项目保持停用。标记为解除登记的项目已停用且资料缺失：确认将其移入签名登记的保留历史，不恢复接入或同步，不删除或补写任何项目文件；以后使用需独立接入。取消不会修改登记。完成后继续独立确认程序更新。'});
 }
 
 export function authorizationEffectForProjectIdentityRevalidation(plan) {
@@ -514,14 +541,21 @@ export function applyProjectIdentityRevalidation({plan,now=Date.now()}) {
     journalFile=path.join(projectTransactionPaths(context).journals,plan.planId+'.json');writeProjectJournal(journalFile,journal);
     const payload=structuredClone(registry.payload);
     for(const entry of plan.revalidation.entries){
-      const record=payload.projects[entry.projectId];record.projectIdentity=entry.selectedIdentity;
+      const record=payload.projects[entry.projectId];
+      if(entry.action==='retire-disabled-registration'){
+        payload.retainedDisabledProjects ||= {};
+        payload.retainedDisabledProjects[plan.planId+':'+entry.projectId]={record,reason:entry.reason,missing:entry.missing,retiredAt:now,planId:plan.planId,confirmationEvidence:authorization};
+        delete payload.projects[entry.projectId];
+        continue;
+      }
+      record.projectIdentity=entry.selectedIdentity;
       record.confirmationEvidence={confirmationId:authorization.confirmationId||authorization.authorizationId,effectHash:authorization.effectHash,planId:plan.planId,confirmedAt:now};
       if(record.continuousSync.state==='active')record.continuousSync={...record.continuousSync,revision:record.continuousSync.revision+1,planId:plan.planId,grantedAt:now};
     }
     writeJsonAtomic(registry.file,{...payload,integrity:signTrustedPayload(payload)});
     journal.outcome='completed';writeProjectJournal(journalFile,journal,'completed','registry-revalidated');
     updateTrustedPreIntent(intent,'completed',{completedAt:Date.now(),outcome:'completed'});
-    return {ok:true,state:'revalidated',projects:plan.revalidation.entries.map(e=>({project:e.project,state:e.state,continuousSync:e.continuousSync.state})),preserved:plan.preserves,mutationPerformed:true};
+    return {ok:true,state:'revalidated',projects:plan.revalidation.entries.map(e=>({project:e.project,state:e.state,action:e.action,reason:e.reason,continuousSync:e.continuousSync.state,registration:e.action==='retire-disabled-registration'?'retained-history':'active-registry'})),preserved:plan.preserves,mutationPerformed:true};
   }catch(error){
     if(journal){try{restoreFileSnapshot(path.join(context.root,'state/projects.json'),journal.before.registry);journal.outcome='rolled-back';writeProjectJournal(journalFile,journal,'completed','rollback-complete');updateTrustedPreIntent(intent,'completed',{outcome:'rolled-back'});}catch(recoveryError){writeProjectJournal(journalFile,journal,'manual-action-required','rollback-failed');updateTrustedPreIntent(intent,'manual-action-required',{errorCode:recoveryError.code});}}
     else if(!consumed){try{failExactManagerConfirmationAtBoundary(reservation,{code:error.code||'PROJECT_REVALIDATION_FAILED',intentWritten:false,intentId:plan.planId});if(intent)updateTrustedPreIntent(intent,'cancelled',{errorCode:error.code});}catch{}}

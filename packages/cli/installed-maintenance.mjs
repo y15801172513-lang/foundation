@@ -8,6 +8,7 @@ import {installedClient,discoverRegisteredInstallation} from '../../distribution
 import {followMaintenance} from '../../distribution/summon-foundation/lib/maintenance-handoff.mjs';
 import {resumeSkillHandoff} from '../../distribution/summon-foundation/lib/resume-handoff.mjs';
 import {createJourneyControl} from '../../distribution/summon-foundation/lib/journey-control.mjs';
+import {operationFailure} from '../../distribution/summon-foundation/lib/operation-failure.mjs';
 import {startProgressPage} from '../../distribution/summon-foundation/lib/progress-page.mjs';
 
 function privateDirectory(directory){
@@ -49,13 +50,13 @@ export async function runInstalledMaintenance({authority,args,output}) {
    route:{product:'summon foundation',arguments:['foundation','--update','--root',root],source:'https://github.com/y15801172513-lang/foundation/blob/main/docs/install-with-codex.md'},
    next:'使用正式说明核验的获取入口查询并固定目标发行，再从 --update 同页流程下载、核验和独立确认。需要独立获取环境与该缓存的写入权限；不要运行未核验的 npx。离线时保留当前安装，卸载不依赖此环境。'},null,2));return;
  }
- if(kind==='update'&&!previous){
-  const directory=assertTrustedCandidatePath(plainPath(option('--candidate')));
+ const prepareCandidate=()=>{
+  const directory=assertTrustedCandidatePath(plainPath(option('--candidate')),authority,{captureAcquisition:()=>{}});
   const verified=validateCandidate(directory,{platform:process.platform,arch:process.arch,requireRuntime:true});
   if(!verified.ok)throw Error('更新候选字节核验失败：'+verified.error.code);
   const m=JSON.parse(fs.readFileSync(plainPath(path.join(directory,'manifest.json'))));
-  candidate={path:directory,manifestHash:m.candidateHash,version:m.productVersion,bytes:m.totalBytes,runtimeHash:m.files.find(f=>f.path===m.runtime.path)?.sha256};
- }
+  return {path:directory,manifestHash:m.candidateHash,version:m.productVersion,bytes:m.totalBytes,runtimeHash:m.files.find(f=>f.path===m.runtime.path)?.sha256};
+ };
  for(const old of discoverOperations({home,installationRoot:root,installId:current.identity.installId}).operations){
   if((!old.terminal||old.resumable)&&old.pid&&old.pid!==process.pid){try{process.kill(old.pid,0);throw Error('该安装已有未结束的获取或维护进程；只读查询原记录，不并行创建计划')}catch(e){if(e.code!=='ESRCH')throw e}}
   if(!old.terminal&&old.currentPlanRef){const status=installedClient(root,env).call(['manager','status','--plan-ref',old.currentPlanRef]);if(['pending','executing','consumed'].includes(status.state))throw Error('已有未结束的精确计划；先核对原操作，不创建并发批准');}
@@ -68,8 +69,9 @@ export async function runInstalledMaintenance({authority,args,output}) {
  update({});
  try{
   page=await startProgressPage(()=>operation,{control});update({progressUrl:page.url});output.log(JSON.stringify({status:'FOUNDATION_SINGLE_PAGE',url:page.url,operationId:operation.operationId}));
+  if(kind==='update'&&!previous){update({phase:'checking-candidate'});candidate=prepareCandidate();}
   const result=previous&&kind!=='uninstall'?await resumeSkillHandoff({file:previous.resultFile||option('--record'),env,journeyControl:control,newOperation:operation,onChange:update}):await followMaintenance({operation,kind,candidate,env,onChange:update,journeyControl:control});
   update(result);process.exitCode=operationExitCode(operation);
- }catch(error){update({state:'verification-required',terminal:true,phase:'finished',next:error.message+'；保留本次记录，只读核对后再明确继续，不重放批准'});process.exitCode=1;throw error;}
+ }catch(error){const diagnostic=operationFailure(error.diagnostic||error);update({state:'verification-required',terminal:true,phase:'finished',errorCode:diagnostic.code,errorStage:diagnostic.stage,retryable:diagnostic.retryable,diagnostic,next:diagnostic.next+'；保留本次记录，只读核对后再明确继续，不重放批准'});process.exitCode=1;throw error;}
  finally{if(page)await page.close();}
 }

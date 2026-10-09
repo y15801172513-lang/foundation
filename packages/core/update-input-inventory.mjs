@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import {spawnSync} from 'node:child_process';
 
 const hash=b=>crypto.createHash('sha256').update(b).digest('hex');
-function reject(message){throw new Error(`升级暂存盘点失败：${message}`);}
+function reject(message,code=null){throw Object.assign(new Error(`升级暂存盘点失败：${message}`),code?{code}:{});}
 function plain(file){
   if(!path.isAbsolute(file)||path.normalize(file)!==file)reject('路径不是规范化绝对路径');
   for(let p=file;p!==path.dirname(p);p=path.dirname(p))if(fs.lstatSync(p).isSymbolicLink()||fs.realpathSync(p)!==p)reject('路径含链接或已漂移');
@@ -24,6 +24,7 @@ export function snapshotAcquisitionCandidate(candidatePath,{homeRealPath,install
   for(const p of [cache,stage]){const s=identity(p);if(s.mode!==0o700)reject('获取目录不是当前账户独占 0700');}
   const operationFile=path.join(stage,'operation-result.json');if(fileRecord(operationFile).mode!==0o600)reject('操作记录权限无效');
   const operation=JSON.parse(fs.readFileSync(operationFile));
+  if(operation.terminal===true)reject('获取操作已结束，旧材料不能作为本次运行记录；保留结果，从正常更新入口发起新操作','ACQUISITION_CACHE_OPERATION_ENDED');
   if(operation.terminal!==false||!['acquired','awaiting-confirmation','executing'].includes(operation.phase)||!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(operation.operationId||''))reject('获取操作不是本次未结束记录');
   if(operation.installationRoot&&operation.installationRoot!==installRoot)reject('操作绑定其他安装目录');
   const receipt=JSON.parse(fs.readFileSync(plain(path.join(stage,'acquisition.json'))));
