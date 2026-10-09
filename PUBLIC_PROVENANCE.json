@@ -1,13 +1,13 @@
 {
   "schemaVersion": "clean-export/1",
-  "version": "0.2.33",
-  "sourceTreeSha256": "3ca68de84e658a63c144a024354708d3ea2eacc0d4f1af0258fdcb1751be2570",
+  "version": "0.2.34",
+  "sourceTreeSha256": "abfb9aee8b6c89bd476aa52a4b46afa9034912dcd58d56c3c8242cab39ecfd17",
   "exportedFiles": [
     {
       "path": "README.md",
       "mode": 420,
       "bytes": 6384,
-      "sha256": "74dcab024aa53ea68dd5e220cc31cf96aacb9691520de0cc7597741aa8b9c9c7"
+      "sha256": "ec27135d6d62882c33b05eaecdc13c9a596757bc635689635f9c2b3d0c570a0a"
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
@@ -43,7 +43,7 @@
       "path": "apps/management-center/package.json",
       "mode": 420,
       "bytes": 1330,
-      "sha256": "77f3b533d3daeda5aeb31d1fa637750430e6041aafd7c58d44df4a684e261ffc"
+      "sha256": "d66aafe2dd91e9ad938d919c1e68e785a4ffc0a498cead8f752a30f02ff0b3a1"
     },
     {
       "path": "apps/management-center/src/components/foundation/content-roles.jsx",
@@ -408,8 +408,8 @@
     {
       "path": "distribution/summon-foundation/README.md",
       "mode": 420,
-      "bytes": 3605,
-      "sha256": "8f080292314d3580b45ff8baed2b4c4eaa95795877beb8fe990fad69459e776a"
+      "bytes": 4942,
+      "sha256": "a1006b0c5308c82e0509a2a351693b2c0fbc41cdbfbeac8e1762af051002cd9d"
     },
     {
       "path": "distribution/summon-foundation/THIRD_PARTY_NOTICES.txt",
@@ -426,38 +426,50 @@
     {
       "path": "distribution/summon-foundation/bin/summon.mjs",
       "mode": 493,
-      "bytes": 18444,
-      "sha256": "c9e4012f61bb7ec43a2d9573f2ad202332b9cd19c9e687e257e4ad29c5c2ae8e"
+      "bytes": 18897,
+      "sha256": "2c2045991aa2656530ae4b3523a1cbc7ed8d1a76fbe432681c3993087fb51f5b"
     },
     {
       "path": "distribution/summon-foundation/lib/acquire.mjs",
       "mode": 420,
-      "bytes": 15778,
-      "sha256": "04ddea33e2c48d95a6a433dc04897d208577488d653e559fc2454dbf41910b49"
+      "bytes": 15998,
+      "sha256": "f6a24db0d331fc8fd79272863bd0fbda8749c23e3e231cadd1ff57513b7a71e4"
     },
     {
       "path": "distribution/summon-foundation/lib/acquisition-task.mjs",
       "mode": 420,
-      "bytes": 1468,
-      "sha256": "6a0d145f7017f0dfb1fc1f511404bf8e492a068304506999b5dc0a539d304ceb"
+      "bytes": 1607,
+      "sha256": "cdebaa68f597efd903e4436685db259231ae1843fadc9aabbd299687f933d4d7"
     },
     {
       "path": "distribution/summon-foundation/lib/acquisition-worker.mjs",
       "mode": 420,
-      "bytes": 1449,
-      "sha256": "b6a5fde3cede5c9de8b7709963703c28e42ae7898491c8f721321470bd41d25f"
+      "bytes": 1482,
+      "sha256": "a0a45171ec71a2483f0c45f395a684632372e2b3e96f77d5dd7d559decbd0c8e"
     },
     {
       "path": "distribution/summon-foundation/lib/cli-options.mjs",
       "mode": 420,
-      "bytes": 1937,
-      "sha256": "894baf01c372c5f0e74882fb5c6864bd5becfc26b23e81c3a3aad0e211e9c8e7"
+      "bytes": 2179,
+      "sha256": "fe87b68564dc03fcad599739f08db30b8ddded7fe0c939b1e2783dfc7711fc13"
     },
     {
       "path": "distribution/summon-foundation/lib/environment-check.mjs",
       "mode": 420,
       "bytes": 4290,
       "sha256": "50f63aba3e2a653cec6fbcaacd54fd519c866d88a1d92644248a17ef11076f9d"
+    },
+    {
+      "path": "distribution/summon-foundation/lib/github-api.mjs",
+      "mode": 420,
+      "bytes": 6776,
+      "sha256": "efc4d4306fcfef4e7e3ec7e2184ed5c9b0741ab5e50e3734ecb90796b499ad22"
+    },
+    {
+      "path": "distribution/summon-foundation/lib/github-auth.mjs",
+      "mode": 420,
+      "bytes": 2704,
+      "sha256": "f85761cf9054e26534a3b626240209184c7e32ea0e3a42106d451cb78f820b50"
     },
     {
       "path": "distribution/summon-foundation/lib/journey-control.mjs",
@@ -492,8 +504,8 @@
     {
       "path": "distribution/summon-foundation/lib/operation-failure.mjs",
       "mode": 420,
-      "bytes": 3007,
-      "sha256": "1399957ab252e85d256c45be4d5aa104960fd7b0fb77ec140283bcea7cffff64"
+      "bytes": 4257,
+      "sha256": "50d5a2644d3e64412bee8b4ad44868fe6d3c4357bf32a5dd979c38e47cc5c38d"
     },
     {
       "path": "distribution/summon-foundation/lib/operation-result.mjs",
@@ -547,13 +559,13 @@
       "path": "distribution/summon-foundation/npm-shrinkwrap.json",
       "mode": 420,
       "bytes": 21856,
-      "sha256": "962f8f58c2d607e89ac382dd3c922ac96fc6cdeaed34364adb4b28d610a1e821"
+      "sha256": "382b416b2224830dd911d5515ad4231814b546eb0c57fa878bc3ee08cb7053e3"
     },
     {
       "path": "distribution/summon-foundation/package.json",
       "mode": 420,
       "bytes": 873,
-      "sha256": "47120c532dc08dcbae67add889b02fb5bc67b1df7cc3624bf557da80165acfd3"
+      "sha256": "bede6918234b8f2ea77eb349c6042cb430e0bba39e3f083759675d25fca42b15"
     },
     {
       "path": "docs/FOUNDATION_SHADCN_TYPE_SPACING_GOVERNANCE_V01.md",
@@ -637,7 +649,7 @@
       "path": "docs/install-with-codex.md",
       "mode": 420,
       "bytes": 26097,
-      "sha256": "afcfd82ed7c7a04039f251defdf8b10049b3a61eb9071be60a0a45d6519abec9"
+      "sha256": "b56bd00794228588de25acac3d47942f4cfeff8d8d81a705f5dde16bf1d3b8c1"
     },
     {
       "path": "docs/rules-and-project-use.md",
@@ -655,7 +667,7 @@
       "path": "foundation-kit.json",
       "mode": 420,
       "bytes": 1128,
-      "sha256": "f778cc569599cfc988f72bfd00133c40a0ea91ac80af3c9a609b1595cdc7abad"
+      "sha256": "9d65aeedba9025b50457cedf831144cccf91799c3d3225307bb298fc3ea206b2"
     },
     {
       "path": "migrations/0.1.1.mjs",
@@ -667,13 +679,13 @@
       "path": "package-lock.json",
       "mode": 420,
       "bytes": 217374,
-      "sha256": "9dd6c8dd6c01e062719f8238b6dcc9e28c725eb842fb8f5085cd00d55d2174d3"
+      "sha256": "0376b18b139f2d19fbf828b9eb2ba0a78b47e77f56700ea3f4a7605278e9b4a2"
     },
     {
       "path": "package.json",
       "mode": 420,
       "bytes": 752,
-      "sha256": "ff78df24a8b212b1c0450dd62cd72f96663b311c752c37f178f1d33caa4a915c"
+      "sha256": "cd8ccee58d0b6ce10031d8ebf0d809bfc3cf504f39529c37e0bdb09e07f346ab"
     },
     {
       "path": "packages/cli/command-contract.mjs",
@@ -703,7 +715,7 @@
       "path": "packages/cli/package.json",
       "mode": 420,
       "bytes": 294,
-      "sha256": "3c9f0c4fc40ab04d8c3993cdf58c4f423ae86e71762763ddd21f68ac45109620"
+      "sha256": "5a180285363ad314729a94480c7a146fcb2888c3c08a94ea07357031cad99a33"
     },
     {
       "path": "packages/core/ai-bridge.mjs",
@@ -1027,7 +1039,7 @@
       "path": "packages/core/package.json",
       "mode": 420,
       "bytes": 582,
-      "sha256": "a5dbfc6adad369eb28b07c5705b0190ccadfba8bae0be3d99e832ceb45f4ae06"
+      "sha256": "90042395d632ad4f2f8608cd51e0822fdd56ee65668c7f057962b82242c2daf2"
     },
     {
       "path": "packages/core/path-boundary.mjs",

@@ -1,8 +1,9 @@
+import {resolveGitHubAuth,withoutGitHubCredentials} from './github-auth.mjs';
 import {Worker} from 'node:worker_threads';
 
-export function acquireInWorker({version,stage,operationId,onContext=()=>{},onPhase=()=>{},onProgress=()=>{}}) {
+export function acquireInWorker({version,stage,operationId,auth=resolveGitHubAuth(),onContext=()=>{},onPhase=()=>{},onProgress=()=>{}}) {
   return new Promise((resolve,reject)=>{
-    const worker=new Worker(new URL('./acquisition-worker.mjs',import.meta.url),{workerData:{version,stage,operationId}});
+    const worker=new Worker(new URL('./acquisition-worker.mjs',import.meta.url),{env:withoutGitHubCredentials(),workerData:{version,stage,operationId,auth}});
     let receipt,context,failure;
     const interrupt=()=>{failure=Object.assign(Error('获取任务被中断；保留本次材料'),{code:'ACQUISITION_INTERRUPTED'});void worker.terminate();};
     process.once('SIGINT',interrupt);process.once('SIGTERM',interrupt);

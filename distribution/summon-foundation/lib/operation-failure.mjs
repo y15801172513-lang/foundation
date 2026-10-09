@@ -1,6 +1,15 @@
 export function operationFailure(error) {
   const code=/^[A-Z][A-Z0-9_]{1,79}$/.test(error?.code||'')?error.code:'INSTALL_ENTRY_FAILED';
   const stage=/^[a-z][a-z-]{0,39}$/.test(error?.stage||'')?error.stage:'entry';
+  if(code.startsWith('GITHUB_')){
+    const sources=['anonymous','GH_TOKEN','GITHUB_TOKEN','gh','none'];
+    const source=sources.includes(error?.diagnostic?.source)?error.diagnostic.source:'none';
+    const category=/RATE_LIMIT/.test(code)?'rate-limit':/AUTH/.test(code)?'authentication':code==='GITHUB_API_FORBIDDEN'?'forbidden':'http';
+    const seconds=error?.diagnostic?.retryAfterSeconds;
+    const retryAfterSeconds=Number.isSafeInteger(seconds)&&seconds>=0?seconds:null;
+    const next=category==='rate-limit'?`GitHub 限流（来源 ${source}）；${retryAfterSeconds===null?'按服务提示等待':`至少等待 ${retryAfterSeconds} 秒`}后再发起获取。匿名用户可显式选择 --github-auth gh。`:category==='authentication'?`GitHub 认证失败（来源 ${source}）；核实对应环境凭证，或自行检查 gh auth status --hostname github.com 后选择 --github-auth gh；也可明确选择 anonymous。`:category==='forbidden'?`GitHub API 权限不足（来源 ${source}）；核实凭证权限与组织策略，不自动回退匿名。`:'GitHub API 请求未完成；核实发行与服务状态后再发起获取。';
+    return {code,stage,category,source,retryAfterSeconds,retryable:error?.retryable===true,next};
+  }
   if (['PROJECT_COMPATIBILITY_UNKNOWN','PROJECT_RUNTIME_INCOMPATIBLE','PROJECT_DOWNGRADE_INCOMPATIBLE','PROJECT_IDENTITY_REBIND_REQUIRED'].includes(code)) {
     const project = typeof error?.details?.project === 'string' && error.details.project.startsWith('/') && error.details.project.length <= 4096 && !/[\u0000-\u001f]/u.test(error.details.project) ? error.details.project : null;
     const reasons = ['device-changed','directory-replaced','invalid-signature','installation-binding-mismatch','project-missing','unsafe-path','unsafe-project-path','portable-binding-mismatch','capability-missing','evidence-changed-after-plan'];

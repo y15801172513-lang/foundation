@@ -7,6 +7,8 @@ import {Updater} from 'tuf-js';
 import snappy from 'snappyjs';
 import {verifyReleaseProof} from './release-proof.mjs';
 import policy from './public-policy.json' with {type:'json'};
+import {githubApi} from './github-api.mjs';
+import {resolveGitHubAuth,withoutGitHubCredentials} from './github-auth.mjs';
 import {readOperation} from './operation-result.mjs';
 
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
@@ -32,7 +34,7 @@ function download(url, limit=10_000_000) {
   if(r.status!==0 || r.error) throw downloadFailure(r,u.hostname);
   return r.stdout;
 }
-function api(endpoint) { return json(download(`https://api.github.com/repos/${policy.repository}/${endpoint}`)); }
+function api(endpoint,auth) { return githubApi(endpoint,auth); }
 async function downloadLarge(url,total,onProgress) {
   const {spawn}=await import('node:child_process');
   const env={PATH:'/usr/bin:/bin'};for(const k of ['HTTPS_PROXY','HTTP_PROXY','ALL_PROXY','NO_PROXY','https_proxy','http_proxy','all_proxy','no_proxy','TMPDIR'])if(process.env[k])env[k]=process.env[k];
@@ -57,18 +59,18 @@ async function downloadLarge(url,total,onProgress) {
 }
 function regular(file) { const s=fs.lstatSync(file); if(!s.isFile()||s.isSymbolicLink())fail('不是普通文件');return s; }
 export {plainPath} from './local-path.mjs';
-export function inspectRelease(version) {
+export function inspectRelease(version,{auth=resolveGitHubAuth()}={}) {
   if(!Number.isSafeInteger(policy.repositoryId)||policy.repositoryId<=0)fail('公共仓库身份尚未绑定；此源码不是可用发行入口');
   if(version!==undefined&&!semver.test(version))fail('版本必须是明确的 x.y.z');
-  const repository=json(download(`https://api.github.com/repos/${policy.repository}`));
+  const repository=api('',auth);
   if(repository.id!==policy.repositoryId||repository.full_name!==policy.repository||repository.private!==false)fail('公共仓库身份漂移');
-  const release=api(version?`releases/tags/v${version}`:'releases/latest');
+  const release=api(version?`releases/tags/v${version}`:'releases/latest',auth);
   if(!/^v\d+\.\d+\.\d+$/.test(release.tag_name)||!release.immutable||release.draft||release.prerelease)fail('没有可用的正式不可变发行');
-  const commit=api(`commits/${release.tag_name}`);
+  const commit=api(`commits/${release.tag_name}`,auth);
   if(!/^[a-f0-9]{40}$/.test(commit.sha))fail('无法解析发行提交');
   // Instructions follow the maintained public docs, frozen for this invocation;
   // runtime identity still comes exclusively from the immutable release tag.
-  const documentation=api('commits/main');
+  const documentation=api('commits/main',auth);
   if(!/^[a-f0-9]{40}$/.test(documentation.sha))fail('无法固定当前安装说明提交');
   return {repository,release,sourceCommit:commit.sha,documentationCommit:documentation.sha,version:release.tag_name.slice(1)};
 }
@@ -83,12 +85,12 @@ async function trustRoot(stage) {
   await updater.refresh();const info=await updater.getTargetInfo('trusted_root.json');if(!info)fail('GitHub 信任目标缺失');
   return json(fs.readFileSync(await updater.downloadTarget(info)));
 }
-async function verifiedAsset(context,asset,stage,trust,onProgress=()=>{},onDownloaded=()=>{}) {
+async function verifiedAsset(context,asset,stage,trust,onProgress=()=>{},onDownloaded=()=>{},auth) {
   if(!asset||!Number.isSafeInteger(asset.size)||asset.size<=0||asset.size>250_000_000||!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(asset.name)||!/^sha256:[a-f0-9]{64}$/.test(asset.digest)||asset.browser_download_url!==`https://github.com/${policy.repository}/releases/download/${context.release.tag_name}/${asset.name}`)fail('资产元数据无效');
   const bytes=asset.size>10_000_000?await downloadLarge(asset.browser_download_url,asset.size,p=>onProgress({...p,asset:asset.name})):download(asset.browser_download_url,asset.size+1);
   onDownloaded();
   if(bytes.length!==asset.size||`sha256:${hash(bytes)}`!==asset.digest)fail('下载长度或摘要不匹配');
-  const proofs=api(`attestations/${asset.digest}?predicate_type=release&per_page=100`).attestations;
+  const proofs=api(`attestations/${asset.digest}?predicate_type=release&per_page=100`,auth).attestations;
   if(!Array.isArray(proofs)||proofs.length>=100)fail('证明列表不完整或分页待核实');
   const matches=[];
   for(const item of proofs){
@@ -128,7 +130,7 @@ function validateCandidate(root,release,sourceCommit) {
 // stage is always created by the CLI from the OS account in production.
 // Keeping this module callable allows contained engineering validation without
 // adding an install/cache override to the user-facing executable.
-export async function acquireRelease(context,stage,{onPhase=()=>{},onProgress=()=>{},operationId=null}={}) {
+export async function acquireRelease(context,stage,{onPhase=()=>{},onProgress=()=>{},operationId=null,auth=resolveGitHubAuth()}={}) {
   plainPath(stage);const s=fs.lstatSync(stage),entries=fs.readdirSync(stage);if(!s.isDirectory()||(s.mode&0o777)!==0o700||s.uid!==process.getuid())fail('获取目录必须是当前用户的新建独占空目录');
   if(entries.length){if(entries.length!==1||entries[0]!=='operation-result.json'||!operationId)fail('获取目录包含未知内容');const r=readOperation(path.join(stage,entries[0]));if(r.operationId!==operationId||r.terminal||r.phase!=='discovering')fail('获取目录不是本次早期记录');}
   const beforeTmp=process.env.TMPDIR;process.env.TMPDIR=stage;
@@ -138,20 +140,20 @@ export async function acquireRelease(context,stage,{onPhase=()=>{},onProgress=()
     const name=`foundation-release-${context.version}-macos-arm64.json`;
     const catalogs=context.release.assets.filter(x=>x.name===name);if(catalogs.length!==1)fail('发行清单缺失或重复');
     onPhase('fetching-and-verifying-catalog');
-    const catalog=json((await verifiedAsset(context,catalogs[0],stage,trust)).bytes);
+    const catalog=json((await verifiedAsset(context,catalogs[0],stage,trust,undefined,undefined,auth)).bytes);
     const releases=catalog.releases?.filter(x=>x.version===context.version&&x.platform==='darwin'&&x.arch==='arm64');
     if(catalog.schemaVersion!=='1.0.0'||catalog.product!=='ai-product-foundation-kit'||catalog.keyId!==null||!Number.isSafeInteger(catalog.issuedAt)||catalog.issuedAt>Date.now()||!Number.isSafeInteger(catalog.expiresAt)||catalog.expiresAt<=Date.now()||catalog.expiresAt<=catalog.issuedAt||releases?.length!==1)fail('发行清单身份、有效期或架构不匹配');
     const release=releases[0];const assetName=`foundation-${release.sha256}.tar.gz`;
     if(release.repositoryId!==policy.repositoryId||release.sourceCommit!==context.sourceCommit||!/^[a-f0-9]{64}$/.test(release.candidateHash)||release.url!==`https://github.com/${policy.repository}/releases/download/${context.release.tag_name}/${assetName}`||!/^\d+\.\d+\.\d+$/.test(release.runtime?.version)||release.runtime.url!==`https://nodejs.org/dist/v${release.runtime.version}/node-v${release.runtime.version}-darwin-arm64.tar.gz`)fail('清单不能更换仓库、提交或官方运行时来源');
     const assets=context.release.assets.filter(x=>x.name===assetName&&x.size===release.bytes&&x.digest===`sha256:${release.sha256}`);if(assets.length!==1)fail('归档身份不匹配');
     onPhase('fetching-and-verifying-runtime');
-    const archive=await verifiedAsset(context,assets[0],stage,trust,onProgress,()=>onPhase('verifying-runtime'));
+    const archive=await verifiedAsset(context,assets[0],stage,trust,onProgress,()=>onPhase('verifying-runtime'),auth);
     onPhase('extracting-and-validating');
-    const listing=spawnSync('/usr/bin/tar',['-tzf',archive.file],{encoding:'utf8',maxBuffer:10_000_000});
-    const types=spawnSync('/usr/bin/tar',['-tvzf',archive.file],{encoding:'utf8',maxBuffer:10_000_000});
+    const listing=spawnSync('/usr/bin/tar',['-tzf',archive.file],{env:withoutGitHubCredentials(),encoding:'utf8',maxBuffer:10_000_000});
+    const types=spawnSync('/usr/bin/tar',['-tvzf',archive.file],{env:withoutGitHubCredentials(),encoding:'utf8',maxBuffer:10_000_000});
     if(listing.status!==0||types.status!==0||listing.stdout.trim().split('\n').some(p=>p.startsWith('/')||p.includes('\\')||p.split('/').includes('..'))||types.stdout.trim().split('\n').some(p=>!['d','-'].includes(p[0])||/[sStT]/.test(p.slice(1,10))))fail('归档包含不安全路径、链接或特殊权限');
     const candidate=path.join(stage,'candidate');fs.mkdirSync(candidate,{mode:0o700});
-    const extracted=spawnSync('/usr/bin/tar',['-xzf',archive.file,'-p','--no-same-owner','--no-acls','--no-fflags','--no-mac-metadata','--no-xattrs','-C',candidate],{stdio:'pipe'});if(extracted.status!==0)fail('归档展开失败；未执行');
+    const extracted=spawnSync('/usr/bin/tar',['-xzf',archive.file,'-p','--no-same-owner','--no-acls','--no-fflags','--no-mac-metadata','--no-xattrs','-C',candidate],{env:withoutGitHubCredentials(),stdio:'pipe'});if(extracted.status!==0)fail('归档展开失败；未执行');
     const checked=validateCandidate(candidate,release,context.sourceCommit);
     const receipt={...archive.evidence,candidateHash:release.candidateHash,launcher:checked.launcher,purpose:'acquisition-cache',retained:true,deletionAuthority:false,installationConfirmed:false};
     fs.writeFileSync(path.join(stage,'acquisition.json'),JSON.stringify(receipt,null,2)+'\n',{flag:'wx',mode:0o600});

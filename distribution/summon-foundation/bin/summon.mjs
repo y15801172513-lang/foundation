@@ -4,6 +4,8 @@ import path from 'node:path';
 import {spawn,spawnSync} from 'node:child_process';
 import {inspectRelease,plainPath} from '../lib/acquire.mjs';
 
+import {takeGitHubCredentials,resolveGitHubAuth,redactGitHubSecret} from '../lib/github-auth.mjs';
+
 import {acquireInWorker} from '../lib/acquisition-task.mjs';
 import {startProgressPage} from '../lib/progress-page.mjs';
 import {followSelectedSkill} from '../lib/skill-handoff.mjs';
@@ -25,6 +27,7 @@ summon foundation --uninstall --root /absolute/installed-folder
 summon foundation --resume /absolute/acquisition/operation-result.json
 默认命令下载并验证正式发行，进入安装准备；未给目录时在安装页选择。不会静默安装或注册 Skill。
 --inspect 才只读查询发行，不下载运行归档。
+--github-auth auto|anonymous|gh 用于查询、获取与更新。默认 auto 依次读取 GH_TOKEN、GITHUB_TOKEN，无凭证则匿名；仅显式 gh 读取 GitHub CLI 已有登录。anonymous 忽略环境凭证。
 --prepare 下载并核验固定发行，打开 Foundation 本人确认流程；不会代替确认。
 --acquire 仅下载并核验更新材料，返回候选与回执；不启动安装或执行更新。
 --status 只读本次结果记录；中间记录不证明进程仍在运行，不重试或重放确认。
@@ -50,13 +53,16 @@ function stageDirectory(){
   const stat=fs.lstatSync(cache);if(stat.uid!==process.getuid()||(stat.mode&0o777)!==0o700)fail('获取缓存必须由当前用户独占 0700；不会自动 chmod 已有目录');
   return fs.mkdtempSync(path.join(cache,'acquisition.'));
 }
-let operation=null,stage=null,progressPage=null;
+let operation=null,stage=null,progressPage=null,auth=null;
+const credentials=takeGitHubCredentials();
 const journeyControl=createJourneyControl(()=>operation,patch=>patch?updateOperation(patch):progressPage?.publish());
 function updateOperation(patch){if(!operation)return;Object.assign(operation,patch,{updatedAt:new Date().toISOString()});if(operation.terminal)operation.exitCode=operationExitCode(operation);const file=saveOperation(operation,stage);if(file)operation.resultFile=file;progressPage?.publish();console.log(JSON.stringify({status:'FOUNDATION_INSTALL_OPERATION',...operation,resultFile:file,recordSaved:!!file}));}
 try{
   const args=parseSummonArgs(process.argv.slice(2));
   if(args.help){console.log(help);process.exit(0);}
   if(args.status){console.log(JSON.stringify(readOperation(args.status),null,2));process.exit(0);}
+  if(!args.uninstall&&!args.resume)auth=resolveGitHubAuth(args['github-auth'],credentials);
+  for(const key of Object.keys(credentials))delete credentials[key];
   const initialEnvironment=inspectEntryEnvironment({purpose:args.uninstall?'uninstall':args.resume?'resume':args.inspect?'discover':'acquire'});
   if(!initialEnvironment.supported||!initialEnvironment.compatible){
     operation=createOperation();updateOperation({phase:'checking-environment',environment:initialEnvironment});
@@ -91,14 +97,14 @@ try{
     if(args.update){
       if(args.version&&args.version!==current.version)assertUpdateEngineSupport(inspection,{root:args.root,stage});
       updateOperation({phase:'discovering'});
-      const target=inspectRelease(args.version);args.version=target.version;
+      const target=inspectRelease(args.version,{auth});args.version=target.version;
       updateOperation({version:target.version,sourceCommit:target.sourceCommit});
       if(target.version===current.version){
         updateOperation({state:'completed',terminal:true,phase:'finished',programState:'unchanged',installationWrites:'none',next:'当前已是所选正式版本；未下载、更新或重新注册 Skill。'});
         await progressPage.close();progressPage=null;process.exit(0);
       }
       assertUpdateEngineSupport(inspection,{root:args.root,stage});
-      const {context,receipt}=await acquireInWorker({version:args.version,stage,operationId:operation.operationId,onContext:context=>updateOperation({version:context.version,sourceCommit:context.sourceCommit}),onProgress:download=>updateOperation({download}),onPhase:phase=>updateOperation({phase,...(phase==='fetching-and-verifying-runtime'?{download:null}:{})})});
+      const {context,receipt}=await acquireInWorker({auth,version:args.version,stage,operationId:operation.operationId,onContext:context=>updateOperation({version:context.version,sourceCommit:context.sourceCommit}),onProgress:download=>updateOperation({download}),onPhase:phase=>updateOperation({phase,...(phase==='fetching-and-verifying-runtime'?{download:null}:{})})});
       const directory=plainPath(path.dirname(receipt.launcher)),manifest=JSON.parse(fs.readFileSync(plainPath(path.join(directory,'manifest.json'))));
       if(manifest.productVersion!==context.version)fail('获取版本与候选不一致');
       candidate={path:directory,manifestHash:manifest.candidateHash,version:manifest.productVersion,bytes:manifest.totalBytes,runtimeHash:manifest.files.find(f=>f.path===manifest.runtime.path)?.sha256};
@@ -109,12 +115,12 @@ try{
     await progressPage.close();progressPage=null;
   }else if(!args.prepare&&!args.acquire){
     if(initialEnvironment.state!=='ready'){operation=createOperation();updateOperation({phase:'checking-environment',environment:initialEnvironment});fail('发行查询所需环境无法核实；尚未联网');}
-    const context=inspectRelease(args.version);
+    const context=inspectRelease(args.version,{auth});
     const guide=`https://github.com/${context.repository.full_name}/blob/${context.documentationCommit}/docs/install-with-codex.md`;
     console.log(JSON.stringify({schemaVersion:'1.0.0',status:'RELEASE_DISCOVERED_NOT_ACQUIRED',product:'Foundation',version:context.version,sourceCommit:context.sourceCommit,documentationCommit:context.documentationCommit,repository:context.repository.full_name,guide,installationPerformed:false,skillRegistered:false,
       conversationNextStep:'本次 --inspect 仅查询；未下载、未安装，不自动接续写入。需要安装时由用户发起默认安装入口，并核对当前任务权限。',
       terminalBoundary:'普通终端无法创建或唤醒 Codex 对话；请在有相应权限的 Codex 任务发起安装。',
-      acquisition:'尚未下载或验证运行归档。默认入口或 --prepare 执行匿名 GitHub 证明与完整性核验。'},null,2));
+      acquisition:'尚未下载或验证运行归档。默认入口或 --prepare 执行 GitHub 证明与完整性核验。'},null,2));
   }else{
     console.log(`本次独占获取目录：${stage}`);
     progressPage=await startProgressPage(()=>operation,args.acquire?{}:{control:journeyControl});
@@ -124,13 +130,13 @@ try{
     if(environment.state!=='ready')fail('获取环境检查未通过：'+environment.state+'；缺少 '+environment.missing.join('、')+'；不会以安装 Node 替代缺失的系统工具');
     if(!args.acquire){
       updateOperation({phase:'discovering'});
-      const metadata=inspectRelease(args.version);args.version=metadata.version;
+      const metadata=inspectRelease(args.version,{auth});args.version=metadata.version;
       updateOperation({phase:'choosing-intent',environment,version:metadata.version,sourceCommit:metadata.sourceCommit,acquisitionRoot:stage,destinationIntent:args.destination||'',journeyContext:{id:operation.operationId,skillChoice:'undecided'}});
       const choice=await journeyControl.waitChoice();
       updateOperation({phase:'discovering',intentSelected:true,destinationIntent:choice.destination,scopeIntent:{kind:choice.scopeKind,projectRoot:choice.projectRoot},destinationCheck:choice.destinationCheck,journeyContext:{id:operation.operationId,skillChoice:choice.skillChoice}});
     }
     updateOperation({phase:'discovering'});
-    const {context,receipt}=await acquireInWorker({version:args.version,stage,operationId:operation.operationId,onContext:context=>updateOperation({version:context.version,sourceCommit:context.sourceCommit}),onProgress:download=>updateOperation({download}),onPhase:phase=>updateOperation({phase,...(phase==='fetching-and-verifying-runtime'?{download:null}:{})})});console.log(JSON.stringify({status:'GITHUB_ACQUISITION_VERIFIED',...receipt,destinationIntent:args.destination}));
+    const {context,receipt}=await acquireInWorker({auth,version:args.version,stage,operationId:operation.operationId,onContext:context=>updateOperation({version:context.version,sourceCommit:context.sourceCommit}),onProgress:download=>updateOperation({download}),onPhase:phase=>updateOperation({phase,...(phase==='fetching-and-verifying-runtime'?{download:null}:{})})});console.log(JSON.stringify({status:'GITHUB_ACQUISITION_VERIFIED',...receipt,destinationIntent:args.destination}));
     updateOperation({phase:'acquired',version:context.version,sourceCommit:context.sourceCommit});
     if(args.acquire){updateOperation({state:'update-input-ready',terminal:true});console.log(JSON.stringify({status:'UPDATE_INPUT_READY_NOT_APPLIED',candidate:path.dirname(receipt.launcher),receipt:path.join(stage,'acquisition.json'),next:'使用当前健康安装的稳定入口生成独立更新计划；本人确认后才更新。获取回执不是删除授权。'}));await progressPage.close();progressPage=null;process.exit(0);}
     const env={...process.env};for(const key of ['NODE_OPTIONS','NODE_PATH','NODE_V8_COVERAGE','NODE_REDIRECT_WARNINGS','NODE_COMPILE_CACHE','NODE_COMPILE_CACHE_PORTABLE','NODE_PRESERVE_SYMLINKS'])delete env[key];
@@ -157,4 +163,4 @@ try{
     if(!operation.terminal)updateOperation({state:'verification-required',terminal:true,childExitCode:ended.code,next:'服务退出不等于成功或取消；只读核验原 session 与 installed 状态，不自动重试'});
     process.exitCode=operationExitCode(operation);
   }
-}catch(e){const failure=operationFailure(e);const message=String(e.message).replace(/https?:\/\/\S+/g,'[已脱敏网址]').replace(/(?:github_pat_|ghp_|npm_)[A-Za-z0-9_]+/g,'[已脱敏凭据]');updateOperation({state:e.code==='ENTRY_CHOICE_CANCELLED'?'cancelled-no-install':e.code==='ENTRY_CHOICE_EXPIRED'?'expired-no-install':operation?.programState==='completed'?'partial':operation&&operation.installationWrites!=='none'?'verification-required':'failed',terminal:true,...(operation?.programState==='completed'?{failedPhase:operation.phase,phase:'finished'}:{}),errorCode:failure.code,errorStage:failure.stage,retryable:failure.retryable,diagnostic:{...failure,...(e.code==='ACQUISITION_TRANSPORT_FAILED'?{transport:e.diagnostic}:{} )},next:(e.diagnostic?.category?failure.next:message)+'。先核验旧工具进程已结束及同次结果；保留材料，不自动重试或重放安装确认'});console.error(`错误：[${failure.code} / ${failure.stage} / retryable=${failure.retryable}] ${message}`);process.exitCode=operationExitCode(operation);}finally{if(progressPage)await progressPage.close();}
+}catch(e){const failure=operationFailure(e);const message=redactGitHubSecret(e.message,auth);updateOperation({state:e.code==='ENTRY_CHOICE_CANCELLED'?'cancelled-no-install':e.code==='ENTRY_CHOICE_EXPIRED'?'expired-no-install':operation?.programState==='completed'?'partial':operation&&operation.installationWrites!=='none'?'verification-required':'failed',terminal:true,...(operation?.programState==='completed'?{failedPhase:operation.phase,phase:'finished'}:{}),errorCode:failure.code,errorStage:failure.stage,retryable:failure.retryable,diagnostic:{...failure,...(e.code==='ACQUISITION_TRANSPORT_FAILED'?{transport:e.diagnostic}:{} )},next:(e.diagnostic?.category?failure.next:message)+'。先核验旧工具进程已结束及同次结果；保留材料，不自动重试或重放安装确认'});console.error(`错误：[${failure.code} / ${failure.stage} / retryable=${failure.retryable}] ${message}`);process.exitCode=operationExitCode(operation);}finally{if(progressPage)await progressPage.close();}

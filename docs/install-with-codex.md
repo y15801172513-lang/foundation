@@ -1,17 +1,17 @@
 # 用 Codex 安装 Foundation
 
-当前支持边界见[现行支持策略](install-platform-024.md#现行支持策略)。本源码对应程序 0.2.33、npm 0.1.15；发行可用性必须在线核验。
+当前支持边界见[现行支持策略](install-platform-024.md#现行支持策略)。本源码对应程序 0.2.34、npm 0.1.16；发行可用性必须在线核验。
 
 新版要求启动器和运行引擎均声明单页接续，所有所选确认在初始页面展开，不兼容旧版多页过渡。临时页面结束后仍可读取同次结果；不自动删除或迁移旧安装。
 
 本文是可从固定发行提交读取的操作说明，不单独证明该版本已发布。必须以实际 npm registry 和公共不可变 Release 的验证结果为准；缺包、缺发行或验证失败时停止获取，不把仓库存在当作安装成功。真实安装、Skill 注册及新对话发现分别验收。
 
-对应版本：[Foundation 0.2.33](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.33)、[npm 0.1.15](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.15)。运行源码身份以同版本发行证明为准，文档提交不替代运行源码身份。
+对应版本：[Foundation 0.2.34](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.34)、[npm 0.1.16](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.16)。运行源码身份以同版本发行证明为准，文档提交不替代运行源码身份。
 
 在具备权限的新 Codex 对话中使用：
 
 ```text
-npx --yes --package @josephyulei/summon-foundation@0.1.15 summon foundation --version 0.2.33
+npx --yes --package @josephyulei/summon-foundation@0.1.16 summon foundation --version 0.2.34
 ```
 
 新版默认命令先在同一页面收集目录和 Skill 意向，再获取并校验固定版本，随后就地展开每个精确确认。只打开首次返回的单页 URL；不追随内部 manager 地址或另开标签。选择不是执行批准。无 TTY 不阻塞终端提问；关闭页面不算取消，目录选择有明确到期。系统浏览器仅在明确告知并得到同意后备用。

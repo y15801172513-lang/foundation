@@ -16,7 +16,7 @@ Foundation 的薄获取入口，不包含完整运行包，没有 npm 安装生�
 确认 registry 中存在本版本及对应不可变 Release 后，在具备安装权限的新 Codex 对话粘贴：
 
 ```text
-npx --yes --package @josephyulei/summon-foundation@0.1.12 summon foundation
+npx --yes --package @josephyulei/summon-foundation@0.1.16 summon foundation
 ```
 
 旧版退出推荐入口；支持边界见[现行支持策略](https://github.com/y15801172513-lang/foundation/blob/main/docs/install-platform-024.md#现行支持策略)。旧不可变版本不修改，不自动迁移或清除旧安装。
@@ -28,7 +28,23 @@ Codex 需要打开返回的内置浏览器网址，并分段等待同次操作�
 显式 --inspect 只查询发行。默认命令先在页面选择目录与Skill意向，再下载核验；最终精确计划仍需本人确认。--prepare传入的目录只是意向；--acquire只准备更新输入。更新/卸载仅使用支持单页的已安装稳定入口，不回退旧页面。
 
 需要 macOS arm64、Node.js 22.9+ 与 npm。无 TTY 不会卡在终端提问；目录选择在页面进行，关闭页面不算确认或取消。
-固定版本准备阶段匿名校验 GitHub 仓库身份、不可变 Release、签名证明、时间戳、源码提交和资产字节，随后使用随包运行时进入现有 Foundation 确认页面。
+固定版本准备阶段校验 GitHub 仓库身份、不可变 Release、签名证明、时间戳、源码提交和资产字节，随后使用随包运行时进入现有 Foundation 确认页面。
 不关闭 Gatekeeper、不清除隔离属性，不冒充 Apple 签名或公证。遇到权限问题安全停止。
 
 尚无 Foundation / Skill 的缓存说明：[公开清理指南](https://github.com/y15801172513-lang/foundation/blob/main/docs/cache-cleanup.md)。当前 README 不是安装完成回执。
+
+### 可选 GitHub 认证
+
+以下选项需要支持可选认证的获取器版本；npm 0.1.15 不支持。支持该选项的入口可使用：
+
+```sh
+summon foundation --inspect --github-auth gh
+summon foundation --github-auth gh
+summon foundation --acquire --version 0.2.33 --github-auth gh
+summon foundation --update --root /absolute/installed-folder --github-auth gh
+summon foundation --inspect --github-auth anonymous
+```
+
+默认 `--github-auth auto` 优先读取 `GH_TOKEN`，其次 `GITHUB_TOKEN`；均无值则匿名，不读取 gh 登录。`gh` 模式只在明确选择时读取 `gh auth token --hostname github.com`，忽略这两个环境变量；`anonymous` 强制匿名。不要把 Token 写入命令参数、聊天或项目文件。gh 缺失或未登录时自行安装 CLI / 执行 `gh auth login --hostname github.com`，入口不会代为登录。401 提示修复所选凭证，不静默回退；普通403提示核实权限，主/次级限流按响应头等待。自动重试最多两次、累计等待最多五秒，超过预算则提示服务要求的等待时间，不提前重试。
+
+认证头仅用于 HTTPS api.github.com 的本产品仓库 API；每跳检查，跨域后不再携带认证。下载资产、信任数据、安装/更新及 Skill 子进程不接收 Token。Token 不改变发行证明和完整性要求。
