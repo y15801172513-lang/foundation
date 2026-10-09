@@ -1,13 +1,13 @@
 {
   "schemaVersion": "clean-export/1",
-  "version": "0.2.34",
-  "sourceTreeSha256": "abfb9aee8b6c89bd476aa52a4b46afa9034912dcd58d56c3c8242cab39ecfd17",
+  "version": "0.2.35",
+  "sourceTreeSha256": "ee79ebd562515d2e3ad03c3229243073b5dd4397ccb8195bc7c2b1e730e337c4",
   "exportedFiles": [
     {
       "path": "README.md",
       "mode": 420,
       "bytes": 6384,
-      "sha256": "ec27135d6d62882c33b05eaecdc13c9a596757bc635689635f9c2b3d0c570a0a"
+      "sha256": "e7be0c072495167e159dc635d06d66ac0e17fda431efc122b66377fb2f2a78ca"
     },
     {
       "path": "THIRD_PARTY_NOTICES.md",
@@ -43,7 +43,7 @@
       "path": "apps/management-center/package.json",
       "mode": 420,
       "bytes": 1330,
-      "sha256": "d66aafe2dd91e9ad938d919c1e68e785a4ffc0a498cead8f752a30f02ff0b3a1"
+      "sha256": "f1578db35ef07793c886c9ccd8dee0296175c8fcb978b0b66c0766fe63f18141"
     },
     {
       "path": "apps/management-center/src/components/foundation/content-roles.jsx",
@@ -426,8 +426,8 @@
     {
       "path": "distribution/summon-foundation/bin/summon.mjs",
       "mode": 493,
-      "bytes": 18897,
-      "sha256": "2c2045991aa2656530ae4b3523a1cbc7ed8d1a76fbe432681c3993087fb51f5b"
+      "bytes": 19176,
+      "sha256": "edcb0fda07e485717129217ab5479832a4223962b5b2d20e8ed58748b306b51b"
     },
     {
       "path": "distribution/summon-foundation/lib/acquire.mjs",
@@ -450,8 +450,8 @@
     {
       "path": "distribution/summon-foundation/lib/cli-options.mjs",
       "mode": 420,
-      "bytes": 2179,
-      "sha256": "fe87b68564dc03fcad599739f08db30b8ddded7fe0c939b1e2783dfc7711fc13"
+      "bytes": 2255,
+      "sha256": "e174cbfd858583aa682bcf5424decc0d273488b59a92b99efe3227f6daa16475"
     },
     {
       "path": "distribution/summon-foundation/lib/environment-check.mjs",
@@ -559,13 +559,13 @@
       "path": "distribution/summon-foundation/npm-shrinkwrap.json",
       "mode": 420,
       "bytes": 21856,
-      "sha256": "382b416b2224830dd911d5515ad4231814b546eb0c57fa878bc3ee08cb7053e3"
+      "sha256": "832a3fbc5f85d7eae357a24c42bf9aa800ec1d88bf86ae5b0a16d0f8ded21d9e"
     },
     {
       "path": "distribution/summon-foundation/package.json",
       "mode": 420,
       "bytes": 873,
-      "sha256": "bede6918234b8f2ea77eb349c6042cb430e0bba39e3f083759675d25fca42b15"
+      "sha256": "7f1457b4571339295d17fb056e472b86bc198c2cba65c9aa5470cd861cd9b02a"
     },
     {
       "path": "docs/FOUNDATION_SHADCN_TYPE_SPACING_GOVERNANCE_V01.md",
@@ -648,8 +648,8 @@
     {
       "path": "docs/install-with-codex.md",
       "mode": 420,
-      "bytes": 26097,
-      "sha256": "b56bd00794228588de25acac3d47942f4cfeff8d8d81a705f5dde16bf1d3b8c1"
+      "bytes": 29585,
+      "sha256": "50f4c3f003566cbd52b1a9003aab51ac847d2cea3f3f3f8261ab669840ed11a1"
     },
     {
       "path": "docs/rules-and-project-use.md",
@@ -667,7 +667,7 @@
       "path": "foundation-kit.json",
       "mode": 420,
       "bytes": 1128,
-      "sha256": "9d65aeedba9025b50457cedf831144cccf91799c3d3225307bb298fc3ea206b2"
+      "sha256": "085c5d95554d53f881f8873661d37f0d2c768b16964499c97787aabd8a640456"
     },
     {
       "path": "migrations/0.1.1.mjs",
@@ -679,13 +679,13 @@
       "path": "package-lock.json",
       "mode": 420,
       "bytes": 217374,
-      "sha256": "0376b18b139f2d19fbf828b9eb2ba0a78b47e77f56700ea3f4a7605278e9b4a2"
+      "sha256": "a21dd9fdc033f16cfa6774d133278aba46c89b05bed88cdb531607421315f854"
     },
     {
       "path": "package.json",
       "mode": 420,
       "bytes": 752,
-      "sha256": "cd8ccee58d0b6ce10031d8ebf0d809bfc3cf504f39529c37e0bdb09e07f346ab"
+      "sha256": "01a218e37033beb766493de0a9876d038b3fa6589b0f01b1a30ca89b1f386b5a"
     },
     {
       "path": "packages/cli/command-contract.mjs",
@@ -715,7 +715,7 @@
       "path": "packages/cli/package.json",
       "mode": 420,
       "bytes": 294,
-      "sha256": "5a180285363ad314729a94480c7a146fcb2888c3c08a94ea07357031cad99a33"
+      "sha256": "8bb327964bb22c83723b6921c00fa530d5a25f56bacf755d88564e57becd274e"
     },
     {
       "path": "packages/core/ai-bridge.mjs",
@@ -1039,7 +1039,7 @@
       "path": "packages/core/package.json",
       "mode": 420,
       "bytes": 582,
-      "sha256": "90042395d632ad4f2f8608cd51e0822fdd56ee65668c7f057962b82242c2daf2"
+      "sha256": "be693ee174f8f3798d4fdc66eeeee21451f32f9b475116fcc9d55ba652b0e3d7"
     },
     {
       "path": "packages/core/path-boundary.mjs",
@@ -1386,8 +1386,8 @@
     {
       "path": "rules/lifecycle-guide.md",
       "mode": 420,
-      "bytes": 23054,
-      "sha256": "e4ffa40af1797d16ed38842c21d946d1581e3f820a1172c2d61f923565626799"
+      "bytes": 24029,
+      "sha256": "20be6247c2973dc045747b56cf529cf2a66d97954a74deb5803150041e17d125"
     },
     {
       "path": "rules/manifest.json",
@@ -1476,14 +1476,14 @@
     {
       "path": "skills/ai-product-foundation-kit/SKILL.md",
       "mode": 420,
-      "bytes": 17090,
-      "sha256": "5136d2e648497810840940190d8c700bd12309ff0c16db1035567e495161cebc"
+      "bytes": 17928,
+      "sha256": "873b44d54f99a9171e21157aa475c43fd1df2bb4bca5920819feb51c5e0ddce5"
     },
     {
       "path": "skills/ai-product-foundation-kit/capability.json",
       "mode": 420,
       "bytes": 945,
-      "sha256": "4e26d27abf0949f4df2f55f98fbbfd73ec7a1c45ff9b55e59fb0d6ce335259ce"
+      "sha256": "5c295756b5db93d9399194c631f4073db8b9e4ba49d7518db3175a30f7d5ec01"
     },
     {
       "path": "templates/foundation-project/.foundation/facts/changes.json",

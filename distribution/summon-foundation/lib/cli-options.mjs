@@ -3,6 +3,7 @@ export function parseSummonArgs(args){
   args=[...args];
   if(args.length===0||args.length===1&&['--help','-h'].includes(args[0]))return {help:true};
   if(args.shift()!=='foundation')fail('仅支持 summon foundation');
+  if(args.length===1&&['--help','-h'].includes(args[0]))return {help:true};
   const result={prepare:false};const seen=new Set();
   while(args.length){const flag=args.shift();if(seen.has(flag))fail('重复参数');seen.add(flag);
     if(flag==='--prepare')result.prepare=true;

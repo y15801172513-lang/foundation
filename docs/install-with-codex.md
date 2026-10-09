@@ -1,17 +1,17 @@
 # 用 Codex 安装 Foundation
 
-当前支持边界见[现行支持策略](install-platform-024.md#现行支持策略)。本源码对应程序 0.2.34、npm 0.1.16；发行可用性必须在线核验。
+当前支持边界见[现行支持策略](install-platform-024.md#现行支持策略)。本源码对应程序 0.2.35、npm 0.1.17；发行可用性必须在线核验。
 
 新版要求启动器和运行引擎均声明单页接续，所有所选确认在初始页面展开，不兼容旧版多页过渡。临时页面结束后仍可读取同次结果；不自动删除或迁移旧安装。
 
 本文是可从固定发行提交读取的操作说明，不单独证明该版本已发布。必须以实际 npm registry 和公共不可变 Release 的验证结果为准；缺包、缺发行或验证失败时停止获取，不把仓库存在当作安装成功。真实安装、Skill 注册及新对话发现分别验收。
 
-对应版本：[Foundation 0.2.34](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.34)、[npm 0.1.16](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.16)。运行源码身份以同版本发行证明为准，文档提交不替代运行源码身份。
+对应版本：[Foundation 0.2.35](https://github.com/y15801172513-lang/foundation/releases/tag/v0.2.35)、[npm 0.1.17](https://www.npmjs.com/package/@josephyulei/summon-foundation/v/0.1.17)。运行源码身份以同版本发行证明为准，文档提交不替代运行源码身份。
 
 在具备权限的新 Codex 对话中使用：
 
 ```text
-npx --yes --package @josephyulei/summon-foundation@0.1.16 summon foundation --version 0.2.34
+npx --yes --package @josephyulei/summon-foundation@0.1.17 summon foundation --version 0.2.35
 ```
 
 新版默认命令先在同一页面收集目录和 Skill 意向，再获取并校验固定版本，随后就地展开每个精确确认。只打开首次返回的单页 URL；不追随内部 manager 地址或另开标签。选择不是执行批准。无 TTY 不阻塞终端提问；关闭页面不算取消，目录选择有明确到期。系统浏览器仅在明确告知并得到同意后备用。
@@ -44,11 +44,25 @@ npm 薄入口需要 Node.js 22.9+ 和 npm；完整 Foundation 运行时随发行
 
 已有安装应先检查，再选择打开或更新，不为新项目再装一份。已有项目专属安装仍按原记录识别；项目移动、替换或记录不一致时停止，不自动迁移为共用安装。没有 Skill 定位记录的自选位置无法凭空发现，需用户提供原软件位置，不扫描电脑。项目接入仍需独立确认。卸载只处理本安装及已明确批准的对话功能，保留其他安装、项目资料、未知或修改文件、原有 Node 和独立缓存记录。
 
-公共来源固定为 `y15801172513-lang/foundation`，GitHub 仓库 ID `1363748227`。无需私有仓库权限或 GitHub 登录。匿名读取本页失败时，可通过 `https://api.github.com/repos/y15801172513-lang/foundation/contents/docs/install-with-codex.md` 获取内容；固定返回的文档身份，不到其他来源找同名脚本。正式发行前 404 不能当作安装完成。
+公共来源固定为 `y15801172513-lang/foundation`，GitHub 仓库 ID `1363748227`。公开获取不要求私有仓库权限；匿名额度可用时无需 GitHub 登录。匿名读取本页失败时，可通过 `https://api.github.com/repos/y15801172513-lang/foundation/contents/docs/install-with-codex.md` 获取内容；API也可能受匿名限流，不能把备用地址当作绕过限流的方法。固定返回的文档身份，不到其他来源找同名脚本。正式发行前 404 不能当作安装完成。
 
 连接使用用户现有环境；代理仅作用于本次网络命令，不修改系统/全局代理，不把维护者的代理地址作为产品依赖。
 
 ## 2. 固定版本与来源
+
+### 已安装版本的更新与认证恢复
+
+旧安装与当前获取器是两个版本。Foundation 0.2.31 的稳定入口 `maintenance update --install-id <已核验身份>` 在没有候选时返回 `acquisition-required`，其 `route.source` 指向公共 main 的本页；因此旧用户可沿既有交接发现当前说明，无须先升级或刷新 Skill。先读取并固定当前公共文档提交，再按本文核验固定 npm 包及正式发行。不要只读旧安装内的文档副本，也不要把修改后的新 Skill 当作旧用户已具备的能力。
+
+认证能力从 **npm 0.1.16** 起提供（与 Foundation 0.2.34 一同发行），不是由旧引擎新增。对已经核验来源和固定版本的获取器先读 `summon --help`（已发布0.1.16使用此顶层帮助；子命令 `summon foundation --help` 不被旧入口识别时，不据此推断认证能力缺失）；帮助应声明 `--github-auth auto|anonymous|gh`。可用 `summon foundation --inspect [--version <目标>]` 只读核验发行。不得凭单个源码文件、资产匿名下载注释或历史版本断言整个获取器仅支持匿名；包未取得或帮助未核实应报告“能力未核实”。不执行未核验或滚动版本的 npx，也不要求更新旧程序后才能使用新获取器。
+
+默认 `auto` 依次使用本次环境已有的 `GH_TOKEN`、`GITHUB_TOKEN`，均无值则匿名；不会隐式读取 gh。`anonymous` 明确忽略环境凭证；`gh` 仅在明确选择后读取 GitHub CLI 已有登录。凭证只用于允许的 GitHub API请求，运行资产下载不带凭证，跨域重定向不携带认证；证明、摘要和安装身份检查保持不变。
+
+匿名 `GITHUB_PRIMARY_RATE_LIMIT` / `GITHUB_SECONDARY_RATE_LIMIT` 只证明这条匿名路径受限，不是全部更新的前置阻断。读取入口实际错误的来源、类别与等待时间，然后在正常对话中说明并让用户选择：复用已有 gh 登录、使用本次环境已配置的凭证，或保持匿名按服务时间等待/停止。不要向用户索要或展示 Token，不强迫创建新 Token，不静默调用 `gh auth token`。选择 gh 后可先只读 `gh auth status --hostname github.com`；未安装、未登录或已过期时准确说明，只有本人另行完成安装/登录后才继续。无网络时说明网络阻断；401、权限403不自动降级匿名或绕过组织策略。
+
+明确选择 gh 后，使用同一已核验获取器、同一安装根和固定目标，将 `--github-auth gh` 用于查询及 `summon foundation --update --root <已核验根> --version <固定目标> --github-auth gh`。选择环境凭证时沿默认 auto；保持匿名时显式 anonymous，并遵守服务等待时间。先确认旧进程已退出及原操作结果，再发起新的获取，不能重放旧安装确认。拒绝认证时停止或等待，不创建更新计划，不修改安装、Skill或项目；已经产生的获取记录如实保留，不把缓存写入称为安装变更。
+
+认证来源选择仅允许本次 API 获取，不是更新批准。可信获取后继续原同页更新，展示准确当前→目标、安装位置、保留项与权限，仍由本人确认精确更新计划。未确认、取消、失败与实际完成分别报告；不能用查询成功、下载完成或工程模拟确认替代真实用户更新。
 
 显式 `--inspect` 才只查询公共 Release，返回 `RELEASE_DISCOVERED_NOT_ACQUIRED`、固定版本、运行载荷的 sourceCommit，以及当次固定公共 main 的 documentationCommit/安装说明链接；不写获取缓存、不下载运行文件。默认命令使用同一发现逻辑继续获取，不把发现当作完成。维护说明可以在不改写 Release 的前提下修正；两个提交分别显示，不能拿文档提交替代运行归档身份。执行中不追逐 latest，不让用户填写仓库 ID、摘要或内部参数。
 

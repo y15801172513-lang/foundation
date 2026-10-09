@@ -28,6 +28,7 @@ summon foundation --resume /absolute/acquisition/operation-result.json
 默认命令下载并验证正式发行，进入安装准备；未给目录时在安装页选择。不会静默安装或注册 Skill。
 --inspect 才只读查询发行，不下载运行归档。
 --github-auth auto|anonymous|gh 用于查询、获取与更新。默认 auto 依次读取 GH_TOKEN、GITHUB_TOKEN，无凭证则匿名；仅显式 gh 读取 GitHub CLI 已有登录。anonymous 忽略环境凭证。
+匿名限流只限制匿名路径：按服务时间等待/停止，或在明确选择后复用已有 gh 登录；不要求新建或展示 Token。认证选择不代替更新页面的独立确认。恢复步骤见公共安装说明“已安装版本的更新与认证恢复”。
 --prepare 下载并核验固定发行，打开 Foundation 本人确认流程；不会代替确认。
 --acquire 仅下载并核验更新材料，返回候选与回执；不启动安装或执行更新。
 --status 只读本次结果记录；中间记录不证明进程仍在运行，不重试或重放确认。
